@@ -1,0 +1,8 @@
+*.zip
+venv/
+.vscode/
+__pycache__/
+.DS_Store
+.env
+.flaskenv
+test_files/
