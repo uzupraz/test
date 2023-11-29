@@ -1,7 +1,7 @@
 import os
 
 
-class Config:
+class AppConfig:
     """
     Configuration required for retrieving the os or local environment variables
     Any environment variables to be used in the application should be set here
@@ -21,7 +21,7 @@ class Config:
 
 
     @classmethod
-    def _load(cls) -> 'Config':
+    def _load(cls) -> 'AppConfig':
         """
         Load configuration values from environment variables.
 
@@ -34,7 +34,7 @@ class Config:
 
 
     @classmethod
-    def get_instance(cls, prefer = None) -> 'Config':
+    def get_instance(cls, prefer = None) -> 'AppConfig':
         """
         Get the Config instance, loading values if not loaded already.
 
@@ -45,6 +45,6 @@ class Config:
             Config: The Config instance.
         """
         if not cls._instance:
-            cls._instance = prefer if prefer else Config._load()
+            cls._instance = prefer if prefer else AppConfig._load()
 
         return cls._instance

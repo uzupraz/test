@@ -5,7 +5,7 @@
 from flask import Flask
 
 from controller import api
-from configuration import Config
+from configuration import AppConfig
 from utils import LogManager
 
 
@@ -16,6 +16,6 @@ app.config['ERROR_INCLUDE_MESSAGE'] = False
 api.init_app(app)
 
 if __name__ == '__main__':
-    config = Config.get_instance()
+    config = AppConfig.get_instance()
     LogManager.configure_logging(config.log_level)
     app.run(debug=False)

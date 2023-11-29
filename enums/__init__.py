@@ -1,1 +1,1 @@
-from .service_status import ServiceStatus
+from .status import ServiceStatus, APIStatus

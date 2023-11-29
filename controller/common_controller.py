@@ -3,7 +3,7 @@ from flask_restx import  fields, Resource, Namespace
 from .server_response import ServerResponse
 
 
-health_api = Namespace('health', description='Health related operations')
+health_api = Namespace('Health API', description='Checks the health of an API', path='/health')
 log = health_api.logger
 
 server_response = health_api.model('Server Response', {
@@ -14,9 +14,9 @@ server_response = health_api.model('Server Response', {
 })
 
 
-@health_api.route('/')
+@health_api.route('')
 class HealthResource(Resource):
 
     @health_api.marshal_with(server_response, skip_none=True)
     def get(self):
-        return ServerResponse()
+        return ServerResponse.success()

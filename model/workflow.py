@@ -1,43 +1,39 @@
+from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 
 
+@dataclass
 class Connection:
 
-
-    def __init__(self, sourceNode: str, targetNode: str) -> None:
-        self.sourceNode = sourceNode
-        self.targetNode = targetNode
+    sourceNode: str
+    targetNode: str
 
 
+@dataclass
 class Node:
 
-
-    def __init__(self, id: str, name: str, description: str, type: str, hasSubflow: bool, parameters: Dict[str, Any], nodeTemplateId: str, subWorkflow: Optional['SubWorkflow']) -> None:
-        self.id = id
-        self.name = name
-        self.description = description
-        self.type = type
-        self.hasSubflow = hasSubflow
-        self.parameters = parameters
-        self.nodeTemplateId = nodeTemplateId
-        self.subWorkflow = subWorkflow
+    id: str
+    name: str
+    description: str
+    type: str
+    hasSubflow: bool
+    parameters: Dict[str, Any]
+    nodeTemplateId: str
+    subWorkflow: Optional['SubWorkflow']
 
 
+@dataclass
 class Config:
 
-
-    def __init__(self, startAt: str, connections: List[Connection], nodes: List[Node]) -> None:
-        self.startAt = startAt
-        self.connections = connections
-        self.nodes = nodes
+    startAt: str
+    connections: List[Connection]
+    nodes: List[Node]
 
 
+@dataclass
 class SubWorkflow:
 
-
-    def __init__(self, config: Config) -> None:
-        self.config = config
-
+    config: Config
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'SubWorkflow':
@@ -45,22 +41,20 @@ class SubWorkflow:
         return cls(**data)
 
 
+@dataclass
 class Workflow:
 
-
-    def __init__(self, ownerId: str, workflowId: str, config: Config, createdBy: str, createdByName: str, creationDate: str, groupName: str, name: str, state: str, workflowVersion: int, schemaVersion: int) -> None:
-        self.ownerId = ownerId
-        self.workflowId = workflowId
-        self.config = config
-        self.createdBy = createdBy
-        self.createdByName = createdByName
-        self.creationDate = creationDate
-        self.groupName = groupName
-        self.name = name
-        self.state = state
-        self.workflowVersion = workflowVersion
-        self.schemaVersion = schemaVersion
-
+    ownerId: str
+    workflowId: str
+    config: Config
+    createdBy: str
+    createdByName: str
+    creationDate: str
+    groupName: str
+    name: str
+    state: str
+    workflowVersion: int
+    schemaVersion: int
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Workflow':

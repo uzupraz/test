@@ -25,6 +25,12 @@ class ServerResponse:
 
 
     @classmethod
+    def response(cls, code: ServiceStatus, message: str,  payload=None) -> 'ServerResponse':
+        payload = asdict(payload) if payload else payload
+        return ServerResponse(code.value, message, payload=payload)
+
+
+    @classmethod
     def error(cls, code:ServiceStatus, message='Could not perform operation', payload=None) -> 'ServerResponse':
         payload = asdict(payload) if payload else payload
         return ServerResponse(code.value, message, payload=payload)
