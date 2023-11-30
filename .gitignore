@@ -57,3 +57,4 @@ venv.bak/
 .vscode/
 .DS_Store
 test_files/
+script.py
