@@ -7,7 +7,7 @@ api = Namespace('Workflow API', description='Manages workflow related operations
 log = api.logger
 
 
-@api.route('')
+@api.route('/')
 class WorkflowResource(Resource):
 
 

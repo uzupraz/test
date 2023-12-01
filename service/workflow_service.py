@@ -1,11 +1,11 @@
 from model import Workflow
-from .workflow_converter import CustomWorkflowConverter
+from .workflow_converter import StepFunctionJSONConverter
 
 
 class WorkflowService:
 
 
-    def __init__(self, workflow_converter: CustomWorkflowConverter) -> None:
+    def __init__(self, workflow_converter: StepFunctionJSONConverter) -> None:
         self.workflow_converter = workflow_converter
 
 

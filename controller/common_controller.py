@@ -35,7 +35,7 @@ node_dto = health_api.model('Node', {
     'hasSubflow': fields.Boolean(required=True),
     'parameters': fields.Raw(required=True),
     'nodeTemplateId': fields.String(required=True),
-    'subWorkflow': fields.Nested(sub_workflow_dto)
+    'subWorkflow': fields.Nested(sub_workflow_dto, allow_null=True)
 })
 
 # Add nodes to config after node is defined
@@ -56,7 +56,7 @@ workflow_dto = health_api.model('Workflow', {
 })
 
 
-@health_api.route('')
+@health_api.route('/')
 class HealthResource(Resource):
 
     @health_api.marshal_with(server_response, skip_none=True)

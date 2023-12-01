@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
+from dacite import from_dict
+
 
 @dataclass
 class Connection:
@@ -18,45 +20,20 @@ class Node:
     hasSubflow: bool
     parameters: Dict[str, Any]
     nodeTemplateId: str
-    subWorkflow: Optional['SubWorkflow'] = None
-
+    subWorkflow: Optional['SubWorkflow'] = field(default=None)
 
 @dataclass
 class Config:
 
-    startAt: str
-    connections: List[Connection]
-    nodes: List[Node]
+    startAt: str = field(default=None)
+    connections: List[Connection] = field(default=None)
+    nodes: List[Node] = field(default=None)
 
 
 @dataclass
 class SubWorkflow:
 
-    config: Config
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'SubWorkflow':
-        # Convert connections
-        connections = []
-        for conn in data['config']['connections']:
-            connections.append(Connection(**conn))
-        data['config']['connections'] = connections
-
-        # Convert nodes
-        nodes = []
-        for node in data['config']['nodes']:
-            if not node['hasSubflow']:
-                nodes.append(Node(**node))
-            else:
-                # If it has a subWorkflow, remove the subWorkflow key from the node dictionary,
-                # and create a SubWorkflow object using the from_dict method,
-                # and creates a Node object with subWorkflow set to the created SubWorkflow object.
-                sub_workflow = node.pop('subWorkflow')
-                nodes.append(Node(subWorkflow=SubWorkflow.from_dict(sub_workflow), **node))
-        data['config']['nodes'] = nodes
-
-        data['config'] = Config(**data['config'])
-        return cls(**data)
+    config: Config = field(default=None)
 
 
 @dataclass
@@ -75,25 +52,5 @@ class Workflow:
     schemaVersion: int
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Workflow':
-        # Convert connections
-        connections = []
-        for conn in data['config']['connections']:
-            connections.append(Connection(**conn))
-        data['config']['connections'] = connections
-
-        # Convert nodes
-        nodes = []
-        for node in data['config']['nodes']:
-            if not node['hasSubflow']:
-                nodes.append(Node(**node))
-            else:
-                # If it has a subWorkflow, remove the subWorkflow key from the node dictionary,
-                # and create a SubWorkflow object using the from_dict method,
-                # and creates a Node object with subWorkflow set to the created SubWorkflow object.
-                sub_workflow = node.pop('subWorkflow')
-                nodes.append(Node(subWorkflow=SubWorkflow.from_dict(sub_workflow), **node))
-        data['config']['nodes'] = nodes
-
-        data['config'] = Config(**data['config'])
-        return cls(**data)
+    def parse_from(cls, data: Dict[str, Any]) -> 'Workflow':
+        return from_dict(data_class=Workflow, data=data)

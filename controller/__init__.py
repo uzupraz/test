@@ -20,7 +20,7 @@ for ns in namespaces:
 
 
 @api.errorhandler(Exception)
-def handle_all_exceptions(e):
+def handle_all_exceptions(e:Exception):
     """
     This function handles all exceptions that occur within the API.
 

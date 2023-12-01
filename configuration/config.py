@@ -10,7 +10,7 @@ class AppConfig:
     _instance = None
 
 
-    def __init__(self, log_level: str) -> None:
+    def __init__(self, log_level:str) -> None:
         """
         Initialize the Config object with the provided attributes.
 
@@ -34,7 +34,7 @@ class AppConfig:
 
 
     @classmethod
-    def get_instance(cls, prefer = None) -> 'AppConfig':
+    def get_instance(cls, prefer=None) -> 'AppConfig':
         """
         Get the Config instance, loading values if not loaded already.
 

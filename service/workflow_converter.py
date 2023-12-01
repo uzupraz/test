@@ -1,30 +1,46 @@
-from model import Workflow
+from typing import List
+
+from model import Workflow, Node, Connection
+from controller import common_controller as common_ctrl
 
 
-class CustomWorkflowConverter:
+log = common_ctrl.log
 
 
-    def convert(self, workflow: Workflow) -> dict:
-        step_function = {
-            "Comment": workflow.name,
-            "StartAt": workflow.config.startAt,
-            "Version": workflow.workflowVersion,
-            "States": self.convert_states(workflow.config.nodes, workflow.config.connections)
-        }
+class StepFunctionJSONConverter:
+    """
+    This class is used to convert a Workflow object into an AWS Step Functions state machine.
+    Used only for enabling a workflow to be executed in AWS Step Functions.
+    """
 
+
+    def convert(self, workflow:Workflow) -> dict:
+        log.info('Converting workflow into step function json. workflowId: %s', workflow.workflowId)
+        try:
+            step_function = {
+                'Comment': workflow.name,
+                'StartAt': workflow.config.startAt,
+                'Version': workflow.workflowVersion,
+                'States': self.convert_states(workflow.config.nodes, workflow.config.connections)
+            }
+        except Exception as e:
+            log.exception('Failed to convert workflow into step function json. workflowId: %s', workflow.workflowId, e)
+            raise e
+
+        log.info('Successfully converted workflow into step function json. workflowId: %s', workflow.workflowId)
         return step_function
 
 
-    def convert_subworkflow(self, sub_workflow: Workflow) -> None:
+    def convert_subworkflow(self, sub_workflow:Workflow) -> None:
         sub_step_function = {
-            "StartAt": sub_workflow.config.startAt,
-            "States": self.convert_states(sub_workflow.config.nodes, sub_workflow.config.connections)
+            'StartAt': sub_workflow.config.startAt,
+            'States': self.convert_states(sub_workflow.config.nodes, sub_workflow.config.connections)
         }
 
         return sub_step_function
 
 
-    def convert_states(self, nodes, connections):
+    def convert_states(self, nodes:List[Node], connections:List[Connection]):
         states = {}
 
         # Create states from nodes
@@ -35,35 +51,36 @@ class CustomWorkflowConverter:
         # Update state transitions based on connections
         for connection in connections:
             source_state = states[connection.sourceNode]
-            if 'Next' not in source_state:
-                source_state['Next'] = connection.targetNode
-                if 'End' in source_state:
-                    del source_state['End']  # Not an end state since it has a next state
+            source_state['Next'] = connection.targetNode
+
+        # Find states that don't have a 'Next' field and add 'End': True
+        for state in states.values():
+            if 'Next' not in state:
+                state['End'] = True
 
         return states
 
 
-    def __get_state(self, node):
+    def __get_state(self, node:Node):
         state = {
-            "Type": node.type,
-            "End": True
+            'Type': node.type
         }
 
-        if node.type == "Task":
-            state["Resource"] = node.nodeTemplateId
-            state["Parameters"] = {
-                "Payload.$": "$",  # Include this by default
+        if node.type == 'Task':
+            state['Resource'] = node.nodeTemplateId
+            state['Parameters'] = {
+                'Payload.$': '$',  # Include this by default
                 **node.parameters  # Include the rest of the parameters
             }
-        elif node.type == "Parallel":
-            state["Branches"] = [self.convert_subworkflow(node.subWorkflow)]
-        elif node.type == "Map":
-            state["ItemProcessor"] = {
-                "ProcessorConfig": {"Mode": "INLINE"},
-                "StartAt": node.subWorkflow.config.startAt,
-                "States": self.convert_states(node.subWorkflow.config.nodes, node.subWorkflow.config.connections)
+        elif node.type == 'Parallel':
+            state['Branches'] = [self.convert_subworkflow(node.subWorkflow)]
+        elif node.type == 'Map':
+            state['ItemProcessor'] = {
+                'ProcessorConfig': {'Mode': 'INLINE'},
+                'StartAt': node.subWorkflow.config.startAt,
+                'States': self.convert_states(node.subWorkflow.config.nodes, node.subWorkflow.config.connections)
             }
-        elif node.type == "Wait":
-            state["Seconds"] = int(node.parameters["Seconds"])
+        elif node.type == 'Wait':
+            state['Seconds'] = int(node.parameters['Seconds'])
 
         return state
