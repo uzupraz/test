@@ -25,7 +25,7 @@ class StepFunctionJSONConverter:
             }
         except Exception as e:
             log.exception('Failed to convert workflow into step function json. workflowId: %s', workflow.workflowId, e)
-            raise e
+            raise ValueError('Failed to convert workflow into step function json. workflowId: %s' % workflow.workflowId)
 
         log.info('Successfully converted workflow into step function json. workflowId: %s', workflow.workflowId)
         return step_function
