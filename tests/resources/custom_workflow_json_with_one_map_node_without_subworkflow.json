@@ -1,0 +1,62 @@
+{
+    "ownerId": "2241e2f8-0c9a-46e9-bf0f-7f4bb2e17a0c",
+    "workflowId": "8adb38af-7acc-461f-9aaf-9f9d422fcd0a",
+    "config": {
+      "startAt": "8ccbecd0-3622-48e4-8415-8af389c9f275",
+      "connections": [
+        {
+          "sourceNode": "8ccbecd0-3622-48e4-8415-8af389c9f275",
+          "targetNode": "8ccbecd0-3622-48e4-8415-8af389c9f276"
+        },
+        {
+          "sourceNode": "8ccbecd0-3622-48e4-8415-8af389c9f276",
+          "targetNode": "8ccbecd0-3622-48e4-8415-8af389c9f277"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "8ccbecd0-3622-48e4-8415-8af389c9f275",
+          "name": "File Event",
+          "description": "Listen to lah lah lah",
+          "hasSubflow": false,
+          "type": "Task",
+          "parameters": {
+            "path": "/partners/d421d0cd-3834-46ec-ba28-91b3803ae48f/*"
+          },
+          "nodeTemplateId": "file-event:1",
+          "subWorkflow": {}
+        },
+        {
+          "id": "8ccbecd0-3622-48e4-8415-8af389c9f276",
+          "name": "File Event",
+          "description": "Listen to lah lah lah",
+          "hasSubflow": true,
+          "type": "Map",
+          "parameters": {
+            "path": "/partners/d421d0cd-3834-46ec-ba28-91b3803ae48f/*"
+          },
+          "nodeTemplateId": "file-event:1"
+        },
+        {
+          "id": "8ccbecd0-3622-48e4-8415-8af389c9f277",
+          "name": "File Event",
+          "description": "Listen to lah lah lah",
+          "hasSubflow": false,
+          "type": "Task",
+          "parameters": {
+            "path": "/partners/d421d0cd-3834-46ec-ba28-91b3803ae48f/*"
+          },
+          "nodeTemplateId": "file-event:1",
+          "subWorkflow": {}
+        }
+      ]
+    },
+    "createdBy": "2241e2f8-0c9a-46e9-bf0f-7f4bb2e17a0c",
+    "createdByName": "aanal",
+    "creationDate": "2023-09-18T05:30:50.846714",
+    "groupName": "Test",
+    "name": "Simple Workflow",
+    "state": "INACTIVE",
+    "workflowVersion": 1,
+    "schemaVersion": 1
+}

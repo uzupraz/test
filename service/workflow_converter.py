@@ -21,7 +21,7 @@ class StepFunctionJSONConverter:
                 'Comment': workflow.name,
                 'StartAt': workflow.config.startAt,
                 'Version': workflow.workflowVersion,
-                'States': self.convert_states(workflow.config.nodes, workflow.config.connections)
+                'States': self.__convert_states(workflow.config.nodes, workflow.config.connections)
             }
         except Exception as e:
             log.exception('Failed to convert workflow into step function json. workflowId: %s', workflow.workflowId, e)
@@ -31,16 +31,16 @@ class StepFunctionJSONConverter:
         return step_function
 
 
-    def convert_subworkflow(self, sub_workflow:Workflow) -> None:
+    def __convert_subworkflow(self, sub_workflow:Workflow) -> None:
         sub_step_function = {
             'StartAt': sub_workflow.config.startAt,
-            'States': self.convert_states(sub_workflow.config.nodes, sub_workflow.config.connections)
+            'States': self.__convert_states(sub_workflow.config.nodes, sub_workflow.config.connections)
         }
 
         return sub_step_function
 
 
-    def convert_states(self, nodes:List[Node], connections:List[Connection]):
+    def __convert_states(self, nodes:List[Node], connections:List[Connection]):
         states = {}
 
         # Create states from nodes
@@ -73,14 +73,14 @@ class StepFunctionJSONConverter:
                 **node.parameters  # Include the rest of the parameters
             }
         elif node.type == 'Parallel':
-            state['Branches'] = [self.convert_subworkflow(node.subWorkflow)]
+            state['Branches'] = [self.__convert_subworkflow(node.subWorkflow)]
         elif node.type == 'Map':
             state['ItemProcessor'] = {
                 'ProcessorConfig': {'Mode': 'INLINE'},
                 'StartAt': node.subWorkflow.config.startAt,
-                'States': self.convert_states(node.subWorkflow.config.nodes, node.subWorkflow.config.connections)
+                'States': self.__convert_states(node.subWorkflow.config.nodes, node.subWorkflow.config.connections)
             }
         elif node.type == 'Wait':
-            state['Seconds'] = int(node.parameters['Seconds'])
+            state['Seconds'] = int(node.parameters['seconds'])
 
         return state

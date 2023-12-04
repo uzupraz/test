@@ -1,0 +1,45 @@
+{
+  "Comment": "Simple Workflow",
+  "StartAt": "8ccbecd0-3622-48e4-8415-8af389c9f275",
+  "Version": 1,
+  "States": {
+      "8ccbecd0-3622-48e4-8415-8af389c9f275": {
+          "Type": "Task",
+          "Resource": "file-event:1",
+          "Parameters": {
+              "Payload.$": "$",
+              "path": "/partners/d421d0cd-3834-46ec-ba28-91b3803ae48f/*"
+          },
+          "Next": "8ccbecd0-3622-48e4-8415-8af389c9f276"
+      },
+      "8ccbecd0-3622-48e4-8415-8af389c9f276": {
+          "Type": "Parallel",
+          "Branches": [
+              {
+                  "StartAt": "8ccbecd0-3622-48e4-8415-8af389c9f275",
+                  "States": {
+                      "8ccbecd0-3622-48e4-8415-8af389c9f275": {
+                          "Type": "Task",
+                          "Resource": "file-event:1",
+                          "Parameters": {
+                              "Payload.$": "$",
+                              "path": "/partners/d421d0cd-3834-46ec-ba28-91b3803ae48f/*"
+                          },
+                          "Next": "8ccbecd0-3622-48e4-8415-8af389c9f276"
+                      },
+                      "8ccbecd0-3622-48e4-8415-8af389c9f276": {
+                          "Type": "Task",
+                          "Resource": "file-event:1",
+                          "Parameters": {
+                              "Payload.$": "$",
+                              "path": "/partners/d421d0cd-3834-46ec-ba28-91b3803ae48f/*"
+                          },
+                          "End": true
+                      }
+                  }
+              }
+          ],
+          "End": true
+      }
+  }
+}
