@@ -1,5 +1,4 @@
 import unittest
-import os
 from parameterized import parameterized
 
 from ..test_utils import TestUtils
@@ -34,12 +33,10 @@ class TestStepFunctionJSONConverter(unittest.TestCase):
     ])
     def test_convert(self, input_file_name, expected_file_name, expected_exception):
         """
-        Tests the happy case of converting a workflow with a node type of "task"
-        into a step function JSON. Input workflow has two nodes and one connection between them.
-        The second node is the end node.
+        Tests the all possible cases of converting a workflow into a step function JSON.
         """
 
-        input_file_path = os.getcwd() + self.test_resource_path + input_file_name
+        input_file_path = self.test_resource_path + input_file_name
         workflow_json = TestUtils.get_file_content(input_file_path)
         workflow = Workflow.parse_from(workflow_json)
 
@@ -49,7 +46,7 @@ class TestStepFunctionJSONConverter(unittest.TestCase):
         else:
             actual_result = self.step_function_json_converter.convert(workflow)
 
-            expected_file_path = os.getcwd() + self.test_resource_path + expected_file_name
+            expected_file_path = self.test_resource_path + expected_file_name
             expected_result = TestUtils.get_file_content(expected_file_path)
 
             self.assertEqual(expected_result, actual_result)
