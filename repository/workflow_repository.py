@@ -23,7 +23,7 @@ class WorkflowRepository:
         self.workflow_table = self.__configure_table()
 
 
-    def save(self, workflow: Workflow):
+    def save(self, workflow: Workflow) -> 'Workflow':
         log.info('Saving workflow. workflowId: %s', workflow.workflowId)
         try:
             # Convert the Workflow object to a dictionary
@@ -31,7 +31,7 @@ class WorkflowRepository:
             # Save the dictionary to DynamoDB
             response = self.workflow_table.put_item(Item=workflow_dict)
             log.info('Successfully saved workflow. workflowId: %s', workflow.workflowId)
-            return response
+            return workflow
         except ClientError as e:
             log.exception('Failed to save workflow. workflowId: %s', workflow.workflowId, e)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, e.response['Error']['Message'])

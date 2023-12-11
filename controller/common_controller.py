@@ -9,7 +9,7 @@ log = health_api.logger
 server_response = health_api.model('Server Response', {
     'code': fields.String,
     'message': fields.String,
-    'payload': fields.Raw,
+    'payload': fields.Raw(allow_null=True),
     'timestamp': fields.DateTime
 })
 
@@ -61,4 +61,4 @@ class HealthResource(Resource):
 
     @health_api.marshal_with(server_response, skip_none=True)
     def get(self):
-        return ServerResponse.success()
+        return ServerResponse.success(), 200

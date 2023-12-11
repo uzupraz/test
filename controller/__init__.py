@@ -16,7 +16,7 @@ from enums import ServiceStatus
 from exception import ServiceException
 
 
-api = Api(version='1.0', title='InterconnectHub Management API', description='InterconnectHub Management for Workflow related services.')
+api = Api(version='1.0', title='InterconnectHub Management API', description='InterconnectHub Management for Workflow related services.', doc='/api-docs')
 namespaces = [health_ns, workflow_ns]
 
 for ns in namespaces:
