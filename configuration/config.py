@@ -48,3 +48,57 @@ class AppConfig:
             cls._instance = prefer if prefer else AppConfig._load()
 
         return cls._instance
+
+
+class AWSConfig:
+    """
+    Configuration related to the AWS are loaded here.
+    """
+
+    _instance = None
+
+
+    def __init__(self, workflow_table_name:str, is_local:bool, aws_region:str) -> None:
+        """
+        Initialize the AWSConfig object with the provided attributes.
+
+        Args:
+            workflow_table_name (str): The name of the DynamoDB table where the workflow data is stored.
+            is_local (bool): Whether the application is running locally or not.
+            aws_region (str): The AWS region where the application is running.
+        """
+        self.workflow_table_name = workflow_table_name
+        self.is_local = is_local
+        self.aws_region = aws_region
+
+
+    @classmethod
+    def _load(cls) -> 'AWSConfig':
+        """
+        Load configuration values from environment variables.
+
+        Returns:
+            AWSConfig: AWSConfig object with loaded values.
+        """
+        workflow_table_name = os.getenv('WORKFLOW_TABLE_NAME')
+        is_local = os.getenv('IS_LOCAL', 'False').lower() == 'true'
+        aws_region = os.getenv('AWS_REGION')
+
+        return cls(workflow_table_name, is_local, aws_region)
+
+
+    @classmethod
+    def get_instance(cls, prefer=None) -> 'AWSConfig':
+        """
+        Get the AWSConfig instance, loading values if not loaded already.
+
+        Args:
+            prefer (AWSConfig, optional): A preferred AWSConfig instance. Defaults to None.
+
+        Returns:
+            AWSConfig: The AWSConfig instance.
+        """
+        if not cls._instance:
+            cls._instance = prefer if prefer else AWSConfig._load()
+
+        return cls._instance

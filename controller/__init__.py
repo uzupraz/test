@@ -1,22 +1,38 @@
 # Since flask restx does not work with flask > 3.0.0
 # See link below for current open issue ticket for flask_restx
 # https://github.com/python-restx/flask-restx/issues/566
+from flask import jsonify
 import restx_monkey as monkey
 monkey.patch_restx()
 
 from flask_restx import Api
 from dataclasses import asdict
+from werkzeug.exceptions import HTTPException
 
 from .common_controller import health_api as health_ns
 from .workflow_resource import api as workflow_ns
 from .server_response import ServerResponse
 from enums import ServiceStatus
+from exception import ServiceException
+
 
 api = Api(version='1.0', title='InterconnectHub Management API', description='InterconnectHub Management for Workflow related services.')
 namespaces = [health_ns, workflow_ns]
 
 for ns in namespaces:
     api.add_namespace(ns)
+
+
+@api.errorhandler(HTTPException)
+def handle_bad_request(e):
+    # Use getattr to safely get the data attribute
+    error_data = getattr(e, 'data', None)
+    return asdict(ServerResponse.error(ServiceStatus.FAILURE, message=e.description, payload=error_data)), e.code
+
+
+@api.errorhandler(ServiceException)
+def handle_bad_request(e):
+    return asdict(ServerResponse.error(e.status, message=e.message)), e.status_code
 
 
 @api.errorhandler(Exception)
