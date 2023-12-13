@@ -7,5 +7,6 @@ class ServiceStatus(Enum):
 
 
 class APIStatus(Enum):
+    START='START'
     SUCCESS='SUCCESS'
     FAILURE='FAILURE'

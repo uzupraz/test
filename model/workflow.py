@@ -6,8 +6,8 @@ from dacite import from_dict
 @dataclass
 class Connection:
 
-    sourceNode: str
-    targetNode: str
+    source_node: str
+    target_node: str
 
 
 @dataclass
@@ -17,15 +17,15 @@ class Node:
     name: str
     description: str
     type: str
-    hasSubflow: bool
+    has_subflow: bool
     parameters: Dict[str, Any]
-    nodeTemplateId: str
-    subWorkflow: Optional['SubWorkflow'] = field(default=None)
+    node_template_id: str
+    sub_workflow: Optional['SubWorkflow'] = field(default=None)
 
 @dataclass
 class Config:
 
-    startAt: str = field(default=None)
+    start_at: str = field(default=None)
     connections: List[Connection] = field(default=None)
     nodes: List[Node] = field(default=None)
 
@@ -39,17 +39,17 @@ class SubWorkflow:
 @dataclass
 class Workflow:
 
-    ownerId: str
-    workflowId: str
+    owner_id: str
+    workflow_id: str
     config: Config
-    createdBy: str
-    createdByName: str
-    creationDate: str
-    groupName: str
+    created_by: str
+    created_by_name: str
+    creation_date: str
+    group_name: str
     name: str
     state: str
-    workflowVersion: int
-    schemaVersion: int
+    workflow_version: int
+    schema_version: int
 
     @classmethod
     def parse_from(cls, data: Dict[str, Any]) -> 'Workflow':

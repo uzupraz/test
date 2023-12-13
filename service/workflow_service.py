@@ -17,6 +17,16 @@ class WorkflowService:
 
 
     def save_workflow(self, workflow: Workflow) -> 'Workflow':
+        """
+        Saves a workflow using the workflow repository.
+
+        Args:
+            workflow (Workflow): The workflow to be saved.
+
+        Returns:
+            Workflow: The created workflow object.
+        """
+        log.info('Calling repository to save workflow. workflowId: %s, organizationId: %s', workflow.workflow_id, workflow.owner_id)
         created_workflow = self.workflow_repository.save(workflow)
         return created_workflow
 

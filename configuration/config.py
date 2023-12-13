@@ -10,14 +10,16 @@ class AppConfig:
     _instance = None
 
 
-    def __init__(self, log_level:str) -> None:
+    def __init__(self, log_level:str, workflow_table_name:str) -> None:
         """
         Initialize the Config object with the provided attributes.
 
         Args:
             log_level (str): Logging level string (e.g., 'DEBUG', 'INFO', 'WARNING', etc.).
+            workflow_table_name (str): The name of the DynamoDB table where the workflow data is stored.
         """
         self.log_level = log_level
+        self.workflow_table_name = workflow_table_name
 
 
     @classmethod
@@ -29,8 +31,9 @@ class AppConfig:
             Config: Config object with loaded values.
         """
         log_level =  os.getenv('APP_LOG_LEVEL', 'DEBUG').upper()
+        workflow_table_name = os.getenv('APP_WORKFLOW_TABLE_NAME')
 
-        return cls(log_level)
+        return cls(log_level, workflow_table_name)
 
 
     @classmethod
@@ -58,16 +61,14 @@ class AWSConfig:
     _instance = None
 
 
-    def __init__(self, workflow_table_name:str, is_local:bool, aws_region:str) -> None:
+    def __init__(self, is_local:bool, aws_region:str) -> None:
         """
         Initialize the AWSConfig object with the provided attributes.
 
         Args:
-            workflow_table_name (str): The name of the DynamoDB table where the workflow data is stored.
             is_local (bool): Whether the application is running locally or not.
             aws_region (str): The AWS region where the application is running.
         """
-        self.workflow_table_name = workflow_table_name
         self.is_local = is_local
         self.aws_region = aws_region
 
@@ -80,11 +81,10 @@ class AWSConfig:
         Returns:
             AWSConfig: AWSConfig object with loaded values.
         """
-        workflow_table_name = os.getenv('WORKFLOW_TABLE_NAME')
-        is_local = os.getenv('IS_LOCAL', 'False').lower() == 'true'
+        is_local = os.getenv('AWS_IS_LOCAL', 'False').lower() == 'true'
         aws_region = os.getenv('AWS_REGION')
 
-        return cls(workflow_table_name, is_local, aws_region)
+        return cls(is_local, aws_region)
 
 
     @classmethod

@@ -1,4 +1,4 @@
-from dataclasses import dataclass, asdict, is_dataclass
+from dataclasses import dataclass, asdict
 from enums import ServiceStatus
 import datetime
 

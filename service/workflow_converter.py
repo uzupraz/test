@@ -15,25 +15,25 @@ class StepFunctionJSONConverter:
 
 
     def convert(self, workflow:Workflow) -> dict:
-        log.info('Converting workflow into step function json. workflowId: %s', workflow.workflowId)
+        log.info('Converting workflow into step function json. workflowId: %s', workflow.workflow_id)
         try:
             step_function = {
                 'Comment': workflow.name,
-                'StartAt': workflow.config.startAt,
-                'Version': workflow.workflowVersion,
+                'StartAt': workflow.config.start_at,
+                'Version': workflow.workflow_version,
                 'States': self.__convert_states(workflow.config.nodes, workflow.config.connections)
             }
         except Exception as e:
-            log.exception('Failed to convert workflow into step function json. workflowId: %s', workflow.workflowId, e)
-            raise ValueError('Failed to convert workflow into step function json. workflowId: %s' % workflow.workflowId)
+            log.exception('Failed to convert workflow into step function json. workflowId: %s', workflow.workflow_id, e)
+            raise ValueError('Failed to convert workflow into step function json. workflowId: %s' % workflow.workflow_id)
 
-        log.info('Successfully converted workflow into step function json. workflowId: %s', workflow.workflowId)
+        log.info('Successfully converted workflow into step function json. workflowId: %s', workflow.workflow_id)
         return step_function
 
 
     def __convert_subworkflow(self, sub_workflow:Workflow) -> None:
         sub_step_function = {
-            'StartAt': sub_workflow.config.startAt,
+            'StartAt': sub_workflow.config.start_at,
             'States': self.__convert_states(sub_workflow.config.nodes, sub_workflow.config.connections)
         }
 
@@ -50,8 +50,8 @@ class StepFunctionJSONConverter:
 
         # Update state transitions based on connections
         for connection in connections:
-            source_state = states[connection.sourceNode]
-            source_state['Next'] = connection.targetNode
+            source_state = states[connection.source_node]
+            source_state['Next'] = connection.target_node
 
         # Find states that don't have a 'Next' field and add 'End': True
         for state in states.values():
@@ -67,18 +67,18 @@ class StepFunctionJSONConverter:
         }
 
         if node.type == 'Task':
-            state['Resource'] = node.nodeTemplateId
+            state['Resource'] = node.node_template_id
             state['Parameters'] = {
                 'Payload.$': '$',  # Include this by default
                 **node.parameters  # Include the rest of the parameters
             }
         elif node.type == 'Parallel':
-            state['Branches'] = [self.__convert_subworkflow(node.subWorkflow)]
+            state['Branches'] = [self.__convert_subworkflow(node.sub_workflow)]
         elif node.type == 'Map':
             state['ItemProcessor'] = {
                 'ProcessorConfig': {'Mode': 'INLINE'},
-                'StartAt': node.subWorkflow.config.startAt,
-                'States': self.__convert_states(node.subWorkflow.config.nodes, node.subWorkflow.config.connections)
+                'StartAt': node.sub_workflow.config.start_at,
+                'States': self.__convert_states(node.sub_workflow.config.nodes, node.sub_workflow.config.connections)
             }
         elif node.type == 'Wait':
             state['Seconds'] = int(node.parameters['seconds'])
