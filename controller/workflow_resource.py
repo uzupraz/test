@@ -25,8 +25,8 @@ class WorkflowResource(Resource):
 
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
-        self.aws_config = AWSConfig.get_instance()
-        self.app_config = AppConfig.get_instance()
+        self.aws_config = AWSConfig()
+        self.app_config = AppConfig()
         self.workflow_repository = WorkflowRepository.get_instance(self.app_config, self.aws_config)
         self.workflow_service = WorkflowService.get_instance(self.workflow_repository)
 

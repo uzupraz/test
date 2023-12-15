@@ -17,8 +17,8 @@ class TestWorkflowRepository(unittest.TestCase):
 
 
     def setUp(self) -> None:
-        self.aws_config = AWSConfig(True, '')
-        self.app_config = AppConfig('', 'test_table')
+        self.aws_config = AWSConfig(True, 'fake_aws_region')
+        self.app_config = AppConfig('fake_log_level', 'test_table')
         self.workflow_repository = WorkflowRepository.get_instance(self.app_config, self.aws_config)
         self.workflow_repository.workflow_table = mock.MagicMock()
 

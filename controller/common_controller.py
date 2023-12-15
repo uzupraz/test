@@ -3,31 +3,32 @@ from flask_restx import  fields, Resource, Namespace
 from .server_response import ServerResponse
 
 
-health_api = Namespace('Health API', description='Checks the health of an API', path='/health')
-log = health_api.logger
+api = Namespace('Health API', description='Checks the health of an API', path='/health')
+log = api.logger
 
-server_response = health_api.model('Server Response', {
+server_response = api.model('Server Response', {
+    'request_id': fields.String,
     'code': fields.String,
     'message': fields.String,
     'payload': fields.Raw,
     'timestamp': fields.DateTime
 })
 
-connection_dto = health_api.model('Connection', {
+connection_dto = api.model('Connection', {
     'source_node': fields.String(required=True),
     'target_node': fields.String(required=True)
 })
 
-config_dto = health_api.model('Config', {
+config_dto = api.model('Config', {
     'start_at': fields.String(required=True),
     'connections': fields.List(fields.Nested(connection_dto))
 })
 
-sub_workflow_dto = health_api.model('SubWorkflow', {
+sub_workflow_dto = api.model('SubWorkflow', {
     'config': fields.Nested(config_dto)
 })
 
-node_dto = health_api.model('Node', {
+node_dto = api.model('Node', {
     'id': fields.String(required=True),
     'name': fields.String(required=True),
     'description': fields.String(required=True),
@@ -41,7 +42,7 @@ node_dto = health_api.model('Node', {
 # Add nodes to config after node is defined
 config_dto['nodes'] = fields.List(fields.Nested(node_dto))
 
-workflow_dto = health_api.model('Workflow', {
+workflow_dto = api.model('Workflow', {
     'owner_id': fields.String(required=True),
     'workflow_id': fields.String(required=True),
     'config': fields.Nested(config_dto),
@@ -56,9 +57,9 @@ workflow_dto = health_api.model('Workflow', {
 })
 
 
-@health_api.route('/')
+@api.route('/')
 class HealthResource(Resource):
 
-    @health_api.marshal_with(server_response, skip_none=True)
+    @api.marshal_with(server_response, skip_none=True)
     def get(self):
         return ServerResponse.success(), 200

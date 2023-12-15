@@ -1,18 +1,30 @@
 import awsgi
-import flask_cors
 from flask import Flask
+import flask_cors
 
+from controller import api
+from configuration import AppConfig
+from context import RequestContext
 from utils import LogManager
 
+# Create a Flask application instance
+app = Flask(__name__)
+# Disable error message inclusion in the Flask response
+app.config['ERROR_INCLUDE_MESSAGE'] = False
+
+# Enable Cross-Origin Resource Sharing (CORS) on the Flask application
+flask_cors.CORS(app)
+
+config = AppConfig.get_instance()
+# Configure logging with the log level from config
+LogManager.configure_logging(log_level=config.log_level)
+
+# Allow to lazy register the API on a Flask application
+api.init_app(app)
 
 def lambda_handler(event, context):
-    # Create a Flask application instance
-    app = Flask(__name__)
-    # Disable error message inclusion in the Flask response
-    app.config['ERROR_INCLUDE_MESSAGE'] = False
-    # Enable Cross-Origin Resource Sharing (CORS) on the Flask application
-    flask_cors.CORS(app)
-    # Configure logging settings using the imported LogManager class
-    LogManager.configure_logging()
-    # Generate the response using the Flask application and the provided event and context
-    return awsgi.response(app, event, context)
+    with app.app_context():  # Set up the application context
+        # Updates request ID with aws lambda request id in the request context
+        RequestContext.update_request_id(context.aws_request_id)
+        # Generate the response using the Flask application with the provided event and context
+        return awsgi.response(app, event, context)

@@ -10,7 +10,7 @@ from flask import request
 from dataclasses import asdict
 from werkzeug.exceptions import HTTPException
 
-from .common_controller import health_api as health_ns, log
+from .common_controller import log, api as health_ns
 from .workflow_resource import api as workflow_ns
 from .server_response import ServerResponse
 from enums import ServiceStatus, APIStatus
