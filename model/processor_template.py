@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 @dataclass
 class InputDescription:
@@ -26,13 +26,13 @@ class ParameterDescription:
 
 @dataclass
 class ProcessorTemplate:
-    id: str
+    template_id: str
     name: str
     description: str
     icon: str
     limit: int
-    input: InputDescription
-    output: OutputDescription
+    input: Optional[InputDescription]
+    output: Optional[OutputDescription]
     parameter_editor: str
     parameters: Dict[str, ParameterDescription]
     processor_type: str

@@ -9,12 +9,12 @@ from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
-from utils.helper_types import Singleton
+from utils import Singleton
 
 log = common_ctrl.log
 
 
-class ProcessorTemplateRepo(Singleton):
+class ProcessorTemplateRepo(metaclass=Singleton):
 
 
     _instance = None
@@ -27,12 +27,18 @@ class ProcessorTemplateRepo(Singleton):
 
 
     def get_all_templates(self) -> List[ProcessorTemplate]:
+        """
+        Lists all the templates available in the database.
+
+        Returns:
+            The list of templates available in the database. Empty list if nothing available
+        """
 
         templates = []
         try:
             response = self.table.scan()
             for item in response.get('Items', []):
-                template = dacite.from_dict()
+                template = dacite.from_dict(ProcessorTemplate, item)
                 templates.append(template)
         except ClientError as e:
             log.exception('Failed to list all templates. Result: ', e.response['ResponseMetadata']['HTTPStatusCode'])
@@ -40,7 +46,7 @@ class ProcessorTemplateRepo(Singleton):
         return templates
 
 
-    def __configure_table(self) -> boto3.Tabl:
+    def __configure_table(self):
         """
         Configures and returns a DynamoDB table based on the current environment.
 

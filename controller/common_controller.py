@@ -71,6 +71,7 @@ output_description_dto = api.model('Template Output Description', {
 })
 
 parameter_description_dto = api.model('Parameter Description', {
+    'parameter_id': fields.String(required=True),
     'description': fields.String(required=True),
     'name': fields.String(required=True),
     'order': fields.Integer(),
@@ -87,7 +88,7 @@ processor_template_dto = api.model('Processor Template', {
     'input': fields.Nested(input_description_dto, allow_null=True),
     'output': fields.Nested(output_description_dto, allow_null=True),
     'parameter_editor': fields.String(required=True),
-    'parameters': {'*': fields.Wildcard(parameter_description_dto)},
+    'parameters': {'*': fields.Wildcard(fields.Nested(parameter_description_dto))},
     'processor_type': fields.String(required=True),
     'version': fields.Integer()
 })

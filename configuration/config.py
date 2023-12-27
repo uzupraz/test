@@ -1,7 +1,7 @@
 import os
 import dataclasses
 
-from utils.helper_types import Singleton
+from utils import Singleton
 
 
 @dataclasses.dataclass(init=False)
