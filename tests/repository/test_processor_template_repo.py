@@ -26,7 +26,6 @@ class TestProcessTemplateRepo(unittest.TestCase):
             self.mock_configure_table = mock_configure_table
             mock_configure_table.return_value = self.mock_table
             self.repo = ProcessorTemplateRepo(self.app_config, self.aws_config)
-            self.repo.table = self.mock_table
 
 
     def test_get_all_templates_success_should_return_items(self):

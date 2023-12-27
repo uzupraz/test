@@ -1,16 +1,16 @@
 import unittest
 import dataclasses
-from unittest import mock
+from unittest.mock import Mock, patch, MagicMock
 from botocore.exceptions import ClientError
 
 from configuration import AWSConfig, AppConfig
 from repository import WorkflowRepository
-from ..test_utils import TestUtils
+from tests.test_utils import TestUtils
 from model import Workflow
 from exception import ServiceException
+from utils import Singleton
 
 
-@unittest.skip('Failing Tests due to bad configuration')
 class TestWorkflowRepository(unittest.TestCase):
 
 
@@ -18,10 +18,14 @@ class TestWorkflowRepository(unittest.TestCase):
 
 
     def setUp(self) -> None:
-        self.aws_config = AWSConfig()
-        self.app_config = AppConfig()
-        self.workflow_repository = WorkflowRepository.get_instance(self.app_config, self.aws_config)
-        self.workflow_repository.workflow_table = mock.MagicMock()
+        self.mock_table = Mock()
+        self.app_config = Mock()
+        self.aws_config = Mock()
+        Singleton.clear_instance(WorkflowRepository)
+        with patch('repository.workflow_repository.WorkflowRepository._WorkflowRepository__configure_table') as mock_configure_table:
+            self.mock_configure_table = mock_configure_table
+            mock_configure_table.return_value = self.mock_table
+            self.workflow_repository = WorkflowRepository.get_instance(self.app_config, self.aws_config)
 
 
     def tearDown(self) -> None:
@@ -41,7 +45,7 @@ class TestWorkflowRepository(unittest.TestCase):
         workflow_json = TestUtils.get_file_content(input_file_path)
         workflow = Workflow.parse_from(workflow_json)
 
-        self.workflow_repository.workflow_table.put_item = mock.MagicMock()
+        self.workflow_repository.workflow_table.put_item = MagicMock()
 
         actual_workflow = self.workflow_repository.save(workflow)
 
@@ -57,7 +61,7 @@ class TestWorkflowRepository(unittest.TestCase):
         workflow_json = TestUtils.get_file_content(input_file_path)
         workflow = Workflow.parse_from(workflow_json)
 
-        self.workflow_repository.workflow_table.put_item = mock.MagicMock()
+        self.workflow_repository.workflow_table.put_item = MagicMock()
         self.workflow_repository.workflow_table.put_item.side_effect = ClientError({'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'put_item')
 
         with self.assertRaises(ServiceException):
