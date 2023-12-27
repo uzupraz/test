@@ -6,7 +6,6 @@ from .common_controller import processor_template_dto, server_response
 from configuration import AWSConfig, AppConfig
 from service import ProcessorTemplateService
 from repository import ProcessorTemplateRepo
-from model import ProcessorTemplate
 from enums import APIStatus
 
 
@@ -18,7 +17,7 @@ list_processor_templates_response_dto = api.inherit('List Processor Response', s
 })
 
 @api.route('/')
-class ProcessorTemplate(Resource):
+class ProcessorTemplateResource(Resource):
 
 
     def __init__(self, api=None, *args, **kwargs):

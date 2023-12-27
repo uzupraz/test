@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, Optional
+from numbers import Number
 
 @dataclass
 class InputDescription:
@@ -19,7 +20,7 @@ class OutputDescription:
 class ParameterDescription:
     description: str
     name: str
-    order: int
+    order: Number
     type: str
     required: bool
 
@@ -30,11 +31,11 @@ class ProcessorTemplate:
     name: str
     description: str
     icon: str
-    limit: int
+    limit: Number
     input: Optional[InputDescription]
     output: Optional[OutputDescription]
     parameter_editor: str
     parameters: Dict[str, ParameterDescription]
     processor_type: str
-    version: int
+    version: Number
     lambda_resource: str

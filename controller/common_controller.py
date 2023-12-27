@@ -84,7 +84,7 @@ processor_template_dto = api.model('Processor Template', {
     'name': fields.String(required=True),
     'description': fields.String(required=True),
     'icon': fields.String(required=True),
-    'limit': fields.Integer(),
+    'limit': fields.Arbitrary(),
     'input': fields.Nested(input_description_dto, allow_null=True),
     'output': fields.Nested(output_description_dto, allow_null=True),
     'parameter_editor': fields.String(required=True),

@@ -9,7 +9,7 @@ from utils import Singleton
 log = common_ctrl.log
 
 
-class ProcessorTemplateService(Singleton):
+class ProcessorTemplateService(metaclass=Singleton):
 
 
     _instance = None
