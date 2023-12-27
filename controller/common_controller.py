@@ -56,6 +56,42 @@ workflow_dto = api.model('Workflow', {
     'schema_version': fields.Integer(required=True)
 })
 
+# Processor Template Related DTO Items
+
+input_description_dto = api.model('Template Input Description', {
+    'description': fields.String(),
+    'format': fields.String(),
+    'media_type': fields.String()
+})
+
+output_description_dto = api.model('Template Output Description', {
+    'description': fields.String(),
+    'format': fields.String(),
+    'media_type': fields.String()
+})
+
+parameter_description_dto = api.model('Parameter Description', {
+    'description': fields.String(required=True),
+    'name': fields.String(required=True),
+    'order': fields.Integer(),
+    'type': fields.String(required=True),
+    'required': fields.Boolean()
+})
+
+processor_template_dto = api.model('Processor Template', {
+    'template_id': fields.String(required=True),
+    'name': fields.String(required=True),
+    'description': fields.String(required=True),
+    'icon': fields.String(required=True),
+    'limit': fields.Integer(),
+    'input': fields.Nested(input_description_dto, allow_null=True),
+    'output': fields.Nested(output_description_dto, allow_null=True),
+    'parameter_editor': fields.String(required=True),
+    'parameters': {'*': fields.Wildcard(parameter_description_dto)},
+    'processor_type': fields.String(required=True),
+    'version': fields.Integer()
+})
+
 
 @api.route('/')
 class HealthResource(Resource):

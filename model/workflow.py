@@ -5,14 +5,12 @@ from dacite import from_dict
 
 @dataclass
 class Connection:
-
     source_node: str
     target_node: str
 
 
 @dataclass
 class Node:
-
     id: str
     name: str
     description: str
@@ -22,9 +20,9 @@ class Node:
     node_template_id: str
     sub_workflow: Optional['SubWorkflow'] = field(default=None)
 
+
 @dataclass
 class Config:
-
     start_at: str = field(default=None)
     connections: List[Connection] = field(default=None)
     nodes: List[Node] = field(default=None)
@@ -32,13 +30,11 @@ class Config:
 
 @dataclass
 class SubWorkflow:
-
     config: Config = field(default=None)
 
 
 @dataclass
 class Workflow:
-
     owner_id: str
     workflow_id: str
     config: Config
