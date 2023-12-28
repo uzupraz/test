@@ -60,9 +60,9 @@ class WorkflowRepository:
         dynamo_db = None
 
         if self.aws_config.is_local:
-            dynamo_db = boto3.resource('dynamodb', region_name = self.aws_config.aws_region, endpoint_url = 'http://localhost:8000')
+            dynamo_db = boto3.resource('dynamodb', region_name = self.aws_config.dynamodb_aws_region, endpoint_url = 'http://localhost:8000')
         else:
-            config = Config(region_name = self.aws_config.aws_region)
+            config = Config(region_name = self.aws_config.dynamodb_aws_region)
             dynamo_db = boto3.resource('dynamodb', config = config)
 
         return dynamo_db.Table(self.app_config.workflow_table_name)

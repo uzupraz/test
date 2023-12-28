@@ -21,5 +21,5 @@ class AWSConfig(metaclass=Singleton):
     Configuration related to the AWS are loaded here.
     """
     is_local: bool = os.getenv('AWS_IS_LOCAL', 'False').lower() == 'true'
-    aws_region: str = os.getenv('AWS_REGION')
+    dynamodb_aws_region: str = os.getenv('AWS_DYNAMODB_REGION')
 
