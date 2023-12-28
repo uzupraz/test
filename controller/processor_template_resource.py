@@ -34,4 +34,4 @@ class ProcessorTemplateResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
         processor_templates = self.processor_template_service.get_all_templates()
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
-        return ServerResponse.created(payload=processor_templates), 200
+        return ServerResponse.success(payload=processor_templates), 200

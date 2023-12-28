@@ -17,9 +17,6 @@ log = common_ctrl.log
 class ProcessorTemplateRepo(metaclass=Singleton):
 
 
-    _instance = None
-
-
     def __init__(self, app_config:AppConfig, aws_config:AWSConfig) -> None:
         self.aws_config = aws_config
         self.app_config = app_config
@@ -41,7 +38,7 @@ class ProcessorTemplateRepo(metaclass=Singleton):
                 template = dacite.from_dict(ProcessorTemplate, item)
                 templates.append(template)
         except ClientError as e:
-            log.exception('Failed to list all templates. Result: ', e.response['ResponseMetadata']['HTTPStatusCode'])
+            log.exception('Failed to list all templates. status_code: %s, message: %s', e.response['ResponseMetadata']['HTTPStatusCode'], e.response['Error']['Message'])
             raise ServiceException(500, ServiceStatus.FAILURE, 'Could not load available templates list')
         return templates
 

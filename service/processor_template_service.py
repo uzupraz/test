@@ -12,9 +12,6 @@ log = common_ctrl.log
 class ProcessorTemplateService(metaclass=Singleton):
 
 
-    _instance = None
-
-
     def __init__(self, repo: ProcessorTemplateRepo) -> None:
         self.repo = repo
 
