@@ -23,6 +23,7 @@ LogManager.configure_logging(log_level=config.log_level)
 api.init_app(app)
 
 def lambda_handler(event, context):
+    print(event)
     with app.app_context():  # Set up the application context
         # Updates request ID with aws lambda request id in the request context
         RequestContext.update_request_id(context.aws_request_id)
