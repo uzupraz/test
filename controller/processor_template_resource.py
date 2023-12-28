@@ -16,7 +16,7 @@ list_processor_templates_response_dto = api.inherit('List Processor Response', s
        'payload': fields.List(fields.Nested(processor_template_dto))
 })
 
-@api.route('/')
+@api.route('')
 class ProcessorTemplateResource(Resource):
 
 

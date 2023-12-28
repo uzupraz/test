@@ -58,3 +58,4 @@ venv.bak/
 .DS_Store
 test_files/
 script.py
+build_and_deploy.sh
