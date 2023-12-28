@@ -1,1 +1,2 @@
 from .workflow_repository import WorkflowRepository
+from .processor_template_repo import ProcessorTemplateRepo

@@ -1,0 +1,34 @@
+{
+    "template_id": "file-event",
+    "description": "Listens to file events.",
+    "icon": "file-ingress",
+    "input": null,
+    "name": "File Event",
+    "limit": 1,
+    "output": {
+        "description": "The file content",
+        "format": "text",
+        "media_type": "text/plain"
+    },
+    "parameter_editor": "form-editor",
+    "parameters": {
+      "path": {
+        "description": "The file path to listen to events using.",
+        "name": "File Path",
+        "order": 1,
+        "type": "text",
+        "required": true
+      },
+      "error_handling": {
+        "description": "Enable explicit error handling",
+        "name": "Error Handling",
+        "order": 2,
+        "type": "boolean",
+        "required": false
+      }
+    },
+    "processor_type": "Event",
+    "version": 1,
+    "lambda_resource": "arn..."
+  }
+
