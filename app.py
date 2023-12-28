@@ -15,7 +15,7 @@ app.config['ERROR_INCLUDE_MESSAGE'] = False
 # Enable Cross-Origin Resource Sharing (CORS) on the Flask application
 flask_cors.CORS(app)
 
-config = AppConfig.get_instance()
+config = AppConfig()
 # Configure logging with the log level from config
 LogManager.configure_logging(log_level=config.log_level)
 
