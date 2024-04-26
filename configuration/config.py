@@ -23,3 +23,13 @@ class AWSConfig(metaclass=Singleton):
     is_local: bool = os.getenv('AWS_IS_LOCAL', 'False').lower() == 'true'
     dynamodb_aws_region: str = os.getenv('AWS_DYNAMODB_REGION')
 
+
+@dataclasses.dataclass(init=False)
+class AsyncFileDeliveryS3Config(metaclass=Singleton):
+    """
+    Configuration needed for async file delivery and download are loaded here.
+    """
+    input_bucket_name: str = os.getenv('S3_INPUT_BUCKET_NAME')
+    output_bucket_name: str = os.getenv('S3_OUTPUT_BUCKET_NAME')
+    object_prefix: str = os.getenv('S3_OBJECT_PREFIX')
+    pre_signed_url_expiration: int = int(os.getenv('S3_PRE_SIGNED_URL_EXPIRATION_IN_SECONDS', 3600))
