@@ -16,12 +16,14 @@ pre_signed_url_request_dto = api.model('Pre Signed URL Request Model', {
     'filename': fields.String(required=True),
 })
 
-pre_signed_url_response_dto = api.inherit('Returns Pre Signed URL', server_response, {
-       'payload': fields.String
+pre_signed_url_response_dto = api.inherit('Pre Signed URL Response Model', server_response, {
+       'payload': fields.Nested(api.model('URL Dictionary', {
+        'url': fields.String
+    }))
 })
 
-@api.route('')
-class AsyncFileResource(Resource):
+@api.route('/pre-signed-url')
+class PreSignedURLResource(Resource):
 
 
     def __init__(self, api=None, *args, **kwargs):
@@ -33,10 +35,9 @@ class AsyncFileResource(Resource):
     @api.doc('Gets the pre-signed url from S3 for async file delivery')
     @api.expect(pre_signed_url_request_dto, validate=True)
     @api.marshal_with(pre_signed_url_response_dto, skip_none=True)
-    @api.route('/pre-signed-url', methods=['GET'])
-    def get_pre_signed_url(self):
+    def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
         request_body = api.payload
         pre_signed_url = self.s3_file_service.get_pre_signed_url(request_body['owner_id'], request_body['filename'])
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
-        return ServerResponse.success(payload=pre_signed_url), 200
+        return ServerResponse.success(payload={"url": pre_signed_url}), 200

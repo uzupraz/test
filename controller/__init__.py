@@ -13,14 +13,14 @@ from werkzeug.exceptions import HTTPException
 from .common_controller import log, api as health_ns
 from .workflow_resource import api as workflow_ns
 from .processor_template_resource import api as processors_ns
-from .async_file_resource import api as async_file_ns
+from .pre_signed_url_resource import api as pre_signed_url_ns
 from .server_response import ServerResponse
 from enums import ServiceStatus, APIStatus
 from exception import ServiceException
 
 
 api = Api(version='1.0', title='InterconnectHub Management API', description='InterconnectHub Management for Workflow related services.', doc='/api-docs')
-namespaces = [health_ns, workflow_ns, processors_ns, async_file_ns]
+namespaces = [health_ns, workflow_ns, processors_ns, pre_signed_url_ns]
 
 for ns in namespaces:
     api.add_namespace(ns)
