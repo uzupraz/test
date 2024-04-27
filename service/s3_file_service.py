@@ -81,10 +81,11 @@ class S3FileService(metaclass=Singleton):
         results = []
 
         for obj in response.get('Contents', []):
-            results.append({
-                'path': obj['Key'],
-                'url': self._generate_pre_signed_url(self.file_delivery_config.output_bucket_name, obj['Key'], 'get_object')
-            })
+            if not obj['Key'].endswith('/'):
+                results.append({
+                    'path': obj['Key'].lstrip(owner_id),
+                    'url': self._generate_pre_signed_url(self.file_delivery_config.output_bucket_name, obj['Key'], 'get_object')
+                })
 
         return results
     
