@@ -3,7 +3,7 @@ from flask_restx import  fields, Resource, Namespace
 from .server_response import ServerResponse
 
 
-api = Namespace('Health API', description='Checks the health of an API', path='/health')
+api = Namespace('Health API', description='Checks the health of an API', path='/interconnecthub/health')
 log = api.logger
 
 server_response = api.model('Server Response', {

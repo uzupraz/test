@@ -8,7 +8,7 @@ from service import S3FileService
 from configuration import AsyncFileDeliveryS3Config
 
 
-api = Namespace('Files API', description='Manages operations related to async submission of files.', path='/files')
+api = Namespace('Files API', description='Manages operations related to async submission of files.', path='/interconnecthub/files')
 log = api.logger
 
 file_dto = api.model('Processor Template', {

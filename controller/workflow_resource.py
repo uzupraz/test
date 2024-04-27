@@ -11,7 +11,7 @@ from model import Workflow
 from enums import APIStatus
 
 
-api = Namespace('Workflow API', description='Manages workflow related operations.', path='/workflow')
+api = Namespace('Workflow API', description='Manages workflow related operations.', path='/interconnecthub/workflow')
 log = api.logger
 
 create_workflow_response_dto = api.inherit('Create Workflow Response', server_response, {

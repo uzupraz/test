@@ -9,7 +9,7 @@ from repository import ProcessorTemplateRepo
 from enums import APIStatus
 
 
-api = Namespace('Processor Template API', description='Manages operations related to processor template.', path='/processors')
+api = Namespace('Processor Template API', description='Manages operations related to processor template.', path='/interconnecthub/processors')
 log = api.logger
 
 list_processor_templates_response_dto = api.inherit('List Processor Response', server_response, {
