@@ -19,9 +19,8 @@ class S3FileService(metaclass=Singleton):
     def __init__(self, file_delivery_config: AsyncFileDeliveryS3Config) -> None:
         self.s3_client = boto3.client('s3')
         self.file_delivery_config = file_delivery_config
-        print(self.file_delivery_config)
 
-    
+
     def _generate_s3_key(self, owner_id:str, relative_path:str) -> str:
         """
         Generates an s3 key for the provided details.
@@ -38,7 +37,7 @@ class S3FileService(metaclass=Singleton):
         else:
             s3_key = f'{owner_id}/{relative_path}'
         return s3_key
-    
+
 
     def _generate_pre_signed_url(self, bucket_id:str, s3_key:str, action:str) -> str:
         """
@@ -62,7 +61,7 @@ class S3FileService(metaclass=Singleton):
         except ClientError as e:
             log.exception('Failed to get pre-signed url. bucket_id: %s, s3_key: %s, action: %s', bucket_id, s3_key, action)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Could not get pre-signed url')
-    
+
 
     def list_files_in_output_folder(self, owner_id:str, relative_path:str) -> List[any]:
         """
@@ -88,7 +87,7 @@ class S3FileService(metaclass=Singleton):
                 })
 
         return results
-    
+
 
     def move_file(self, source_bucket:str, source_key:str, dest_bucket:str, dest_key:str):
         """
@@ -144,4 +143,3 @@ class S3FileService(metaclass=Singleton):
         s3_key = self._generate_s3_key(owner_id, relative_path)
         log.info('Getting pre-signed url. owner_id: %s, relative_path: %s', owner_id, relative_path)
         return self._generate_pre_signed_url(self.file_delivery_config.input_bucket_name, s3_key, 'put_object')
-    
