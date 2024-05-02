@@ -55,7 +55,7 @@ class FilesResource(Resource):
         owner_id = request.args.get('owner')
         relative_path = request.args.get('path')
         event = request.environ.get("awsgi.event", {})
-        user = from_dict(data_class=User, data=event['requestContext']['authorizer']['claims'])
+        user = User.from_authorizer_claims(event['requestContext']['authorizer']['claims'])
         if not user.has_file_ownership(owner_id):
             log.info('User do not have ownership. owner_id: %s', owner_id)
             log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
@@ -74,7 +74,7 @@ class FilesResource(Resource):
         request_body = api.payload
         owner_id = request_body['owner_id']
         event = request.environ.get("awsgi.event", {})
-        user = from_dict(data_class=User, data=event['requestContext']['authorizer']['claims'])
+        user = User.from_authorizer_claims(event['requestContext']['authorizer']['claims'])
         if not user.has_file_ownership(owner_id):
             log.info('User do not have ownership. owner_id: %s', owner_id)
             log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
@@ -103,7 +103,7 @@ class ConfirmDownloadResource(Resource):
         request_body = api.payload
         owner_id = request_body['owner_id']
         event = request.environ.get("awsgi.event", {})
-        user = from_dict(data_class=User, data=event['requestContext']['authorizer']['claims'])
+        user = User.from_authorizer_claims(event['requestContext']['authorizer']['claims'])
         if not user.has_file_ownership(owner_id):
             log.info('User do not have ownership. owner_id: %s', owner_id)
             log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
