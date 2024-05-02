@@ -15,7 +15,7 @@ class User:
         Returns:
             User: A new instance of the `User` class.
         """
-        return cls(claims['sub'], claims['custom:organization_id'])
+        return cls(claims['sub'], claims['custom:organizationId'])
 
 
     def has_file_ownership(self, file_owner_id: str):
