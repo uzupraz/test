@@ -30,9 +30,10 @@ class WorkflowService:
         created_workflow = self.workflow_repository.save(workflow)
         return created_workflow
     
+    
     def get_workflow_stats(self, start_date:str, end_date:str) -> dict[str, int|str]:
         """
-        Get the stats about the workflows.
+        Get the stats about the workflows using the workflow repository.
 
         Args:
             start_date: Start date for the stats.
@@ -49,9 +50,9 @@ class WorkflowService:
         return workflow_stats
     
 
-    def get_workflow_integrations(self, start_date:str, end_date:str) -> dict[str, any]:
+    def get_workflow_integrations(self, start_date:str, end_date:str) -> list[dict[str, any]]:
         """
-        Get all the active workflow integrations.
+        Get all the active workflow integrations using workflow repository.
 
         Args:
             start_date (str): Start date for the workflow integrations.
@@ -63,6 +64,22 @@ class WorkflowService:
         log.info('Calling repository to get workflow integrations. start_date: %s, end_date: %s',start_date, end_date)
         workflow_integrations = self.workflow_repository.get_workflow_integrations(start_date, end_date)
         return workflow_integrations
+    
+
+    def get_workflow_execution_events(self,start_date: str, end_date: str) -> list[dict[str, any]]:
+        """
+        Get workflow exeuction events using the workflow repository.
+
+        Args:
+            start_date (str): Start date for the events.
+            end_date (str): End date for the events.
+
+        Returns:
+            list[dict[str, any]]: Workflow execution events.
+        """
+        log.info('Calling repository to get workflow execution events. start_date: %s, end_date: %s',start_date, end_date)
+        workflow_execution_events = self.workflow_repository.get_workflow_execution_events(start_date, end_date)
+        return workflow_execution_events
     
     
     @classmethod

@@ -49,9 +49,10 @@ class WorkflowRepository:
             log.exception('Failed to save workflow. workflowId: %s, organizationId:%s', workflow.workflow_id, workflow.owner_id)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t save the workflow')
         
+
     def get_workflow_stats(self, start_date:str, end_date:str) -> dict[str, int|str]:
         """
-        Get the stats about the workflows.
+        Get the stats about the workflows from DynamoDB and OpenSearch.
         
         Parameters:
             start_date: Start date for the stats.
@@ -73,15 +74,16 @@ class WorkflowRepository:
                 'active_workflows': 10,
                 'failed_events': 2,
                 'fluent_executions': 8,
-                'system_status': 'OK'
+                'system_status': 'Online' # THIS CAN BE HARDCODED AS ONLINE FOR NOW.
             }
         except ClientError as e:
             log.exception('Failed to get workflow stats.')
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t get workflow stats')
-        
+
+
     def get_workflow_integrations(self, start_date:str, end_date:str) -> dict[str, any]:
         """
-        Get all the active workflow integrations.
+        Get all the active workflow integrations from OpenSearch.
 
         Parameters:
             start_date (str): Start date for the workflow integrations.
@@ -110,6 +112,35 @@ class WorkflowRepository:
         except ClientError as e:
             log.exception('Failed to get workflow integrations.')
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t get workflow integrations')
+        
+        
+    def get_workflow_execution_events(self, start_date: str, end_date: str) -> list[dict[str, any]]:
+        """
+        Get workflow exeuction events from OpenSearch.
+
+        Args:
+            start_date (str): Start date for the events.
+            end_date (str): End date for the events.
+
+        Returns:
+            list[dict[str, any]]: Workflow execution events.
+        
+        Raises:
+            ServiceException: If there is an error while getting the workflow execution events.
+        """
+        try:
+            log.info('Getting workflow execution events. start_date: %s, end_date: %s', start_date, end_date)
+            #! REPLACE THIS WITH REAL DB QUERY
+            return [
+                {
+                    "date": "2021-07-01",
+                    "failed_events": 2,
+                    "fluent_executions": 8
+                }
+            ]
+        except ClientError as e:
+            log.exception('Failed to get workflow execution events.')
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t get workflow execution events')
 
 
     def __configure_table(self):
