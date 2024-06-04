@@ -174,6 +174,41 @@ class WorkflowRepository:
         except ClientError as e:
             log.exception('Failed to get workflow failed events.')
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t get workflow failed events')
+        
+
+    def get_workflow_failures(self, start_date:str, end_date:str) -> list[dict[str, any]]:
+        """
+        Get workflow failures from OpenSearch.
+
+        Args:
+            start_date (str): Start date for the failures.
+            end_date (str): End date for the failures.
+
+        Returns:
+            list[dict[str, any]]: Workflow failures.
+        
+        Raises:
+            ServiceException: If there is an error while getting the workflow failures.
+        """
+        try:
+            log.info('Getting workflow failures. start_date: %s, end_date: %s', start_date, end_date)
+            #! REPLACE THIS WITH REAL DB QUERY
+            return [
+                {
+                    "color": "red",
+                    "failures": [
+                        {
+                            "error_code": "ERR-001",
+                            "failure_ratio": 0.2,
+                            "severity": 0.5
+                        }
+                    ],
+                    "workflow_name": "Workflow 1"
+                }
+            ]
+        except ClientError as e:
+            log.exception('Failed to get workflow failures.')
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t get workflow failures') 
 
 
     def __configure_table(self):

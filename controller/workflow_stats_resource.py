@@ -15,7 +15,7 @@ parser = reqparse.RequestParser()
 parser.add_argument("start_date", help="Start date for the stats.", required=True)
 parser.add_argument("end_date", help="End date for the stats.", required=True)
 
-get_workflow_stats_response_dto = api.inherit('Get Worflow Stats Response',server_response, {
+get_workflow_stats_response_dto = api.inherit('Get Workflow Stats Response',server_response, {
     'payload': fields.Nested(api.model('Workflow Stats', {
         'active_workflows': fields.Integer(description='Number of active workflows'),
         'failed_events': fields.Integer(description='Number of failed events'),

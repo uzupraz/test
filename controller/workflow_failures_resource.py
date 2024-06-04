@@ -8,22 +8,22 @@ from repository import WorkflowRepository
 from service import WorkflowService
 from enums import APIStatus
 
-api = Namespace(name='Workflow Failed Events API', description='Returns workflow failed events.', path='/interconnecthub/workflow/failed-events')
+api = Namespace(name='Workflow Failures API', description='Returns workflow failures.', path='/interconnecthub/workflow/failures')
 log = api.logger
 
 parser = reqparse.RequestParser()
 parser.add_argument("start_date", help="Start date for the stats.", required=True)
 parser.add_argument("end_date", help="End date for the stats.", required=True)
 
-get_workflow_failed_events_response_dto = api.inherit('Get Worflow Failed Events Response',server_response, {
-    'payload': fields.List(fields.Nested(api.model('Workflow Failed Events',{
-        "date": fields.String(description='Date of the event'),
-        "error_code": fields.String(description='Error code'),
-        "event_id": fields.String(description='Event ID'),
-        "workflow": fields.Nested(api.model("Workflow", {
-            "id": fields.String(description='Workflow ID'),
-            "name": fields.String(description='Workflow Name'),
-        }))
+get_workflow_failures_response_dto = api.inherit('Get Workflow Failures Response',server_response, {
+    'payload': fields.List(fields.Nested(api.model('Workflow Failures',{
+        "color": fields.String(description='Color of the workflow for visualization'),
+        "workflow_name": fields.String(description='Workflow Name'),
+        "failures": fields.List(fields.Nested(api.model("Failure", {
+            "error_code": fields.String(description='Error code'),
+            "failure_ratio": fields.Float(description='Failure ratio'),
+            "severity": fields.Float(description='Severity of the failure.'),
+        })))
     })))
 })
 
@@ -39,15 +39,15 @@ class WorkflowExecutionEventsResource(Resource):
     
 
     @api.expect(parser, validate=True)
-    @api.marshal_with(get_workflow_failed_events_response_dto, skip_none=True)
+    @api.marshal_with(get_workflow_failures_response_dto, skip_none=True)
     def get(self):
         """
-        Get workflow failed events.
+        Get workflow failures.
         """
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
         start_date: str = request.args.get('start_date')
         end_date: str = request.args.get('end_date')
-        workflow_failed_events = self.workflow_service.get_workflow_failed_events(start_date, end_date)
+        workflow_failures = self.workflow_service.get_workflow_failures(start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
-        return ServerResponse.success(payload=workflow_failed_events), 200
+        return ServerResponse.success(payload=workflow_failures), 200
     

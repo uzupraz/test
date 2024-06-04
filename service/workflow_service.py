@@ -97,6 +97,22 @@ class WorkflowService:
         workflow_failed_events = self.workflow_repository.get_workflow_failed_events(start_date, end_date)
         return workflow_failed_events
     
+
+    def get_workflow_failures(self, start_date: str, end_date: str) -> list[dict[str, any]]:
+        """
+        Get workflow failures using the workflow repository.
+
+        Args:
+            start_date (str): Start date for the failures.
+            end_date (str): End date for the failures.
+
+        Returns:
+            list[dict[str, any]]: Workflow failures.
+        """
+        log.info('Calling repository to get workflow failures. start_date: %s, end_date: %s',start_date, end_date)
+        workflow_failures = self.workflow_repository.get_workflow_failures(start_date, end_date)
+        return workflow_failures
+    
     
     @classmethod
     def get_instance(cls, workflow_repository: WorkflowRepository, prefer=None) -> 'WorkflowService':

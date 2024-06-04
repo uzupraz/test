@@ -44,7 +44,7 @@ class WorkflowExecutionEventsResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
         start_date: str = request.args.get('start_date')
         end_date: str = request.args.get('end_date')
-        workflow_stats = self.workflow_service.get_workflow_failed_events(start_date, end_date)
+        workflow_execution_events = self.workflow_service.get_workflow_execution_events(start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
-        return ServerResponse.success(payload=workflow_stats), 200
+        return ServerResponse.success(payload=workflow_execution_events), 200
     
