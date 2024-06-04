@@ -1,4 +1,3 @@
-
 from flask_restx import fields, Resource, Namespace,reqparse
 from flask import request
 
@@ -9,18 +8,22 @@ from repository import WorkflowRepository
 from service import WorkflowService
 from enums import APIStatus
 
-api = Namespace(name='Workflow Execution Events API', description='Returns workflow execution events.', path='/interconnecthub/workflow/execution-events')
+api = Namespace(name='Workflow Failed Events API', description='Returns workflow failed events.', path='/interconnecthub/workflow/failed-events')
 log = api.logger
 
 parser = reqparse.RequestParser()
 parser.add_argument("start_date", help="Start date for the stats.", required=True)
 parser.add_argument("end_date", help="End date for the stats.", required=True)
 
-get_workflow_execution_events_response_dto = api.inherit('Get Workflow Execution Events Response',server_response, {
-    'payload': fields.List(fields.Nested(api.model('Workflow Execution Events',{
+get_workflow_failed_events_response_dto = api.inherit('Get Worflow Failed Events Response',server_response, {
+    'payload': fields.List(fields.Nested(api.model('Workflow Failed Events',{
         "date": fields.String(description='Date of the event'),
-        "failed_events": fields.Integer(description='Number of failed events'),
-        "fluent_executions": fields.Integer(description='Number of fluent executions'),
+        "error_code": fields.String(description='Error code'),
+        "event_id": fields.String(description='Event ID'),
+        "workflow": fields.Nested(api.model("Workflow", {
+            "id": fields.String(description='Workflow ID'),
+            "name": fields.String(description='Workflow Name'),
+        }))
     })))
 })
 
@@ -36,15 +39,15 @@ class WorkflowExecutionEventsResource(Resource):
     
 
     @api.expect(parser, validate=True)
-    @api.marshal_with(get_workflow_execution_events_response_dto, skip_none=True)
+    @api.marshal_with(get_workflow_failed_events_response_dto, skip_none=True)
     def get(self):
         """
-        Get workflow execution events
+        Get workflow failed events.
         """
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
         start_date: str = request.args.get('start_date')
         end_date: str = request.args.get('end_date')
-        workflow_stats = self.workflow_service.get_workflow_failed_events(start_date, end_date)
+        workflow_stats = self.workflow_service.get_workflow_execution_events(start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
         return ServerResponse.success(payload=workflow_stats), 200
     
