@@ -13,6 +13,7 @@ from werkzeug.exceptions import HTTPException
 from .common_controller import log, api as health_ns
 from .workflow_resource import api as workflow_ns
 from .workflow_stats_resource import api as workflow_stats_ns
+from .workflow_integrations_resource import api as workflow_integrations_ns
 from .processor_template_resource import api as processors_ns
 from .files_resource import api as files_ns
 from .server_response import ServerResponse
@@ -21,7 +22,7 @@ from exception import ServiceException
 
 
 api = Api(version='1.0', title='InterconnectHub Management API', description='InterconnectHub Management for Workflow related services.', doc='/api-docs')
-namespaces = [health_ns, workflow_ns, workflow_stats_ns, processors_ns, files_ns]
+namespaces = [health_ns, workflow_ns, workflow_stats_ns, workflow_integrations_ns, processors_ns, files_ns]
 
 for ns in namespaces:
     api.add_namespace(ns)

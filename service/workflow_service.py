@@ -47,8 +47,24 @@ class WorkflowService:
         log.info('Calling repository to get workflow stats. start_date: %s, end_date: %s',start_date, end_date)
         workflow_stats = self.workflow_repository.get_workflow_stats(start_date, end_date)
         return workflow_stats
+    
 
+    def get_workflow_integrations(self, start_date:str, end_date:str) -> dict[str, any]:
+        """
+        Get all the active workflow integrations.
 
+        Args:
+            start_date (str): Start date for the workflow integrations.
+            end_date (str): End date for the workflow integrations.
+
+        Returns:
+            dict[str, any]: Active workflow integrations.
+        """
+        log.info('Calling repository to get workflow integrations. start_date: %s, end_date: %s',start_date, end_date)
+        workflow_integrations = self.workflow_repository.get_workflow_integrations(start_date, end_date)
+        return workflow_integrations
+    
+    
     @classmethod
     def get_instance(cls, workflow_repository: WorkflowRepository, prefer=None) -> 'WorkflowService':
         """

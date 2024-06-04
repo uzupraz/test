@@ -78,6 +78,39 @@ class WorkflowRepository:
         except ClientError as e:
             log.exception('Failed to get workflow stats.')
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t get workflow stats')
+        
+    def get_workflow_integrations(self, start_date:str, end_date:str) -> dict[str, any]:
+        """
+        Get all the active workflow integrations.
+
+        Parameters:
+            start_date (str): Start date for the workflow integrations.
+            end_date (str): End date for the workflow integrations.
+
+        Returns:
+            dict[str, any]: Active workflow integrations.
+        
+        Raises:
+            ServiceException: If there is an error while getting the workflow integrations.
+        """
+        try:
+            log.info('Getting workflow integrations. start_date: %s, end_date: %s', start_date, end_date)
+            #! REPLACE THIS WITH REAL DB QUERY
+            return [
+                {
+                    "failure_count": 2,
+                    "failure_ratio": 0.2,
+                    "last_event_date": "2021-07-01",
+                    "workflow": {
+                        "id": "1",
+                        "name": "Workflow 1"
+                    }
+                }
+            ]
+        except ClientError as e:
+            log.exception('Failed to get workflow integrations.')
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t get workflow integrations')
+
 
     def __configure_table(self):
         """
