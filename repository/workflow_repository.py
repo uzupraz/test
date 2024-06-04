@@ -173,7 +173,7 @@ class WorkflowRepository:
             ]
         except ClientError as e:
             log.exception('Failed to get workflow failed events.')
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t get workflow failed events')
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t get workflow failed events')
         
 
     def get_workflow_failures(self, start_date:str, end_date:str) -> list[dict[str, any]]:

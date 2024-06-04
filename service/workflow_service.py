@@ -68,7 +68,7 @@ class WorkflowService:
 
     def get_workflow_execution_events(self,start_date: str, end_date: str) -> list[dict[str, any]]:
         """
-        Get workflow exeuction events using the workflow repository.
+        Get workflow execution events using the workflow repository.
 
         Args:
             start_date (str): Start date for the events.

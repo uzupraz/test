@@ -15,7 +15,7 @@ parser = reqparse.RequestParser()
 parser.add_argument("start_date", help="Start date for the stats.", required=True)
 parser.add_argument("end_date", help="End date for the stats.", required=True)
 
-get_workflow_failed_events_response_dto = api.inherit('Get Worflow Failed Events Response',server_response, {
+get_workflow_failed_events_response_dto = api.inherit('Get Workflow Failed Events Response',server_response, {
     'payload': fields.List(fields.Nested(api.model('Workflow Failed Events',{
         "date": fields.String(description='Date of the event'),
         "error_code": fields.String(description='Error code'),
