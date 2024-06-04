@@ -29,10 +29,28 @@ class WorkflowService:
         log.info('Calling repository to save workflow. workflowId: %s, organizationId: %s', workflow.workflow_id, workflow.owner_id)
         created_workflow = self.workflow_repository.save(workflow)
         return created_workflow
+    
+    def get_workflow_stats(self, start_date:str, end_date:str) -> dict[str, int|str]:
+        """
+        Get the stats about the workflows.
+
+        Args:
+            start_date: Start date for the stats.
+            end_date: End date for the stats.
+
+        Returns:
+            active_workflows: Number of active workflows.
+            failed_events: Number of failed events.
+            fluent_executions: Number of fluent executions.
+            system_status: System status.
+        """
+        log.info('Calling repository to get workflow stats. start_date: %s, end_date: %s',start_date, end_date)
+        workflow_stats = self.workflow_repository.get_workflow_stats(start_date, end_date)
+        return workflow_stats
 
 
     @classmethod
-    def get_instance(cls, workflow_repository: WorkflowRepository, prefer=None):
+    def get_instance(cls, workflow_repository: WorkflowRepository, prefer=None) -> 'WorkflowService':
         """
         Creates and returns an instance of the WorkflowService class.
 

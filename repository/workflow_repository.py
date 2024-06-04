@@ -48,7 +48,36 @@ class WorkflowRepository:
         except ClientError as e:
             log.exception('Failed to save workflow. workflowId: %s, organizationId:%s', workflow.workflow_id, workflow.owner_id)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t save the workflow')
-
+        
+    def get_workflow_stats(self, start_date:str, end_date:str) -> dict[str, int|str]:
+        """
+        Get the stats about the workflows.
+        
+        Parameters:
+            start_date: Start date for the stats.
+            end_date: End date for the stats.
+        
+        Returns:
+            active_workflows: Number of active workflows.
+            failed_events: Number of failed events.
+            fluent_executions: Number of fluent executions.
+            system_status: System status.
+        
+        Raises:
+            ServiceException: If there is an error while getting the workflow stats.
+        """
+        try:
+            #! REPLACE THIS WITH REAL DB QUERY
+            log.info('Getting workflow stats. start_date: %s, end_date: %s', start_date, end_date)
+            return {
+                'active_workflows': 10,
+                'failed_events': 2,
+                'fluent_executions': 8,
+                'system_status': 'OK'
+            }
+        except ClientError as e:
+            log.exception('Failed to get workflow stats.')
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t get workflow stats')
 
     def __configure_table(self):
         """
@@ -69,7 +98,7 @@ class WorkflowRepository:
 
 
     @classmethod
-    def get_instance(cls, app_config:AppConfig, aws_config:AWSConfig, prefer=None):
+    def get_instance(cls, app_config:AppConfig, aws_config:AWSConfig, prefer=None) -> 'WorkflowRepository':
         """
         Creates and returns an instance of the WorkflowRepository class.
 
