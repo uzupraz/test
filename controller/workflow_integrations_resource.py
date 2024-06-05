@@ -48,7 +48,8 @@ class WorkflowIntegrationsResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
         start_date: str = request.args.get('start_date')
         end_date: str = request.args.get('end_date')
-        workflow_integrations = self.workflow_service.get_workflow_integrations(start_date, end_date)
+        owner_id: str = request.args.get("owner")
+        workflow_integrations = self.workflow_service.get_workflow_integrations(owner_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
         return ServerResponse.success(payload=workflow_integrations), 200
     
