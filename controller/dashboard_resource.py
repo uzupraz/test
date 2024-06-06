@@ -3,7 +3,7 @@ from flask import request
 
 from configuration import AWSConfig, AppConfig
 from .server_response import ServerResponse
-from controller import server_response
+from .common_controller import server_response
 from enums import APIStatus
 from repository import WorkflowRepository
 from service import WorkflowService
