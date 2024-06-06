@@ -1,5 +1,5 @@
 from flask_restx import Namespace, Resource, fields, reqparse
-from flask import request
+from flask import g, request
 
 from configuration import AWSConfig, AppConfig
 from .server_response import ServerResponse
@@ -96,7 +96,7 @@ class WorkflowStatsResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
         start_date: str = request.args.get('start_date')
         end_date: str = request.args.get('end_date')
-        owner_id: str = request.args.get("owner")
+        owner_id: str = g.get("owner_id")
         workflow_stats = workflow_service.get_workflow_stats(owner_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
         return ServerResponse.success(payload=workflow_stats), 200
@@ -116,7 +116,7 @@ class WorkflowIntegrationsResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
         start_date: str = request.args.get('start_date')
         end_date: str = request.args.get('end_date')
-        owner_id: str = request.args.get("owner")
+        owner_id: str = g.get("owner_id")
         workflow_integrations = workflow_service.get_workflow_integrations(owner_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
         return ServerResponse.success(payload=workflow_integrations), 200
@@ -136,7 +136,7 @@ class WorkflowFailuresResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
         start_date: str = request.args.get('start_date')
         end_date: str = request.args.get('end_date')
-        owner_id: str = request.args.get("owner")
+        owner_id: str = g.get("owner_id")
         workflow_failures = workflow_service.get_workflow_failures(owner_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
         return ServerResponse.success(payload=workflow_failures), 200
@@ -156,7 +156,7 @@ class WorkflowFailedEventsResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
         start_date: str = request.args.get('start_date')
         end_date: str = request.args.get('end_date')
-        owner_id: str = request.args.get("owner")
+        owner_id: str = g.get("owner_id")
         workflow_failed_events = workflow_service.get_workflow_failed_events(owner_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
         return ServerResponse.success(payload=workflow_failed_events), 200
@@ -176,7 +176,7 @@ class WorkflowExecutionEventsResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
         start_date: str = request.args.get('start_date')
         end_date: str = request.args.get('end_date')
-        owner_id: str = request.args.get("owner")
+        owner_id: str = g.get("owner_id")
         workflow_execution_events = workflow_service.get_workflow_execution_events(owner_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
         return ServerResponse.success(payload=workflow_execution_events), 200
