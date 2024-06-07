@@ -27,6 +27,6 @@ def lambda_handler(event, context):
         # Updates request ID with aws lambda request id in the request context
         RequestContext.update_request_id(context.aws_request_id)
         # Save the user to flask global request (g)
-        RequestContext.save_user_from_event(event)
+        RequestContext.store_authenticated_user(event)
         # Generate the response using the Flask application with the provided event and context
         return awsgi.response(app, event, context)

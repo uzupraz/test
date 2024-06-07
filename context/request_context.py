@@ -39,9 +39,9 @@ class RequestContext:
         return '-'
     
     @classmethod
-    def save_user_from_event(cls, event: any) -> None:
+    def store_authenticated_user(cls, event: dict) -> None:
         """
-        Save the user object in the Flask application context (g).
+        Store the user object in the Flask application context (g).
 
         Args:
             event: The event object containing the token validation info.
@@ -49,4 +49,3 @@ class RequestContext:
         claims = event['requestContext']['authorizer']['claims']
         user = User.from_authorizer_claims(claims)
         g.user = user
-        g.owner_id = user.sub

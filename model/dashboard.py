@@ -10,7 +10,7 @@ class WorkflowStats:
     active_workflows: int
     failed_events: int
     fluent_executions: int
-    system_status: str
+    system_status: str = "Online"
 
 @dataclass
 class WorkflowIntegration:
