@@ -37,6 +37,7 @@ class RequestContext:
                 g.request_id = str(uuid.uuid4())
             return g.request_id
         return '-'
+   
     
     @classmethod
     def store_authenticated_user(cls, event: dict) -> None:
