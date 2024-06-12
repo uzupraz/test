@@ -12,7 +12,7 @@ from utils import LogManager
 from context import RequestContext
 
 
-#NOTE: 'app' is required by tests therefore has been placed outside of the if statement
+# NOTE: 'app' is required by tests therefore has been placed outside of the if statement
 # Create a Flask application instance
 app = Flask(__name__)
 
@@ -32,5 +32,21 @@ api.init_app(app)
 
 if __name__ == '__main__':
     with app.app_context():  # Set up the application context
+
+        @app.before_request
+        def before_request():
+            RequestContext.store_authenticated_user(
+                {
+                    "requestContext": {
+                        "authorizer": {
+                            "claims": {
+                                "sub": "this_is_owner_id",
+                                "custom:organizationId": "this_is_organization_id",
+                            }
+                        }
+                    }
+                }
+            )
+
         app.run(debug=True)
         RequestContext.update_request_id()
