@@ -56,14 +56,4 @@ class DashboardService:
             workflow_execution_events(list[WorkflowExecutionEvents]): Workflow execution events.
         """
         log.info('Getting workflow execution events. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
-        execution_and_error_counts = self.opensearch_service.get_execution_and_error_counts(owner_id, start_date, end_date)
-        workflow_execution_events = []
-        for execution_and_error_count in execution_and_error_counts:
-            workflow_execution_events.append({
-                WorkflowExecutionEvent(
-                    date=execution_and_error_count.get('date'),
-                    failed_events=execution_and_error_count.get('failed_events'),
-                    fluent_executions=execution_and_error_count.get('fluent_executions'),
-                )
-            })
-        return workflow_execution_events
+        return self.opensearch_service.get_execution_and_error_counts(owner_id, start_date, end_date)

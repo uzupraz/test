@@ -1,7 +1,7 @@
 from flask_restx import Namespace, Resource, fields, reqparse
 from flask import g, request
 
-from configuration import AWSConfig, AppConfig
+from configuration import AWSConfig, AppConfig, OpensearchConfig
 from .server_response import ServerResponse
 from .common_controller import server_response
 from enums import APIStatus
@@ -15,9 +15,11 @@ log = api.logger
 
 app_config = AppConfig()
 aws_config = AWSConfig()
+opensearch_config = OpensearchConfig()
+
 workflow_repository = WorkflowRepository.get_instance(app_config, aws_config)
 workflow_service = WorkflowService(workflow_repository=workflow_repository)
-opensearch_service = OpensearchService()
+opensearch_service = OpensearchService(config=opensearch_config)
 dashboard_service = DashboardService(workflow_repository=workflow_repository, opensearch_service=opensearch_service)
 
 
@@ -95,13 +97,13 @@ class WorkflowStatsResource(Resource):
     @api.expect(parser, validate=True)
     @api.marshal_with(workflow_stats_response_dto, skip_none=True)
     def get(self):
-        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         user = g.get("user")
         owner_id = user.sub
         workflow_stats = dashboard_service.get_workflow_stats(owner_id, start_date, end_date)
-        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflow_stats), 200
 
 
@@ -137,13 +139,13 @@ class WorkflowFailuresResource(Resource):
     @api.expect(parser, validate=True)
     @api.marshal_with(workflow_failures_response_dto, skip_none=True)
     def get(self):
-        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         user = g.get("user")
         owner_id = user.sub
         workflow_failures = workflow_service.get_workflow_failures(owner_id, start_date, end_date)
-        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflow_failures), 200
     
 

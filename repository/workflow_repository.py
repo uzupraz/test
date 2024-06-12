@@ -66,9 +66,8 @@ class WorkflowRepository:
                 ExpressionAttributeNames={'#s': 'state'},
                 ExpressionAttributeValues={':state': 'ACTIVE'}
             )
-            active_count = response['Count']
-            log.info('Successfully counted active workflows: %d', active_count)
-            return active_count
+            log.info('Successfully counted active workflows.')
+            return response['Count']
         except ClientError as e:
             log.exception('Failed to count active workflows.')
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t count the active workflows')
