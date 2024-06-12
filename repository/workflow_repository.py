@@ -2,8 +2,9 @@ import boto3
 import dataclasses
 from botocore.config import Config
 from botocore.exceptions import ClientError
+from boto3.dynamodb.conditions import Attr
 
-from model import Workflow, WorkflowStats, WorkflowItem, WorkflowExecutionEvent, WorkflowFailedEvent, WorkflowFailure, WorkflowFailureItem, WorkflowIntegration
+from model import Workflow, WorkflowItem, WorkflowExecutionEvent, WorkflowFailedEvent, WorkflowFailure, WorkflowFailureItem, WorkflowIntegration
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
 from exception import ServiceException
@@ -46,33 +47,32 @@ class WorkflowRepository:
             log.exception('Failed to save workflow. workflowId: %s, organizationId:%s', workflow.workflow_id, workflow.owner_id)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t save the workflow')
 
-    def get_workflow_stats(self, owner_id: str, start_date:str, end_date:str) -> WorkflowStats:
+
+    def count_active_workflows(self) -> int:
         """
-        Get the stats about the workflows from DynamoDB and OpenSearch.
-        
-        Parameters:
-            owner_id(str): Owner ID for the workflow stats.
-            start_date(str): Start date for the stats.
-            end_date(str): End date for the stats.
-        
+        Count the number of workflows with state 'ACTIVE'.
+
         Returns:
-            workflow_stats(WorkflowStats): The workflow stats.
-        
+            int: The number of workflows with state 'ACTIVE'.
+
         Raises:
-            ServiceException: If there is an error while getting the workflow stats.
+            ServiceException: If there is an error while counting the workflows.
         """
+        log.info('Counting active workflows.')
         try:
-            #! REPLACE THIS WITH REAL DB QUERY
-            log.info('Getting workflow stats. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
-            return WorkflowStats(
-                active_workflows=10,
-                failed_events=10,
-                fluent_executions=10,
-                system_status="Online",
+            response = self.workflow_table.scan(
+                Select='COUNT',
+                FilterExpression=Attr('state').eq('ACTIVE'),
+                ExpressionAttributeNames={'#s': 'state'},
+                ExpressionAttributeValues={':state': 'ACTIVE'}
             )
+            active_count = response['Count']
+            log.info('Successfully counted active workflows: %d', active_count)
+            return active_count
         except ClientError as e:
-            log.exception('Failed to get workflow stats.')
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t get workflow stats')
+            log.exception('Failed to count active workflows.')
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t count the active workflows')
+
 
     def get_workflow_integrations(self, owner_id: str, start_date:str, end_date:str) -> list[WorkflowIntegration]:
         """
@@ -105,35 +105,6 @@ class WorkflowRepository:
             log.exception('Failed to get workflow integrations.')
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t get workflow integrations')
 
-    def get_workflow_execution_events(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowExecutionEvent]:
-        """
-        Get workflow execution events from OpenSearch.
-
-        Args:
-            owner_id (str): Owner ID for the events.
-            start_date (str): Start date for the events.
-            end_date (str): End date for the events.
-
-        Returns:
-            workflow_execution_events(list[WorkflowExecutionEvents]): Workflow execution events.
-        
-        Raises:
-            ServiceException: If there is an error while getting the workflow execution events.
-        """
-        try:
-            log.info('Getting workflow execution events. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
-            #! REPLACE THIS WITH REAL DB QUERY
-            workflow_execution_events = [
-                WorkflowExecutionEvent(
-                    date="2021-07-01",
-                    failed_events=2,
-                    fluent_executions=8,
-                )
-            ]
-            return workflow_execution_events
-        except ClientError as e:
-            log.exception('Failed to get workflow execution events.')
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t get workflow execution events')
 
     def get_workflow_failed_events(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowFailedEvent]:
         """

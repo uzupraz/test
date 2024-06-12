@@ -29,24 +29,7 @@ class WorkflowService:
         log.info('Calling repository to save workflow. workflowId: %s, organizationId: %s', workflow.workflow_id, workflow.owner_id)
         created_workflow = self.workflow_repository.save(workflow)
         return created_workflow
-    
-    
-    def get_workflow_stats(self, owner_id: str, start_date:str, end_date:str) -> WorkflowStats:
-        """
-        Get the stats about the workflows using the workflow repository.
 
-        Args:
-            owner_id: ID associated with user to filter stats by.
-            start_date: Start date for the stats.
-            end_date: End date for the stats.
-
-        Returns:
-            workflow_stats (WorkflowStats): Stats about the workflows.
-        """
-        log.info('Calling repository to get workflow stats. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
-        workflow_stats = self.workflow_repository.get_workflow_stats(owner_id, start_date, end_date)
-        return workflow_stats
-    
 
     def get_workflow_integrations(self, owner_id: str, start_date:str, end_date:str) -> list[WorkflowIntegration]:
         """
@@ -63,23 +46,6 @@ class WorkflowService:
         log.info('Calling repository to get workflow integrations. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
         workflow_integrations = self.workflow_repository.get_workflow_integrations(owner_id, start_date, end_date)
         return workflow_integrations
-    
-
-    def get_workflow_execution_events(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowExecutionEvent]:
-        """
-        Get workflow execution events using the workflow repository.
-
-        Args:
-            owner_id (str): ID associated with user to filter workflow execution events by.
-            start_date (str): Start date for the events.
-            end_date (str): End date for the events.
-
-        Returns:
-            workflow_execution_events (list[WorkflowExecutionEvent]): Workflow execution events.
-        """
-        log.info('Calling repository to get workflow execution events. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
-        workflow_execution_events = self.workflow_repository.get_workflow_execution_events(owner_id, start_date, end_date)
-        return workflow_execution_events
     
 
     def get_workflow_failed_events(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowFailedEvent]:

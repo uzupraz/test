@@ -6,7 +6,7 @@ from .server_response import ServerResponse
 from .common_controller import server_response
 from enums import APIStatus
 from repository import WorkflowRepository
-from service import WorkflowService
+from service import WorkflowService, DashboardService, OpensearchService
 
 
 api = Namespace("Dashboard API", description="API for the dashboard home", path="/interconnecthub/dashboard")
@@ -16,7 +16,9 @@ log = api.logger
 app_config = AppConfig()
 aws_config = AWSConfig()
 workflow_repository = WorkflowRepository.get_instance(app_config, aws_config)
-workflow_service = WorkflowService.get_instance(workflow_repository)
+workflow_service = WorkflowService(workflow_repository=workflow_repository)
+opensearch_service = OpensearchService()
+dashboard_service = DashboardService(workflow_repository=workflow_repository, opensearch_service=opensearch_service)
 
 
 parser = reqparse.RequestParser()
@@ -98,7 +100,7 @@ class WorkflowStatsResource(Resource):
         end_date = request.args.get('end_date')
         user = g.get("user")
         owner_id = user.sub
-        workflow_stats = workflow_service.get_workflow_stats(owner_id, start_date, end_date)
+        workflow_stats = dashboard_service.get_workflow_stats(owner_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
         return ServerResponse.success(payload=workflow_stats), 200
 
@@ -182,6 +184,6 @@ class WorkflowExecutionEventsResource(Resource):
         end_date = request.args.get('end_date')
         user = g.get("user")
         owner_id = user.sub
-        workflow_execution_events = workflow_service.get_workflow_execution_events(owner_id, start_date, end_date)
+        workflow_execution_events = dashboard_service.get_workflow_execution_events(owner_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
         return ServerResponse.success(payload=workflow_execution_events), 200
