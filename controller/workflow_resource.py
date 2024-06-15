@@ -27,8 +27,8 @@ class WorkflowResource(Resource):
         super().__init__(api, *args, **kwargs)
         self.aws_config = AWSConfig()
         self.app_config = AppConfig()
-        self.workflow_repository = WorkflowRepository.get_instance(self.app_config, self.aws_config)
-        self.workflow_service = WorkflowService.get_instance(self.workflow_repository)
+        self.workflow_repository = WorkflowRepository(self.app_config, self.aws_config)
+        self.workflow_service = WorkflowService(self.workflow_repository)
 
 
     @api.expect(workflow_dto, validate=True)

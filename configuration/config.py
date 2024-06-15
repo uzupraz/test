@@ -44,4 +44,6 @@ class OpensearchConfig(metaclass=Singleton):
     host:str = os.getenv('OPENSEARCH_HOST')
     region:str = os.getenv('OPENSEARCH_REGION')
     service:str = os.getenv('OPENSEARCH_SERVICE')
+    port:int = int(os.getenv('OPENSEARCH_PORT', 443))
+    pool_maxsize:int = int(os.getenv('OPENSEARCH_POOL_MAXSIZE', 20))
     index:str = os.getenv('OPENSEARCH_INDEX')

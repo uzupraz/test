@@ -7,9 +7,9 @@ class WorkflowItem:
 
 @dataclass
 class WorkflowStats:
-    active_workflows: int
-    failed_events: int
-    fluent_executions: int
+    active_workflows_count: int
+    failed_events_count: int
+    fluent_executions_count: int
     system_status: str = "Online"
 
 @dataclass

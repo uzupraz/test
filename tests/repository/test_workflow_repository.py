@@ -3,7 +3,6 @@ import dataclasses
 from unittest.mock import Mock, patch, MagicMock
 from botocore.exceptions import ClientError
 
-from configuration import AWSConfig, AppConfig
 from repository import WorkflowRepository
 from tests.test_utils import TestUtils
 from model import Workflow
@@ -25,16 +24,13 @@ class TestWorkflowRepository(unittest.TestCase):
         with patch('repository.workflow_repository.WorkflowRepository._WorkflowRepository__configure_table') as mock_configure_table:
             self.mock_configure_table = mock_configure_table
             mock_configure_table.return_value = self.mock_table
-            self.workflow_repository = WorkflowRepository.get_instance(self.app_config, self.aws_config)
+            self.workflow_repository = WorkflowRepository(self.app_config, self.aws_config)
 
 
     def tearDown(self) -> None:
         self.app_config = None
         self.aws_config = None
         self.workflow_repository = None
-        WorkflowRepository._instance = None
-        AWSConfig._instance = None
-        AppConfig._instance = None
 
 
     def test_save_happy_case_should_successfully_save_the_workflow(self):
