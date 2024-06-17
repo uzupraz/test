@@ -41,7 +41,7 @@ rpds-py==0.10.6
 s3transfer==0.7.0
 six==1.16.0
 tomli==2.0.1
-urllib3==2.2.1
+urllib3==1.26.18
 uvloop==0.17.0
 webargs==8.3.0
 websockets==11.0.3
