@@ -2,6 +2,7 @@ import unittest
 import dataclasses
 from unittest.mock import Mock, patch, MagicMock
 from botocore.exceptions import ClientError
+from boto3.dynamodb.conditions import Key,Attr
 
 from repository import WorkflowRepository
 from tests.test_utils import TestUtils
@@ -62,3 +63,32 @@ class TestWorkflowRepository(unittest.TestCase):
 
         with self.assertRaises(ServiceException):
             self.workflow_repository.save(workflow)
+
+
+    def test_count_active_workflows_happy_case_should_return_correct_count(self):
+        """
+        Test if the function correctly returns the count of active workflows for a given owner.
+        """
+        owner_id = "owner123"
+        expected_count = 5
+        self.workflow_repository.workflow_table.query = MagicMock(return_value={'Count': expected_count})
+
+        actual_count = self.workflow_repository.count_active_workflows(owner_id)
+
+        self.assertEqual(expected_count, actual_count)
+        self.workflow_repository.workflow_table.query.assert_called_once_with(
+            KeyConditionExpression=Key('ownerId').eq(owner_id),
+            FilterExpression=Attr('state').eq('Active'),
+        )
+
+
+    def test_count_active_workflows_when_client_error_is_thrown_should_raise_service_exception(self):
+        """
+        Test if the function raises a ServiceException when a ClientError is thrown by DynamoDB during the count of active workflows.
+        """
+        owner_id = "owner123"
+        self.workflow_repository.workflow_table.query = MagicMock()
+        self.workflow_repository.workflow_table.query.side_effect = ClientError({'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'query')
+
+        with self.assertRaises(ServiceException):
+            self.workflow_repository.count_active_workflows(owner_id)
