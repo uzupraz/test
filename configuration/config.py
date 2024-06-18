@@ -41,7 +41,7 @@ class OpensearchConfig(metaclass=Singleton):
     """
     Configuration related to the Opensearch are loaded here.
     """
-    host:str = os.getenv('OPENSEARCH_HOST', 443)
+    host:str = os.getenv('OPENSEARCH_HOST')
     region:str = os.getenv('OPENSEARCH_REGION')
     service:str = os.getenv('OPENSEARCH_SERVICE', 'es')
     port:int = int(os.getenv('OPENSEARCH_PORT', 443))

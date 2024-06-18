@@ -3,7 +3,7 @@ from botocore.exceptions import ClientError
 from controller import common_controller as common_ctrl
 from repository import WorkflowRepository
 from service.opensearch_service import OpensearchService
-from model import WorkflowStats, WorkflowItem, WorkflowExecutionEvent, WorkflowFailedEvent, WorkflowFailure, WorkflowFailureItem, WorkflowIntegration
+from model import WorkflowStats, WorkflowItem, WorkflowExecutionMetric, WorkflowFailedEvent, WorkflowFailure, WorkflowFailureItem, WorkflowIntegration
 from utils import Singleton
 from exception import ServiceException
 from enums import ServiceStatus, SystemStatus
@@ -34,18 +34,18 @@ class DashboardService(metaclass=Singleton):
         """
         log.info('Getting workflow stats. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
         active_workflows_count = self.workflow_repository.count_active_workflows(owner_id=owner_id)
-        failed_events_executions_count = self.opensearch_service.get_failed_events_executions_count(owner_id=owner_id, start_date=start_date, end_date=end_date)
-        workflow_executions_count = self.opensearch_service.get_workflow_executions_count(owner_id=owner_id, start_date=start_date, end_date=end_date)
+        workflow_failed_executions_count = self.opensearch_service.get_failed_events_executions_count(owner_id=owner_id, start_date=start_date, end_date=end_date)
+        workflow_fluent_executions_count = self.opensearch_service.get_workflow_executions_count(owner_id=owner_id, start_date=start_date, end_date=end_date)
 
         return WorkflowStats(
             active_workflows_count=active_workflows_count,
-            failed_events_count=failed_events_executions_count,
-            fluent_executions_count=workflow_executions_count,
+            failed_executions_count=workflow_failed_executions_count,
+            fluent_executions_count=workflow_fluent_executions_count,
             system_status=SystemStatus.ONLINE.value,
         )
 
 
-    def get_workflow_execution_events(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowExecutionEvent]:
+    def get_workflow_execution_events(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowExecutionMetric]:
         """
         Get workflow execution events from OpenSearch.
 
@@ -55,7 +55,7 @@ class DashboardService(metaclass=Singleton):
             end_date (str): End date for the events.
 
         Returns:
-            workflow_execution_events(list[WorkflowExecutionEvents]): Workflow execution events.
+            workflow_execution_events(list[WorkflowExecutionMetric]): Workflow execution events.
         """
         log.info('Getting workflow execution events. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
         return self.opensearch_service.get_execution_and_error_counts(owner_id, start_date, end_date)

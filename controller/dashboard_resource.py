@@ -29,9 +29,9 @@ parser.add_argument("end_date", help="End date for the stats. e.g YYYY-MM-DDTHH:
 
 workflow_stats_response_dto = api.inherit('Get Workflow Stats Response',server_response, {
     'payload': fields.Nested(api.model('Workflow Stats', {
-        'active_workflows': fields.Integer(description='Number of active workflows'),
-        'failed_events': fields.Integer(description='Number of failed events'),
-        'fluent_executions': fields.Integer(description='Number of fluent executions'),
+        'active_workflows_count': fields.Integer(description='Number of active workflows'),
+        'failed_executions_count': fields.Integer(description='Count of failed workflow executions'),
+        'fluent_executions_count': fields.Integer(description='Count of fluent workflow executions'),
         'system_status': fields.String(description='System status')
     }))
 })

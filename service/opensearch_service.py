@@ -6,7 +6,7 @@ from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
 from configuration import OpensearchConfig
-from model import WorkflowExecutionEvent
+from model import WorkflowExecutionMetric
 
 
 log = common_ctrl.log
@@ -90,7 +90,7 @@ class OpensearchService(metaclass=Singleton):
         Returns:
             int: Unique count of workflows executions.
         """
-        log.info('Searching for the number of fluent executions. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
+        log.info('Searching for the number of workflow fluent executions. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
 
         query = {
             "size": 0,
@@ -99,7 +99,7 @@ class OpensearchService(metaclass=Singleton):
         }
 
         response = self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
-        unique_executions_count = sum([bucket['unique_executions']['value'] for bucket in response['aggregations']['by_date']['buckets']])
+        unique_executions_count = response['hits']['total']['value']
         return unique_executions_count
 
 
@@ -127,11 +127,11 @@ class OpensearchService(metaclass=Singleton):
         }
 
         response = self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
-        unique_failed_events_count = sum([bucket['unique_executions']['value'] for bucket in response['aggregations']['by_date']['buckets']])
+        unique_failed_events_count = response['hits']['total']['value']
         return unique_failed_events_count
 
 
-    def get_execution_and_error_counts(self, owner_id:str, start_date:str, end_date:str) -> list[WorkflowExecutionEvent]:
+    def get_execution_and_error_counts(self, owner_id:str, start_date:str, end_date:str) -> list[WorkflowExecutionMetric]:
         """
         Fetches the counts for fluent executions and failed events, aggregated by date.
 
@@ -141,35 +141,36 @@ class OpensearchService(metaclass=Singleton):
             end_date (str): The end date in ISO format.
 
         Returns:
-            list[WorkflowExecutionEvent]: A list of WorkflowExecutionEvent containing date, fluent executions count, and failed events count.
+            list[WorkflowExecutionMetric]: A list of WorkflowExecutionMetric containing date, fluent executions count, and failed events count.
         """
         log.info('Fetching counts for fluent executions and failed events. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
 
+        query = self._build_base_query(owner_id, start_date=start_date, end_date=end_date)
         fluent_executions_query = {
             "size": 0,
-            "query": self._build_base_query(owner_id, start_date=start_date, end_date=end_date),
+            "query": query,
             "aggs": self._build_histogram_aggregation()
         }
 
         failed_events_query = {
             "size": 0,
-            "query": self._build_base_query(owner_id=owner_id, start_date=start_date, end_date=end_date),
+            "query": query,
             "aggs": self._build_histogram_aggregation()
         }
         failed_events_query['query']['bool']['filter'].append({"match_phrase": {"status": "ERROR"}})
 
-        # Fetch counts for fluent executions and failed events
-        fluent_executions_counts = self.fetch_aggregated_data(query=fluent_executions_query, owner_id=owner_id, start_date=start_date, end_date=end_date)
-        failed_events_counts = self.fetch_aggregated_data(query=failed_events_query, owner_id=owner_id, start_date=start_date, end_date=end_date)
+        # Fetch results for fluent executions and failed events
+        workflow_executions_results = self.fetch_aggregated_data(query=fluent_executions_query, owner_id=owner_id, start_date=start_date, end_date=end_date)
+        failed_executions_results = self.fetch_aggregated_data(query=failed_events_query, owner_id=owner_id, start_date=start_date, end_date=end_date)
 
         # Combine the results based on date
         combined_results = []
-        for date in fluent_executions_counts.keys():
+        for date in workflow_executions_results.keys():
             combined_results.append(
-                WorkflowExecutionEvent(
+                WorkflowExecutionMetric(
                     date=date,
-                    failed_events=failed_events_counts.get(date, 0),
-                    fluent_executions=fluent_executions_counts.get(date, 0),
+                    failed_events=failed_executions_results.get(date, 0),
+                    fluent_executions=workflow_executions_results.get(date, 0),
                 )
             )
         return combined_results

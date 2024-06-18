@@ -1,11 +1,10 @@
 import unittest
 from unittest.mock import patch
-from model.dashboard import WorkflowExecutionEvent
+from model.dashboard import WorkflowExecutionMetric
 from service.opensearch_service import OpensearchService
 from configuration import OpensearchConfig
 
 class TestOpensearchService(unittest.TestCase):
-
 
     def setUp(self):
         self.config = OpensearchConfig()
@@ -17,25 +16,15 @@ class TestOpensearchService(unittest.TestCase):
         self.config.service = "es"
         self.service = OpensearchService(self.config)
 
-
     @patch("service.opensearch_service.OpenSearch.search")
     def test_get_workflow_executions_count(self, mock_search):
         """
         Test if the function returns the correct count of fluent executions of an workflow.
         """
         mock_response = {
-            "aggregations": {
-                "by_date": {
-                    "buckets": [
-                        {
-                            "key_as_string": "2021-01-01",
-                            "unique_executions": {"value": 5},
-                        },
-                        {
-                            "key_as_string": "2021-01-02",
-                            "unique_executions": {"value": 3},
-                        },
-                    ]
+            "hits": {
+                "total": {
+                    "value": 8,
                 }
             }
         }
@@ -44,25 +33,15 @@ class TestOpensearchService(unittest.TestCase):
         actual_count = self.service.get_workflow_executions_count("owner_id", "2021-01-01", "2021-01-02")
         self.assertEqual(actual_count, mock_count)
 
-
     @patch("service.opensearch_service.OpenSearch.search")
     def test_get_failed_events_executions_count(self, mock_search):
         """
         Test if the function returns the correct count of failed events of an workflow.
         """
         mock_response = {
-            "aggregations": {
-                "by_date": {
-                    "buckets": [
-                        {
-                            "key_as_string": "2021-01-01",
-                            "unique_executions": {"value": 2},
-                        },
-                        {
-                            "key_as_string": "2021-01-02",
-                            "unique_executions": {"value": 1},
-                        },
-                    ]
+            "hits": {
+                "total": {
+                    "value": 3,
                 }
             }
         }
@@ -70,7 +49,6 @@ class TestOpensearchService(unittest.TestCase):
         mock_count = 3
         actual_count = self.service.get_failed_events_executions_count("owner_id", "2021-01-01", "2021-01-02")
         self.assertEqual(actual_count, mock_count)
-
 
     @patch("service.opensearch_service.OpensearchService.fetch_aggregated_data")
     def test_get_execution_and_error_counts(self, mock_fetch_aggregated_data):
@@ -82,12 +60,12 @@ class TestOpensearchService(unittest.TestCase):
         mock_fetch_aggregated_data.side_effect = [mock_fluent_executions_counts, mock_failed_events_counts]
         results = self.service.get_execution_and_error_counts("owner_id", "2021-01-01", "2021-01-02")
         expected_results = [
-            WorkflowExecutionEvent(
+            WorkflowExecutionMetric(
                 date="2021-01-01",
                 failed_events=2,
                 fluent_executions=5,
             ),
-            WorkflowExecutionEvent(
+            WorkflowExecutionMetric(
                 date="2021-01-02",
                 failed_events=1,
                 fluent_executions=3,
