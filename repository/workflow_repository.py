@@ -62,16 +62,16 @@ class WorkflowRepository(metaclass=Singleton):
         Raises:
             ServiceException: If there is an error while counting the workflows.
         """
-        log.info('Counting active workflows for owner: %s', owner_id)
+        log.info('Counting active workflows. owner_id: %s', owner_id)
         try:
             response = self.workflow_table.query(
                 KeyConditionExpression=Key('ownerId').eq(owner_id),
-                FilterExpression=Attr('state').eq('Active')
+                FilterExpression=Attr('state').eq('ACTIVE')
             )
-            log.info('Successfully counted active workflows for owner: %s', owner_id)
+            log.info('Successfully counted active workflows. owner_id: %s', owner_id)
             return response['Count']
         except ClientError as e:
-            log.exception('Failed to count active workflows for owner: %s', owner_id)
+            log.exception('Failed to count active workflows. owner_id: %s', owner_id)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t count the active workflows')
 
 

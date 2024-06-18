@@ -75,15 +75,12 @@ class OpensearchService(metaclass=Singleton):
             return response
         except exceptions as e:
             log.exception('Failed to search in opensearch. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
-            raise ServiceException(e.status_code if hasattr(e, 'status_code') else 500, ServiceStatus.FAILURE, str(e))
-        except Exception as e:
-            log.exception('Failed to search in opensearch. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
             raise ServiceException(500, ServiceStatus.FAILURE, str(e))
+        
 
-
-    def get_fluent_executions_count(self, owner_id:str, start_date:str, end_date:str) -> int:
+    def get_workflow_executions_count(self, owner_id:str, start_date:str, end_date:str) -> int:
         """
-        Fetches the count of fluent executions within the specified date range.
+        Counts the total workflows executions having any status and return the number of unique executions as same executions are stored multiple times in opensearch with different status.
 
         Args:
             owner_id (str): The owner ID.
@@ -91,7 +88,7 @@ class OpensearchService(metaclass=Singleton):
             end_date (str): The end date in ISO format.
 
         Returns:
-            int: The count of fluent executions.
+            int: Unique count of workflows executions.
         """
         log.info('Searching for the number of fluent executions. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
 
@@ -106,9 +103,9 @@ class OpensearchService(metaclass=Singleton):
         return unique_executions_count
 
 
-    def get_failed_events_count(self, owner_id:str, start_date:str, end_date:str) -> int:
+    def get_failed_events_executions_count(self, owner_id:str, start_date:str, end_date:str) -> int:
         """
-        Fetches the count of failed events within the specified date range.
+        Fetches the count of failed events executions within the specified date range.
 
         Args:
             owner_id (str): The owner ID.
@@ -118,7 +115,7 @@ class OpensearchService(metaclass=Singleton):
         Returns:
             int: The count of failed events.
         """
-        log.info('Searching for the number of failed events. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
+        log.info('Searching failed events executions. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
 
         query = self._build_base_query(owner_id, start_date=start_date, end_date=end_date)
         query['bool']['filter'].append({"match_phrase": {"status": "ERROR"}})

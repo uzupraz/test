@@ -19,7 +19,7 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_fluent_executions_count(self, mock_search):
+    def test_get_workflow_executions_count(self, mock_search):
         """
         Test if the function returns the correct count of fluent executions of an workflow.
         """
@@ -41,12 +41,12 @@ class TestOpensearchService(unittest.TestCase):
         }
         mock_search.return_value = mock_response
         mock_count = 8
-        actual_count = self.service.get_fluent_executions_count("owner_id", "2021-01-01", "2021-01-02")
+        actual_count = self.service.get_workflow_executions_count("owner_id", "2021-01-01", "2021-01-02")
         self.assertEqual(actual_count, mock_count)
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_failed_events_count(self, mock_search):
+    def test_get_failed_events_executions_count(self, mock_search):
         """
         Test if the function returns the correct count of failed events of an workflow.
         """
@@ -68,7 +68,7 @@ class TestOpensearchService(unittest.TestCase):
         }
         mock_search.return_value = mock_response
         mock_count = 3
-        actual_count = self.service.get_failed_events_count("owner_id", "2021-01-01", "2021-01-02")
+        actual_count = self.service.get_failed_events_executions_count("owner_id", "2021-01-01", "2021-01-02")
         self.assertEqual(actual_count, mock_count)
 
 

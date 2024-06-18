@@ -34,13 +34,13 @@ class DashboardService(metaclass=Singleton):
         """
         log.info('Getting workflow stats. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
         active_workflows_count = self.workflow_repository.count_active_workflows(owner_id=owner_id)
-        failed_events_count = self.opensearch_service.get_failed_events_count(owner_id=owner_id, start_date=start_date, end_date=end_date)
-        fluent_executions_count = self.opensearch_service.get_fluent_executions_count(owner_id=owner_id, start_date=start_date, end_date=end_date)
+        failed_events_executions_count = self.opensearch_service.get_failed_events_executions_count(owner_id=owner_id, start_date=start_date, end_date=end_date)
+        workflow_executions_count = self.opensearch_service.get_workflow_executions_count(owner_id=owner_id, start_date=start_date, end_date=end_date)
 
         return WorkflowStats(
             active_workflows_count=active_workflows_count,
-            failed_events_count=failed_events_count,
-            fluent_executions_count=fluent_executions_count,
+            failed_events_count=failed_events_executions_count,
+            fluent_executions_count=workflow_executions_count,
             system_status=SystemStatus.ONLINE.value,
         )
 

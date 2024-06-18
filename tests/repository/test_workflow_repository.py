@@ -78,7 +78,7 @@ class TestWorkflowRepository(unittest.TestCase):
         self.assertEqual(expected_count, actual_count)
         self.workflow_repository.workflow_table.query.assert_called_once_with(
             KeyConditionExpression=Key('ownerId').eq(owner_id),
-            FilterExpression=Attr('state').eq('Active'),
+            FilterExpression=Attr('state').eq('ACTIVE'),
         )
 
 
