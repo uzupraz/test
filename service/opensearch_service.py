@@ -203,7 +203,7 @@ class OpensearchService(metaclass=Singleton):
                 "aggs": {
                     "unique_executions": {
                         "cardinality": {
-                            "field": "execution_id.keyword"
+                            "field": "execution_id"
                         }
                     }
                 }
