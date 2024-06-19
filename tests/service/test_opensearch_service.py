@@ -8,6 +8,7 @@ from tests.test_utils import TestUtils
 
 class TestOpensearchService(unittest.TestCase):
 
+
     test_resource_path = '/tests/resources/opensearch_service/'
     histogram_aggregation = {
         "by_date": {
@@ -22,6 +23,7 @@ class TestOpensearchService(unittest.TestCase):
         }
     }
 
+
     def setUp(self):
         self.config = MagicMock()
         self.config.host = "test_host"
@@ -31,6 +33,7 @@ class TestOpensearchService(unittest.TestCase):
         self.config.region = "us-east-1"
         self.config.service = "es"
         self.service = OpensearchService(self.config)
+
 
     @patch("service.opensearch_service.OpenSearch.search")
     @patch("service.opensearch_service.OpensearchService._build_base_query")
@@ -77,6 +80,7 @@ class TestOpensearchService(unittest.TestCase):
         self.assertEqual(actual_count, mock_count)
         mock_search.assert_called_once_with(body=query, index=self.service.index)
 
+
     @patch("service.opensearch_service.OpenSearch.search")
     @patch("service.opensearch_service.OpensearchService._build_base_query")
     @patch("service.opensearch_service.OpensearchService._build_histogram_aggregation")
@@ -121,6 +125,7 @@ class TestOpensearchService(unittest.TestCase):
 
         self.assertEqual(actual_count, mock_count)
         mock_search.assert_called_once_with(body=query, index=self.service.index)
+
 
     @patch("service.opensearch_service.OpensearchService._fetch_fluent_executions")
     @patch("service.opensearch_service.OpensearchService._fetch_failed_events")
