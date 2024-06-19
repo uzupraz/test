@@ -100,7 +100,7 @@ class WorkflowStatsResource(Resource):
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         user = g.get("user")
-        workflow_stats = dashboard_service.get_workflow_stats(user.sub, start_date, end_date)
+        workflow_stats = dashboard_service.get_workflow_stats(user.organization_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflow_stats), 200
 
@@ -120,7 +120,7 @@ class WorkflowIntegrationsResource(Resource):
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         user = g.get("user")
-        workflow_integrations = dashboard_service.get_workflow_integrations(user.sub, start_date, end_date)
+        workflow_integrations = dashboard_service.get_workflow_integrations(user.organization_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflow_integrations), 200
     
@@ -140,7 +140,7 @@ class WorkflowFailuresResource(Resource):
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         user = g.get("user")
-        workflow_failures = dashboard_service.get_workflow_failures(user.sub, start_date, end_date)
+        workflow_failures = dashboard_service.get_workflow_failures(user.organization_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflow_failures), 200
     
@@ -160,7 +160,7 @@ class WorkflowFailedEventsResource(Resource):
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         user = g.get("user")
-        workflow_failed_events = dashboard_service.get_workflow_failed_events(user.sub, start_date, end_date)
+        workflow_failed_events = dashboard_service.get_workflow_failed_events(user.organization_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflow_failed_events), 200
 
@@ -180,6 +180,6 @@ class WorkflowExecutionEventsResource(Resource):
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         user = g.get("user")
-        workflow_execution_events = dashboard_service.get_workflow_execution_events(user.sub, start_date, end_date)
+        workflow_execution_events = dashboard_service.get_workflow_execution_events(user.organization_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflow_execution_events), 200
