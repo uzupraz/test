@@ -1,7 +1,7 @@
 # !!! Preload environment before importing any flask components
 # Please do not change order or import
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(override=True)
 
 from flask import Flask
 import flask_cors
