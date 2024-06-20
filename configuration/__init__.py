@@ -1,1 +1,1 @@
-from .config import AppConfig, AWSConfig, AsyncFileDeliveryS3Config
+from .config import AppConfig, AWSConfig, AsyncFileDeliveryS3Config, OpensearchConfig

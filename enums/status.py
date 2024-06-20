@@ -10,3 +10,7 @@ class APIStatus(Enum):
     START='START'
     SUCCESS='SUCCESS'
     FAILURE='FAILURE'
+
+
+class SystemStatus(Enum):
+    ONLINE='ONLINE'

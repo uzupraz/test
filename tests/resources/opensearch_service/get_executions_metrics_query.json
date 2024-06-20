@@ -1,0 +1,50 @@
+{
+    "from": 0,
+    "size": 0,
+    "query": {
+        "bool": {
+            "filter": [
+                {
+                    "match_phrase": {
+                        "owner_id": "owner_id"
+                    }
+                },
+                {
+                    "match_phrase": {
+                        "is_external": false
+                    }
+                },
+                {
+                    "range": {
+                        "event_timestamp": {
+                            "gte": "2024-05-20T12:27:48.184Z",
+                            "lte": "2024-06-20T12:27:48.184Z",
+                            "format": "strict_date_optional_time"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "aggs": {
+        "total_executions": {
+            "cardinality": {
+                "field": "execution_id"
+            }
+        },
+        "failed_executions": {
+            "filter": {
+                "match_phrase": {
+                    "status": "ERROR"
+                }
+            },
+            "aggs": {
+                "failed_count": {
+                    "cardinality": {
+                        "field": "execution_id"
+                    }
+                }
+            }
+        }
+    }
+}

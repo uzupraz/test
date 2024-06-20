@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from enums import SystemStatus
+
 @dataclass
 class WorkflowItem:
     id: str
@@ -7,10 +9,10 @@ class WorkflowItem:
 
 @dataclass
 class WorkflowStats:
-    active_workflows: int
-    failed_events: int
-    fluent_executions: int
-    system_status: str = "Online"
+    active_workflows_count: int
+    failed_executions_count: int
+    total_executions_count: int
+    system_status: str = SystemStatus.ONLINE.value
 
 @dataclass
 class WorkflowIntegration:
@@ -39,7 +41,7 @@ class WorkflowFailedEvent:
     workflow: WorkflowItem
 
 @dataclass
-class WorkflowExecutionEvent:
+class WorkflowExecutionMetric:
     date: str
-    failed_events: int
-    fluent_executions: int
+    failed_executions: int
+    total_executions: int

@@ -34,3 +34,16 @@ class AsyncFileDeliveryS3Config(metaclass=Singleton):
     archive_bucket_name: str = os.getenv('APP_FILES_ARCHIVE_BUCKET_NAME')
     object_prefix: str = os.getenv('APP_FILES_OBJECT_PREFIX', '')
     pre_signed_url_expiration: int = int(os.getenv('APP_FILES_PRE_SIGNED_URL_EXPIRATION_IN_SECONDS', 3600))
+
+
+@dataclasses.dataclass(init=False)
+class OpensearchConfig(metaclass=Singleton):
+    """
+    Configuration related to the Opensearch are loaded here.
+    """
+    host:str = os.getenv('OPENSEARCH_HOST')
+    region:str = os.getenv('OPENSEARCH_REGION')
+    service:str = os.getenv('OPENSEARCH_SERVICE', 'es')
+    port:int = int(os.getenv('OPENSEARCH_PORT', 443))
+    pool_maxsize:int = int(os.getenv('OPENSEARCH_POOL_MAXSIZE', 20))
+    index:str = os.getenv('OPENSEARCH_INDEX')

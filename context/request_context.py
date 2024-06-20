@@ -1,5 +1,6 @@
 import uuid
 from flask import g, has_request_context
+from dataclasses import asdict
 
 from model import User
 
@@ -37,8 +38,8 @@ class RequestContext:
                 g.request_id = str(uuid.uuid4())
             return g.request_id
         return '-'
-   
-    
+
+
     @classmethod
     def store_authenticated_user(cls, event: dict) -> None:
         """
@@ -49,4 +50,4 @@ class RequestContext:
         """
         claims = event['requestContext']['authorizer']['claims']
         user = User.from_authorizer_claims(claims)
-        g.user = user
+        g.user = asdict(user)
