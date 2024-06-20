@@ -11,7 +11,7 @@ class WorkflowItem:
 class WorkflowStats:
     active_workflows_count: int
     failed_executions_count: int
-    fluent_executions_count: int
+    total_executions_count: int
     system_status: str = SystemStatus.ONLINE.value
 
 @dataclass
@@ -43,5 +43,5 @@ class WorkflowFailedEvent:
 @dataclass
 class WorkflowExecutionMetric:
     date: str
-    failed_events: int
-    fluent_executions: int
+    failed_executions: int
+    total_executions: int

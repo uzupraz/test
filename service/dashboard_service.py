@@ -20,34 +20,34 @@ class DashboardService(metaclass=Singleton):
         self.opensearch_service = opensearch_service
 
 
-    def get_workflow_stats(self, owner_id: str, start_date:str, end_date:str) -> WorkflowStats:
+    def get_workflow_stats(self, owner_id: str, start_date: str, end_date: str) -> WorkflowStats:
         """
         Get the stats about the workflows from DynamoDB and OpenSearch.
-        
+
         Parameters:
             owner_id(str): Owner ID for the workflow stats.
             start_date(str): Start date for the stats.
             end_date(str): End date for the stats.
-        
+
         Returns:
             workflow_stats(WorkflowStats): The workflow stats.
         """
         log.info('Getting workflow stats. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
         active_workflows_count = self.workflow_repository.count_active_workflows(owner_id=owner_id)
-        workflow_failed_executions_count = self.opensearch_service.get_failed_events_executions_count(owner_id=owner_id, start_date=start_date, end_date=end_date)
-        workflow_fluent_executions_count = self.opensearch_service.get_workflow_executions_count(owner_id=owner_id, start_date=start_date, end_date=end_date)
+
+        executions_metrics = self.opensearch_service.get_executions_metrics(owner_id, start_date, end_date)
 
         return WorkflowStats(
             active_workflows_count=active_workflows_count,
-            failed_executions_count=workflow_failed_executions_count,
-            fluent_executions_count=workflow_fluent_executions_count,
-            system_status=SystemStatus.ONLINE.value,
+            failed_executions_count=executions_metrics.get('failed_executions'),
+            total_executions_count=executions_metrics.get('total_executions'),
+            system_status=SystemStatus.ONLINE.value
         )
 
 
-    def get_workflow_execution_events(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowExecutionMetric]:
+    def get_workflow_execution_metrics_by_date(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowExecutionMetric]:
         """
-        Get workflow execution events from OpenSearch.
+        Get workflow execution events from OpenSearch by date.
 
         Args:
             owner_id (str): Owner ID for the events.
@@ -58,7 +58,7 @@ class DashboardService(metaclass=Singleton):
             workflow_execution_events(list[WorkflowExecutionMetric]): Workflow execution events.
         """
         log.info('Getting workflow execution events. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
-        return self.opensearch_service.get_execution_and_error_counts(owner_id, start_date, end_date)
+        return self.opensearch_service.get_execution_metrics_by_date(owner_id, start_date, end_date)
 
 
     def get_workflow_integrations(self, owner_id: str, start_date:str, end_date:str) -> list[WorkflowIntegration]:
