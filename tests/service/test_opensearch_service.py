@@ -181,3 +181,18 @@ class TestOpensearchService(unittest.TestCase):
                 start_date="2024-06-17T06:15:20.678Z",
                 end_date="2024-06-19T06:15:20.678Z",
             )
+    
+    
+    @patch("service.opensearch_service.OpenSearch.search")
+    def test_execute_query_invalid_date_exception(self, mock_search):
+        """
+        Test if the function raises a ServiceException when the date is invalid.
+        """
+        mock_search.side_effect = ServiceException(400, ServiceStatus.FAILURE, "error")
+        with self.assertRaises(ServiceException):
+            self.service._execute_query(
+                query={},
+                owner_id="owner_id",
+                start_date="invalid_start_date",
+                end_date="invalid_end_date",
+            )
