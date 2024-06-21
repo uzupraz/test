@@ -158,6 +158,6 @@ class OpensearchService(metaclass=Singleton):
         try:
             response = self.client.search(body=query, index=self.index)
             return response
-        except exceptions:
+        except Exception:
             log.exception('Failed to search in opensearch. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Could not search data')

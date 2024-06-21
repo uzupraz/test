@@ -32,7 +32,6 @@ api.init_app(app)
 
 if __name__ == '__main__':
     with app.app_context():  # Set up the application context
-
         @app.before_request
         def before_request():
             RequestContext.store_authenticated_user(
@@ -41,12 +40,11 @@ if __name__ == '__main__':
                         "authorizer": {
                             "claims": {
                                 "sub": "this_is_owner_id",
-                                "custom:organizationId": "this_is_organization_id",
+                                "custom:organizationId": "test_organization_id"
                             }
                         }
                     }
                 }
             )
-
         app.run(debug=True)
         RequestContext.update_request_id()
