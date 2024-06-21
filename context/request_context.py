@@ -48,6 +48,7 @@ class RequestContext:
         Args:
             event: The event object containing the token validation info.
         """
+        print("event: " + event)
         claims = event['requestContext']['authorizer']['claims']
         user = User.from_authorizer_claims(claims)
         g.user = asdict(user)
