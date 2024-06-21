@@ -26,6 +26,7 @@ def lambda_handler(event, context):
     with app.app_context():  # Set up the application context
         # Updates request ID with aws lambda request id in the request context
         RequestContext.update_request_id(context.aws_request_id)
+        print(event)
         # Save the user to flask global request (g)
         @app.before_request
         def before_request():
