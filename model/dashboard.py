@@ -16,8 +16,8 @@ class WorkflowStats:
 
 @dataclass
 class WorkflowIntegration:
-    failure_count: int
-    failure_ratio: float
+    failed_executions_count: int
+    failed_executions_ratio: float
     last_event_date: str
     workflow: WorkflowItem
 

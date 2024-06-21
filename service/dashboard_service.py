@@ -76,21 +76,7 @@ class DashboardService(metaclass=Singleton):
         Raises:
             ServiceException: If there is an error while getting the workflow integrations.
         """
-        try:
-            log.info('Getting workflow integrations. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
-            #! REPLACE THIS WITH REAL DB QUERY
-            workflow_integrations = [
-                WorkflowIntegration(
-                    failure_count=2,
-                    failure_ratio=0.2,
-                    last_event_date="2021-07-01",
-                    workflow=WorkflowItem(id="1", name="Workflow 1"),
-                )
-            ]
-            return workflow_integrations
-        except ClientError as e:
-            log.exception('Failed to get workflow integrations.')
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t get workflow integrations')
+        return self.opensearch_service.get_workflow_integrations(owner_id, start_date, end_date)
 
 
     def get_workflow_failed_events(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowFailedEvent]:

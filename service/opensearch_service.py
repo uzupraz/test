@@ -6,7 +6,7 @@ from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
 from configuration import OpensearchConfig
-from model import WorkflowExecutionMetric
+from model import WorkflowExecutionMetric, WorkflowIntegration, WorkflowItem
 
 
 log = common_ctrl.log
@@ -124,6 +124,84 @@ class OpensearchService(metaclass=Singleton):
             for bucket in response["aggregations"]["by_date"]["buckets"]
         ]
         return metrics
+
+
+    def get_workflow_integrations(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowIntegration]:
+        """
+        Fetches the active workflow integrations from OpenSearch.
+
+        Args:
+            owner_id (str): The owner ID.
+            start_date (str): The start date in ISO format.
+            end_date (str): The end date in ISO format.
+        
+        Returns:
+            list[WorkflowIntegration]: A list of active workflow integrations.
+        """
+        query = self._build_base_query(owner_id, start_date=start_date, end_date=end_date)
+        aggs = {
+            "integrations": {
+                "terms": {"field": "workflow_id"},
+                "aggs": {
+                    "workflow_name": {
+                        "terms": {"field": "workflow_name"},
+                    },
+                    "last_event_date": {
+                        "max": {"field": "event_timestamp"},
+                    },
+                    "failed_executions": {
+                        "filter": {
+                            "term": {"status": "ERROR"},
+                        },
+                        "aggs": {
+                            "unique_executions": {
+                                "cardinality": {
+                                    "field": "execution_id",
+                                }
+                            }
+                        },
+                    },
+                    "total_executions": {
+                        "cardinality": {"field": "execution_id"},
+                    },
+                },
+            }
+        }
+        query["aggs"] = aggs
+        response = self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
+        workflow_integrations = [
+            self._map_bucket_to_workflow_integration(bucket)
+            for bucket in response["aggregations"]["integrations"]["buckets"]
+        ]
+        return workflow_integrations
+
+
+    def _map_bucket_to_workflow_integration(self, bucket: dict) -> WorkflowIntegration:
+        """
+        Maps the bucket returned by querying for workflow_integrations to a WorkflowIntegration object.
+        """
+        name = bucket["workflow_name"]["buckets"][0]["key"]
+        id = bucket["key"]
+        last_event_date = bucket["last_event_date"]["value"]
+        failed_executions_count = bucket["failed_executions"]["unique_executions"][
+            "value"
+        ]
+        total_executions_count = bucket["total_executions"]["value"]
+        failed_executions_ratio = (
+            ((failed_executions_count / total_executions_count) * 100)
+            if total_executions_count > 0
+            else 0
+        )
+        
+        return WorkflowIntegration(
+            workflow=WorkflowItem(
+                id=id,
+                name=name,
+            ),
+            last_event_date=last_event_date,
+            failed_executions_count=failed_executions_count,
+            failed_executions_ratio=failed_executions_ratio,
+        )
 
 
     def _build_base_query(self, owner_id:str, start_date:str=None, end_date:str=None, is_external:bool=False, from_:int=0, size:int=0) -> dict:

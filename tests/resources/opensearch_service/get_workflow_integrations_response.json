@@ -1,0 +1,299 @@
+{
+    "took": 182,
+    "timed_out": false,
+    "_shards": {
+        "total": 48,
+        "successful": 48,
+        "skipped": 0,
+        "failed": 0
+    },
+    "hits": {
+        "total": {
+            "value": 238,
+            "relation": "eq"
+        },
+        "max_score": 0,
+        "hits": [
+            {
+                "_index": "interconnecthub_event_history_2024-05-22-reindexed",
+                "_id": "Zmtsn48BNzzbLltXciTj",
+                "_score": 0,
+                "_source": {
+                    "event_source_id": "es:api_gw",
+                    "workflow_id": "KZlnumlwuVqnMoNGC9Rrj",
+                    "workflow_name": "Workflow to convert JSON into WA ITC.",
+                    "owner_id": "7QKd6EOPQL77ukqWAcb19",
+                    "is_external": false,
+                    "machine_id": null,
+                    "event_timestamp": 1716366603,
+                    "execution_arn": "arn:aws:states:eu-central-1:451445658243:express:Taskin-JSON-ITC-WA:b6dd9222-9eab-4b4b-81e6-dba5f20ff1bc:d0185e2f-6e45-467c-9358-2223c802bbb8",
+                    "expiration_date": 1724142603,
+                    "content": {},
+                    "execution_id": "UE8_2P59SpGfkOlw0pNAg",
+                    "billing_info": {},
+                    "event_id": "3ftYtAi9aZbAnDTAulQZX",
+                    "event_name": "es:workflow:7QKd6EOPQL77ukqWAcb19:KZlnumlwuVqnMoNGC9Rrj",
+                    "error_code": null,
+                    "status": "FORWARDED_TO_WORKFLOWS"
+                }
+            },
+            {
+                "_index": "interconnecthub_event_history_2024-05-22-reindexed",
+                "_id": "aGtxn48BNzzbLltXqSRq",
+                "_score": 0,
+                "_source": {
+                    "event_source_id": "es:api_gw",
+                    "workflow_id": "KZlnumlwuVqnMoNGC9Rrj",
+                    "workflow_name": "Workflow to convert JSON into WA ITC.",
+                    "owner_id": "7QKd6EOPQL77ukqWAcb19",
+                    "is_external": false,
+                    "machine_id": null,
+                    "event_timestamp": 1716366603,
+                    "execution_arn": "arn:aws:states:eu-central-1:451445658243:express:Taskin-JSON-ITC-WA:b6dd9222-9eab-4b4b-81e6-dba5f20ff1bc:d0185e2f-6e45-467c-9358-2223c802bbb8",
+                    "expiration_date": 1724142603,
+                    "content": {},
+                    "execution_id": "UE8_2P59SpGfkOlw0pNAg",
+                    "billing_info": {
+                        "processing_duration_in_minute": 1,
+                        "transaction_count": 1
+                    },
+                    "event_id": "3ftYtAi9aZbAnDTAulQZX",
+                    "event_name": "es:workflow:7QKd6EOPQL77ukqWAcb19:KZlnumlwuVqnMoNGC9Rrj",
+                    "error_code": null,
+                    "status": "PROCESSED"
+                }
+            },
+            {
+                "_index": "interconnecthub_event_history_2024-05-22-reindexed",
+                "_id": "SmvVno8BNzzbLltXYCSt",
+                "_score": 0,
+                "_source": {
+                    "event_source_id": "es:api_gw",
+                    "workflow_id": "VeDYTvy56weuVExSaPIqO",
+                    "workflow_name": "Workflow to convert JSON into WE ITC.",
+                    "owner_id": "7QKd6EOPQL77ukqWAcb19",
+                    "is_external": false,
+                    "machine_id": null,
+                    "event_timestamp": 1716356673,
+                    "execution_arn": "arn:aws:states:eu-central-1:451445658243:express:Taskin-JSON-ITC-WE:20e14ec1-505f-4dae-8484-a9c681ad8360:f0ebee6c-9845-422c-a0ff-1b314e642cfe",
+                    "expiration_date": 1724132673,
+                    "content": {},
+                    "execution_id": "WVihRd9jEkVeiwOLinbSj",
+                    "billing_info": {},
+                    "event_id": "UrqAhOGG0wiCNXZi-7gwu",
+                    "event_name": "es:workflow:7QKd6EOPQL77ukqWAcb19:VeDYTvy56weuVExSaPIqO",
+                    "error_code": null,
+                    "status": "FORWARDED_TO_WORKFLOWS"
+                }
+            },
+            {
+                "_index": "interconnecthub_event_history_2024-05-22-reindexed",
+                "_id": "TGvano8BNzzbLltXIiQn",
+                "_score": 0,
+                "_source": {
+                    "event_source_id": "es:api_gw",
+                    "workflow_id": "VeDYTvy56weuVExSaPIqO",
+                    "workflow_name": "Workflow to convert JSON into WE ITC.",
+                    "owner_id": "7QKd6EOPQL77ukqWAcb19",
+                    "is_external": false,
+                    "machine_id": null,
+                    "event_timestamp": 1716356673,
+                    "execution_arn": "arn:aws:states:eu-central-1:451445658243:express:Taskin-JSON-ITC-WE:20e14ec1-505f-4dae-8484-a9c681ad8360:f0ebee6c-9845-422c-a0ff-1b314e642cfe",
+                    "expiration_date": 1724132673,
+                    "content": {},
+                    "execution_id": "WVihRd9jEkVeiwOLinbSj",
+                    "billing_info": {
+                        "processing_duration_in_minute": 1,
+                        "transaction_count": 1
+                    },
+                    "event_id": "UrqAhOGG0wiCNXZi-7gwu",
+                    "event_name": "es:workflow:7QKd6EOPQL77ukqWAcb19:VeDYTvy56weuVExSaPIqO",
+                    "error_code": null,
+                    "status": "PROCESSED"
+                }
+            },
+            {
+                "_index": "interconnecthub_event_history_2024-05-22-reindexed",
+                "_id": "fGvon48BNzzbLltXFyTr",
+                "_score": 0,
+                "_source": {
+                    "event_source_id": "es:api_gw",
+                    "workflow_id": "VeDYTvy56weuVExSaPIqO",
+                    "workflow_name": "Workflow to convert JSON into WE ITC.",
+                    "owner_id": "7QKd6EOPQL77ukqWAcb19",
+                    "is_external": false,
+                    "machine_id": null,
+                    "event_timestamp": 1716374673,
+                    "execution_arn": "arn:aws:states:eu-central-1:451445658243:express:Taskin-JSON-ITC-WE:0b87cf65-95e2-464c-ae22-22dabde5dd58:6baa428d-9748-4a26-b774-260d3cf04bf3",
+                    "expiration_date": 1724150673,
+                    "content": {},
+                    "execution_id": "t8g2jU0-WIp_8bbNbQV0Z",
+                    "billing_info": {},
+                    "event_id": "Z7q-KilmHB9XnMC6kwr57",
+                    "event_name": "es:workflow:7QKd6EOPQL77ukqWAcb19:VeDYTvy56weuVExSaPIqO",
+                    "error_code": null,
+                    "status": "FORWARDED_TO_WORKFLOWS"
+                }
+            },
+            {
+                "_index": "interconnecthub_event_history_2024-05-22-reindexed",
+                "_id": "gWvsn48BNzzbLltXtyRt",
+                "_score": 0,
+                "_source": {
+                    "event_source_id": "es:api_gw",
+                    "workflow_id": "VeDYTvy56weuVExSaPIqO",
+                    "workflow_name": "Workflow to convert JSON into WE ITC.",
+                    "owner_id": "7QKd6EOPQL77ukqWAcb19",
+                    "is_external": false,
+                    "machine_id": null,
+                    "event_timestamp": 1716374673,
+                    "execution_arn": "arn:aws:states:eu-central-1:451445658243:express:Taskin-JSON-ITC-WE:0b87cf65-95e2-464c-ae22-22dabde5dd58:6baa428d-9748-4a26-b774-260d3cf04bf3",
+                    "expiration_date": 1724150673,
+                    "content": {},
+                    "execution_id": "t8g2jU0-WIp_8bbNbQV0Z",
+                    "billing_info": {
+                        "processing_duration_in_minute": 1,
+                        "transaction_count": 1
+                    },
+                    "event_id": "Z7q-KilmHB9XnMC6kwr57",
+                    "event_name": "es:workflow:7QKd6EOPQL77ukqWAcb19:VeDYTvy56weuVExSaPIqO",
+                    "error_code": null,
+                    "status": "PROCESSED"
+                }
+            },
+            {
+                "_index": "interconnecthub_event_history_2024-05-22-reindexed",
+                "_id": "imv1n48BNzzbLltXySQB",
+                "_score": 0,
+                "_source": {
+                    "event_source_id": "es:api_gw",
+                    "workflow_id": "KZlnumlwuVqnMoNGC9Rrj",
+                    "workflow_name": "Workflow to convert JSON into WA ITC.",
+                    "owner_id": "7QKd6EOPQL77ukqWAcb19",
+                    "is_external": false,
+                    "machine_id": null,
+                    "event_timestamp": 1716375603,
+                    "execution_arn": "arn:aws:states:eu-central-1:451445658243:express:Taskin-JSON-ITC-WA:a88f8e23-6650-456e-bca3-c0b5ea0f7e24:ab78a09b-2f5e-498a-a257-e760b811b226",
+                    "expiration_date": 1724151603,
+                    "content": {},
+                    "execution_id": "DY_T2Gs6yR-ai8Cax6Xyh",
+                    "billing_info": {},
+                    "event_id": "nu8hRdmh6RkNv1TY_vB5C",
+                    "event_name": "es:workflow:7QKd6EOPQL77ukqWAcb19:KZlnumlwuVqnMoNGC9Rrj",
+                    "error_code": null,
+                    "status": "FORWARDED_TO_WORKFLOWS"
+                }
+            },
+            {
+                "_index": "interconnecthub_event_history_2024-05-22-reindexed",
+                "_id": "jGv7n48BNzzbLltXAiR1",
+                "_score": 0,
+                "_source": {
+                    "event_source_id": "es:api_gw",
+                    "workflow_id": "KZlnumlwuVqnMoNGC9Rrj",
+                    "workflow_name": "Workflow to convert JSON into WA ITC.",
+                    "owner_id": "7QKd6EOPQL77ukqWAcb19",
+                    "is_external": false,
+                    "machine_id": null,
+                    "event_timestamp": 1716375603,
+                    "execution_arn": "arn:aws:states:eu-central-1:451445658243:express:Taskin-JSON-ITC-WA:a88f8e23-6650-456e-bca3-c0b5ea0f7e24:ab78a09b-2f5e-498a-a257-e760b811b226",
+                    "expiration_date": 1724151603,
+                    "content": {},
+                    "execution_id": "DY_T2Gs6yR-ai8Cax6Xyh",
+                    "billing_info": {
+                        "processing_duration_in_minute": 1,
+                        "transaction_count": 1
+                    },
+                    "event_id": "nu8hRdmh6RkNv1TY_vB5C",
+                    "event_name": "es:workflow:7QKd6EOPQL77ukqWAcb19:KZlnumlwuVqnMoNGC9Rrj",
+                    "error_code": null,
+                    "status": "PROCESSED"
+                }
+            },
+            {
+                "_index": "interconnecthub_event_history_2024-05-23",
+                "_id": "QYchpY8BcfBMxLUmW46-",
+                "_score": 0,
+                "_source": {
+                    "event_source_id": "es:api_gw",
+                    "workflow_id": "KZlnumlwuVqnMoNGC9Rrj",
+                    "workflow_name": "Workflow to convert JSON into WA ITC.",
+                    "owner_id": "7QKd6EOPQL77ukqWAcb19",
+                    "is_external": false,
+                    "machine_id": null,
+                    "event_timestamp": 1716462003,
+                    "execution_arn": "arn:aws:states:eu-central-1:451445658243:express:Taskin-JSON-ITC-WA:c7cf89bb-ebff-4683-ab51-4688554b1aaf:f8b6111a-d5f9-4f34-b32f-82e0139c4d05",
+                    "expiration_date": 1724238003,
+                    "content": {},
+                    "execution_id": "3nr4bXVjvvoZ5uy98c7ZA",
+                    "billing_info": {
+                        "processing_duration_in_minute": 1,
+                        "transaction_count": 1
+                    },
+                    "event_id": "JOfMNF71ckFyye2wNyAa2",
+                    "event_name": "es:workflow:7QKd6EOPQL77ukqWAcb19:KZlnumlwuVqnMoNGC9Rrj",
+                    "error_code": null,
+                    "status": "PROCESSED"
+                }
+            },
+            {
+                "_index": "interconnecthub_event_history_2024-05-23",
+                "_id": "P4ccpY8BcfBMxLUmIo4r",
+                "_score": 0,
+                "_source": {
+                    "event_source_id": "es:api_gw",
+                    "workflow_id": "KZlnumlwuVqnMoNGC9Rrj",
+                    "workflow_name": "Workflow to convert JSON into WA ITC.",
+                    "owner_id": "7QKd6EOPQL77ukqWAcb19",
+                    "is_external": false,
+                    "machine_id": null,
+                    "event_timestamp": 1716462003,
+                    "execution_arn": "arn:aws:states:eu-central-1:451445658243:express:Taskin-JSON-ITC-WA:c7cf89bb-ebff-4683-ab51-4688554b1aaf:f8b6111a-d5f9-4f34-b32f-82e0139c4d05",
+                    "expiration_date": 1724238003,
+                    "content": {},
+                    "execution_id": "3nr4bXVjvvoZ5uy98c7ZA",
+                    "billing_info": {},
+                    "event_id": "JOfMNF71ckFyye2wNyAa2",
+                    "event_name": "es:workflow:7QKd6EOPQL77ukqWAcb19:KZlnumlwuVqnMoNGC9Rrj",
+                    "error_code": null,
+                    "status": "FORWARDED_TO_WORKFLOWS"
+                }
+            }
+        ]
+    },
+    "aggregations": {
+        "integrations": {
+            "doc_count_error_upper_bound": 0,
+            "sum_other_doc_count": 0,
+            "buckets": [
+                {
+                    "key": "KZlnumlwuVqnMoNGC9Rrj",
+                    "doc_count": 108,
+                    "last_event_date": {
+                        "value": 1718794823000,
+                        "value_as_string": "1718794823"
+                    },
+                    "workflow_name": {
+                        "doc_count_error_upper_bound": 0,
+                        "sum_other_doc_count": 0,
+                        "buckets": [
+                            {
+                                "key": "Workflow to convert JSON into WA ITC.",
+                                "doc_count": 108
+                            }
+                        ]
+                    },
+                    "failed_executions": {
+                        "doc_count": 0,
+                        "unique_executions": {
+                            "value": 0
+                        }
+                    },
+                    "total_executions": {
+                        "value": 54
+                    }
+                }
+            ]
+        }
+    }
+}
