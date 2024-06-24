@@ -256,8 +256,8 @@ class OpensearchService(metaclass=Singleton):
         """
         Maps the bucket returned by querying for workflow_integrations to a WorkflowIntegration object.
         """
-        name = bucket["workflow_name"]["buckets"][0]["key"]
-        id = bucket["key"]
+        workflow_name = bucket["workflow_name"]["buckets"][0]["key"]
+        workflow_id = bucket["key"]
         last_event_date = bucket["last_event_date"]["value"]
         failed_executions_count = bucket["failed_executions"]["unique_executions"][
             "value"
@@ -271,8 +271,8 @@ class OpensearchService(metaclass=Singleton):
 
         return WorkflowIntegration(
             workflow=WorkflowItem(
-                id=id,
-                name=name,
+                id=workflow_id,
+                name=workflow_name,
             ),
             last_event_date=last_event_date,
             failed_executions_count=failed_executions_count,
