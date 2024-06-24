@@ -148,7 +148,7 @@ class WorkflowFailuresResource(Resource):
         return ServerResponse.success(payload=workflow_failures), 200
 
 
-@api.route("/failed-events")
+@api.route("/failed-executions")
 class WorkflowFailedEventsResource(Resource):
 
     def __init__(self, api=None, *args, **kwargs):
@@ -162,8 +162,9 @@ class WorkflowFailedEventsResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
-        user = g.get("user")
-        workflow_failed_events = dashboard_service.get_workflow_failed_events(user.organization_id, start_date, end_date)
+        user_data = g.get("user")
+        user = User(**user_data)
+        workflow_failed_events = dashboard_service.get_workflow_failed_executions(user.organization_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflow_failed_events), 200
 

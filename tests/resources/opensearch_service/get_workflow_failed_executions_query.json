@@ -1,0 +1,67 @@
+{
+    "from": 0,
+    "size": 0,
+    "query": {
+        "bool": {
+            "filter": [
+                {
+                    "match_phrase": {
+                        "status": "ERROR"
+                    }
+                },
+                {
+                    "match_phrase": {
+                        "owner_id": "owner_id"
+                    }
+                },
+                {
+                    "match_phrase": {
+                        "is_external": false
+                    }
+                },
+                {
+                    "range": {
+                        "event_timestamp": {
+                            "gte": "2024-01-16T08:19:24.908Z",
+                            "lte": "2024-06-20T08:19:24.908Z",
+                            "format": "strict_date_optional_time"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "aggs": {
+        "by_date": {
+            "date_histogram": {
+                "field": "event_timestamp",
+                "interval": "day",
+                "format": "yyyy-MM-dd"
+            },
+            "aggs": {
+                "failed_executions": {
+                    "terms": {
+                        "field": "event_id"
+                    },
+                    "aggs": {
+                        "workflow_id": {
+                            "terms": {
+                                "field": "workflow_id"
+                            }
+                        },
+                        "workflow_name": {
+                            "terms": {
+                                "field": "workflow_name"
+                            }
+                        },
+                        "error_code": {
+                            "terms": {
+                                "field": "error_code"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

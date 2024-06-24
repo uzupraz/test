@@ -6,7 +6,7 @@ from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
 from configuration import OpensearchConfig
-from model import WorkflowExecutionMetric, WorkflowIntegration, WorkflowItem
+from model import WorkflowExecutionMetric, WorkflowIntegration, WorkflowItem, WorkflowFailedEvent
 
 
 log = common_ctrl.log
@@ -176,6 +176,82 @@ class OpensearchService(metaclass=Singleton):
         return workflow_integrations
 
 
+    def get_workflow_failed_executions(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowFailedEvent]:
+        """
+        Fetches the failed workflow executions from OpenSearch.
+
+        Args:
+            owner_id (str): The owner ID.
+            start_date (str): The start date in ISO format.
+            end_date (str): The end date in ISO format.
+        
+        Returns:
+            list[WorkflowFailedEvent]: A list of failed workflow executions.
+        """
+        query = self._build_base_query(owner_id, start_date=start_date, end_date=end_date)
+        aggs = {
+            "by_date": {
+                "date_histogram": {
+                    "field": "event_timestamp",
+                    "interval": "day",
+                    "format": "yyyy-MM-dd",
+                },
+                "aggs": {
+                    "failed_executions": {
+                        "terms": {"field": "event_id"},
+                        "aggs": {
+                            "workflow_id": {
+                                "terms": {"field": "workflow_id"},
+                            },
+                            "workflow_name": {
+                                "terms": {"field": "workflow_name"},
+                            },
+                            "error_code": {
+                                "terms": {"field": "error_code"},
+                            },
+                        },
+                    }
+                },
+            }
+        }
+
+        query["query"]["bool"]["filter"].insert(0, {"match_phrase": {"status": "ERROR"}})
+        query["aggs"] = aggs
+
+        response = self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
+        return self._map_workflow_failed_executions_response(response)
+
+
+    def _map_workflow_failed_executions_response(self, response: dict) -> list[WorkflowFailedEvent]:
+        """
+        Maps the response returned by querying for workflow_failed_executions to a list of WorkflowFailedEvent objects.
+        """
+        buckets = response["aggregations"]["by_date"]["buckets"]
+        workflow_failed_events: list[WorkflowFailedEvent] = []
+
+        for bucket in buckets:
+            date = bucket["key_as_string"]
+            nested_buckets = bucket["failed_executions"]["buckets"]
+            for nested_bucket in nested_buckets:
+                event_id = nested_bucket["key"]
+                workflow_name = nested_bucket["workflow_name"]["buckets"][0]["key"]
+                workflow_id = nested_bucket["workflow_id"]["buckets"][0]["key"]
+                error_code = nested_bucket["error_code"]["buckets"][0]["key"] if nested_bucket["error_code"]["buckets"] else None
+
+                workflow_failed_event = WorkflowFailedEvent(
+                    date=date,
+                    workflow=WorkflowItem(
+                        id=workflow_id,
+                        name=workflow_name,
+                    ),
+                    error_code=error_code,
+                    event_id=event_id,
+                )
+                workflow_failed_events.append(workflow_failed_event)
+
+        return workflow_failed_events
+
+
     def _map_bucket_to_workflow_integration(self, bucket: dict) -> WorkflowIntegration:
         """
         Maps the bucket returned by querying for workflow_integrations to a WorkflowIntegration object.
@@ -192,7 +268,7 @@ class OpensearchService(metaclass=Singleton):
             if total_executions_count > 0
             else 0
         )
-        
+
         return WorkflowIntegration(
             workflow=WorkflowItem(
                 id=id,

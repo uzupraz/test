@@ -3,7 +3,7 @@ from botocore.exceptions import ClientError
 from controller import common_controller as common_ctrl
 from repository import WorkflowRepository
 from service.opensearch_service import OpensearchService
-from model import WorkflowStats, WorkflowItem, WorkflowExecutionMetric, WorkflowFailedEvent, WorkflowFailure, WorkflowFailureItem, WorkflowIntegration
+from model import WorkflowStats, WorkflowExecutionMetric, WorkflowFailedEvent, WorkflowFailure, WorkflowFailureItem, WorkflowIntegration
 from utils import Singleton
 from exception import ServiceException
 from enums import ServiceStatus, SystemStatus
@@ -79,9 +79,9 @@ class DashboardService(metaclass=Singleton):
         return self.opensearch_service.get_workflow_integrations(owner_id, start_date, end_date)
 
 
-    def get_workflow_failed_events(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowFailedEvent]:
+    def get_workflow_failed_executions(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowFailedEvent]:
         """
-        Get workflow failed events from OpenSearch.
+        Get workflow failed executions from OpenSearch.
 
         Args:
             owner_id (str): Owner ID for the events.
@@ -94,24 +94,7 @@ class DashboardService(metaclass=Singleton):
         Raises:
             ServiceException: If there is an error while getting the workflow failed events.
         """
-        try:
-            log.info('Getting workflow failed events. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
-            #! REPLACE THIS WITH REAL DB QUERY
-            workflow_failed_events = [
-                WorkflowFailedEvent(
-                    date="2021-07-01",
-                    error_code="ERR-001",
-                    event_id="1",
-                    workflow=WorkflowItem(
-                        id="1",
-                        name="Workflow 1",
-                    ),
-                )
-            ]
-            return workflow_failed_events
-        except ClientError as e:
-            log.exception('Failed to get workflow failed events.')
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t get workflow failed events')
+        return self.opensearch_service.get_workflow_failed_executions(owner_id, start_date, end_date)
 
 
     def get_workflow_failures(self, owner_id: str, start_date:str, end_date:str) -> list[WorkflowFailure]:

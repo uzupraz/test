@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 from enums.status import ServiceStatus
 from exception.service_exception import ServiceException
-from model import WorkflowExecutionMetric, WorkflowIntegration, WorkflowItem
+from model import WorkflowExecutionMetric, WorkflowIntegration, WorkflowItem, WorkflowFailedEvent
 from service.opensearch_service import OpensearchService
 from tests.test_utils import TestUtils
 
@@ -118,6 +118,49 @@ class TestOpensearchService(unittest.TestCase):
                 failed_executions_ratio=0,
                 last_event_date=1718794823000
             )
+        ]
+
+        self.assertEqual(response, actual_result)
+        mock_search.assert_called_with(body=mock_query, index=self.service.index)
+
+
+    @patch("service.opensearch_service.OpenSearch.search")
+    def test_get_workflow_failed_executions(self, mock_search):
+        """
+        Tests whether this function correctly returns the failed executions of a workflow by date.
+        """
+        owner_id = "owner_id"
+        start_date = "2024-01-16T08:19:24.908Z"
+        end_date = "2024-06-20T08:19:24.908Z"
+
+        mock_response_path = self.test_resource_path + "get_workflow_failed_executions_response.json"
+        mock_query_path = self.test_resource_path + "get_workflow_failed_executions_query.json"
+
+        mock_response = TestUtils.get_file_content(mock_response_path)
+        mock_query = TestUtils.get_file_content(mock_query_path)
+
+        mock_search.return_value = mock_response
+
+        response = self.service.get_workflow_failed_executions(owner_id=owner_id, start_date=start_date, end_date=end_date)
+        actual_result = [
+            WorkflowFailedEvent(
+                date="2024-05-27",
+                error_code=None,
+                workflow=WorkflowItem(
+                    name="Workflow to convert JSON into WE ITC.",
+                    id="VeDYTvy56weuVExSaPIqO"
+                ),
+                event_id="Cg4xnePTpLeqXTDONo0Ke"
+            ),
+            WorkflowFailedEvent(
+                date="2024-05-27",
+                error_code=None,
+                workflow=WorkflowItem(
+                    name="Workflow to convert JSON into WE ITC.",
+                    id="VeDYTvy56weuVExSaPIqO"
+                ),
+                event_id="AIhZRwq0AR9O3VVJmWAjj"
+            ),
         ]
 
         self.assertEqual(response, actual_result)
