@@ -6,7 +6,6 @@ from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
 from configuration import OpensearchConfig
-from model import WorkflowExecutionMetric, WorkflowIntegration, WorkflowItem, WorkflowFailedEvent
 
 
 log = common_ctrl.log
@@ -68,7 +67,7 @@ class OpensearchService(metaclass=Singleton):
         }
 
 
-    def get_execution_metrics_by_date(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowExecutionMetric]:
+    def get_execution_metrics_by_date(self, owner_id: str, start_date: str, end_date: str) -> dict:
         """
         Fetches the counts for fluent executions and failed events, aggregated by date.
 
@@ -78,7 +77,7 @@ class OpensearchService(metaclass=Singleton):
             end_date (str): The end date in ISO format.
 
         Returns:
-            list[WorkflowExecutionMetric]: A list of WorkflowExecutionMetric containing date, fluent executions count, and failed events count.
+            response[dict]: The response from the OpenSearch query. 
         """
         query = self._build_base_query(owner_id, start_date=start_date, end_date=end_date)
         aggs = {
@@ -113,20 +112,10 @@ class OpensearchService(metaclass=Singleton):
         }
         query["aggs"] = aggs
 
-        response = self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
-
-        metrics = [
-            WorkflowExecutionMetric(
-                date=bucket["key_as_string"],
-                failed_executions=bucket["failed_executions"]["failed_count"]["value"],
-                total_executions=bucket["total_executions"]["value"],
-            )
-            for bucket in response["aggregations"]["by_date"]["buckets"]
-        ]
-        return metrics
+        return self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
 
 
-    def get_workflow_integrations(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowIntegration]:
+    def get_workflow_integrations(self, owner_id: str, start_date: str, end_date: str) -> dict:
         """
         Fetches the active workflow integrations from OpenSearch.
 
@@ -136,7 +125,7 @@ class OpensearchService(metaclass=Singleton):
             end_date (str): The end date in ISO format.
         
         Returns:
-            list[WorkflowIntegration]: A list of active workflow integrations.
+            response[dict]: The response from the OpenSearch query.
         """
         query = self._build_base_query(owner_id, start_date=start_date, end_date=end_date)
         aggs = {
@@ -168,15 +157,10 @@ class OpensearchService(metaclass=Singleton):
             }
         }
         query["aggs"] = aggs
-        response = self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
-        workflow_integrations = [
-            self._map_bucket_to_workflow_integration(bucket)
-            for bucket in response["aggregations"]["integrations"]["buckets"]
-        ]
-        return workflow_integrations
+        return self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
+        
 
-
-    def get_workflow_failed_executions(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowFailedEvent]:
+    def get_workflow_failed_executions(self, owner_id: str, start_date: str, end_date: str) -> dict:
         """
         Fetches the failed workflow executions from OpenSearch.
 
@@ -186,7 +170,7 @@ class OpensearchService(metaclass=Singleton):
             end_date (str): The end date in ISO format.
         
         Returns:
-            list[WorkflowFailedEvent]: A list of failed workflow executions.
+            response[dict]: The response from the OpenSearch query.
         """
         query = self._build_base_query(owner_id, start_date=start_date, end_date=end_date)
         aggs = {
@@ -218,67 +202,8 @@ class OpensearchService(metaclass=Singleton):
         query["query"]["bool"]["filter"].insert(0, {"match_phrase": {"status": "ERROR"}})
         query["aggs"] = aggs
 
-        response = self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
-        return self._map_workflow_failed_executions_response(response)
-
-
-    def _map_workflow_failed_executions_response(self, response: dict) -> list[WorkflowFailedEvent]:
-        """
-        Maps the response returned by querying for workflow_failed_executions to a list of WorkflowFailedEvent objects.
-        """
-        buckets = response["aggregations"]["by_date"]["buckets"]
-        workflow_failed_events: list[WorkflowFailedEvent] = []
-
-        for bucket in buckets:
-            date = bucket["key_as_string"]
-            nested_buckets = bucket["failed_executions"]["buckets"]
-            for nested_bucket in nested_buckets:
-                event_id = nested_bucket["key"]
-                workflow_name = nested_bucket["workflow_name"]["buckets"][0]["key"]
-                workflow_id = nested_bucket["workflow_id"]["buckets"][0]["key"]
-                error_code = nested_bucket["error_code"]["buckets"][0]["key"] if nested_bucket["error_code"]["buckets"] else None
-
-                workflow_failed_event = WorkflowFailedEvent(
-                    date=date,
-                    workflow=WorkflowItem(
-                        id=workflow_id,
-                        name=workflow_name,
-                    ),
-                    error_code=error_code,
-                    event_id=event_id,
-                )
-                workflow_failed_events.append(workflow_failed_event)
-
-        return workflow_failed_events
-
-
-    def _map_bucket_to_workflow_integration(self, bucket: dict) -> WorkflowIntegration:
-        """
-        Maps the bucket returned by querying for workflow_integrations to a WorkflowIntegration object.
-        """
-        workflow_name = bucket["workflow_name"]["buckets"][0]["key"]
-        workflow_id = bucket["key"]
-        last_event_date = bucket["last_event_date"]["value"]
-        failed_executions_count = bucket["failed_executions"]["unique_executions"][
-            "value"
-        ]
-        total_executions_count = bucket["total_executions"]["value"]
-        failed_executions_ratio = (
-            ((failed_executions_count / total_executions_count) * 100)
-            if total_executions_count > 0
-            else 0
-        )
-
-        return WorkflowIntegration(
-            workflow=WorkflowItem(
-                id=workflow_id,
-                name=workflow_name,
-            ),
-            last_event_date=last_event_date,
-            failed_executions_count=failed_executions_count,
-            failed_executions_ratio=failed_executions_ratio,
-        )
-
+        return self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
+    
 
     def _build_base_query(self, owner_id:str, start_date:str=None, end_date:str=None, is_external:bool=False, from_:int=0, size:int=0) -> dict:
         base_query = {
