@@ -1,0 +1,66 @@
+{
+    "took": 30,
+    "timed_out": false,
+    "_shards": {
+        "total": 37,
+        "successful": 37,
+        "skipped": 0,
+        "failed": 0
+    },
+    "hits": {
+        "total": {
+            "value": 12,
+            "relation": "eq"
+        },
+        "max_score": null,
+        "hits": []
+    },
+    "aggregations": {
+        "by_date": {
+            "buckets": [
+                {
+                    "key_as_string": "2024-06-23",
+                    "key": 1719100800000,
+                    "doc_count": 4,
+                    "failed_executions": {
+                        "doc_count": 0,
+                        "failed_count": {
+                            "value": 0
+                        }
+                    },
+                    "total_executions": {
+                        "value": 2
+                    }
+                },
+                {
+                    "key_as_string": "2024-06-24",
+                    "key": 1719187200000,
+                    "doc_count": 4,
+                    "failed_executions": {
+                        "doc_count": 0,
+                        "failed_count": {
+                            "value": 0
+                        }
+                    },
+                    "total_executions": {
+                        "value": 2
+                    }
+                },
+                {
+                    "key_as_string": "2024-06-25",
+                    "key": 1719273600000,
+                    "doc_count": 4,
+                    "failed_executions": {
+                        "doc_count": 0,
+                        "failed_count": {
+                            "value": 0
+                        }
+                    },
+                    "total_executions": {
+                        "value": 2
+                    }
+                }
+            ]
+        }
+    }
+}
