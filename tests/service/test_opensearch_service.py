@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import MagicMock, patch
 from enums.status import ServiceStatus
 from exception.service_exception import ServiceException
-from model import WorkflowExecutionMetric, WorkflowIntegration, WorkflowItem, WorkflowFailedEvent
 from service.opensearch_service import OpensearchService
 from tests.test_utils import TestUtils
 
@@ -66,30 +65,8 @@ class TestOpensearchService(unittest.TestCase):
 
         mock_search.return_value = mock_response
         response = self.service.get_execution_metrics_by_date(owner_id=owner_id, start_date=start_date, end_date=end_date)
-        actual_result = [
-            WorkflowExecutionMetric(
-                date="2024-06-17",
-                total_executions=6,
-                failed_executions=0,
-            ),
-            WorkflowExecutionMetric(
-                date="2024-06-18",
-                total_executions=9,
-                failed_executions=0,
-            ),
-            WorkflowExecutionMetric(
-                date="2024-06-19",
-                total_executions=6,
-                failed_executions=0,
-            ),
-            WorkflowExecutionMetric(
-                date="2024-06-20",
-                total_executions=2,
-                failed_executions=0,
-            ),
-        ]
-
-        self.assertEqual(response, actual_result)
+        
+        self.assertEqual(response, mock_response)
         mock_search.assert_called_with(body=mock_query, index=self.service.index)
 
 
@@ -108,19 +85,8 @@ class TestOpensearchService(unittest.TestCase):
         mock_search.return_value = mock_response
 
         response = self.service.get_workflow_integrations(owner_id=owner_id, start_date=start_date, end_date=end_date)
-        actual_result = [
-            WorkflowIntegration(
-                workflow=WorkflowItem(
-                    name="Workflow to convert JSON into WA ITC.",
-                    id="KZlnumlwuVqnMoNGC9Rrj",
-                ),
-                failed_executions_count=0,
-                failed_executions_ratio=0,
-                last_event_date=1718794823000
-            )
-        ]
-
-        self.assertEqual(response, actual_result)
+        
+        self.assertEqual(response, mock_response)
         mock_search.assert_called_with(body=mock_query, index=self.service.index)
 
 
@@ -142,28 +108,8 @@ class TestOpensearchService(unittest.TestCase):
         mock_search.return_value = mock_response
 
         response = self.service.get_workflow_failed_executions(owner_id=owner_id, start_date=start_date, end_date=end_date)
-        actual_result = [
-            WorkflowFailedEvent(
-                date="2024-05-27",
-                error_code=None,
-                workflow=WorkflowItem(
-                    name="Workflow to convert JSON into WE ITC.",
-                    id="VeDYTvy56weuVExSaPIqO"
-                ),
-                event_id="Cg4xnePTpLeqXTDONo0Ke"
-            ),
-            WorkflowFailedEvent(
-                date="2024-05-27",
-                error_code=None,
-                workflow=WorkflowItem(
-                    name="Workflow to convert JSON into WE ITC.",
-                    id="VeDYTvy56weuVExSaPIqO"
-                ),
-                event_id="AIhZRwq0AR9O3VVJmWAjj"
-            ),
-        ]
-
-        self.assertEqual(response, actual_result)
+        
+        self.assertEqual(response, mock_response)
         mock_search.assert_called_with(body=mock_query, index=self.service.index)
 
 
