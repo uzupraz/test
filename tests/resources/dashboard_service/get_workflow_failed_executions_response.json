@@ -27,7 +27,7 @@
                         "sum_other_doc_count": 0,
                         "buckets": [
                             {
-                                "key": "Cg4xnePTpLeqXTDONo0Ke",
+                                "key": "1WivE8vEsxggA_JQt0TyR",
                                 "doc_count": 4,
                                 "workflow_id": {
                                     "doc_count_error_upper_bound": 0,
@@ -39,6 +39,7 @@
                                         }
                                     ]
                                 },
+                                
                                 "workflow_name": {
                                     "doc_count_error_upper_bound": 0,
                                     "sum_other_doc_count": 0,
@@ -53,10 +54,20 @@
                                     "doc_count_error_upper_bound": 0,
                                     "sum_other_doc_count": 0,
                                     "buckets": []
+                                },
+                                "event_id": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": [
+                                        {
+                                            "key": "Cg4xnePTpLeqXTDONo0Ke",
+                                            "doc_count": 4
+                                        }
+                                    ]
                                 }
                             },
                             {
-                                "key": "AIhZRwq0AR9O3VVJmWAjj",
+                                "key": "9reWJ1QH8_6_wmtIStH8N",
                                 "doc_count": 1,
                                 "workflow_id": {
                                     "doc_count_error_upper_bound": 0,
@@ -82,6 +93,16 @@
                                     "doc_count_error_upper_bound": 0,
                                     "sum_other_doc_count": 0,
                                     "buckets": []
+                                },
+                                "event_id": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": [
+                                        {
+                                            "key": "AIhZRwq0AR9O3VVJmWAjj",
+                                            "doc_count": 4
+                                        }
+                                    ]
                                 }
                             }
                         ]
