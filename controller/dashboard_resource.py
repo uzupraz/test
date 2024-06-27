@@ -29,8 +29,8 @@ three_months_ago = current_date.replace(month=current_date.month - 3)
 
 
 parser = reqparse.RequestParser()
-parser.add_argument("start_date", help="Start date for the stats. e.g. YYYY-MM-DD HH:MM:SS.mmmmmm", required=True, default=three_months_ago.isoformat())
-parser.add_argument("end_date", help="End date for the stats. e.g YYYY-MM-DD HH:MM:SS.mmmmmm", required=True, default=current_date.isoformat())
+parser.add_argument("start_date", help="Start date for the stats. e.g. YYYY-MM-DD HH:MM:SS.mmmmmm", required=False, default=three_months_ago.isoformat())
+parser.add_argument("end_date", help="End date for the stats. e.g YYYY-MM-DD HH:MM:SS.mmmmmm", required=False, default=current_date.isoformat())
 
 
 workflow_stats_response_dto = api.inherit('Get Workflow Stats Response',server_response, {

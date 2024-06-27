@@ -182,8 +182,11 @@ class OpensearchService(metaclass=Singleton):
                 },
                 "aggs": {
                     "failed_executions": {
-                        "terms": {"field": "event_id"},
+                        "terms": {"field": "execution_id"},
                         "aggs": {
+                            "event_id": {
+                                "terms": {"field": "event_id"},
+                            },
                             "workflow_id": {
                                 "terms": {"field": "workflow_id"},
                             },

@@ -189,7 +189,7 @@ class DashboardService(metaclass=Singleton):
             date = bucket["key_as_string"]
             nested_buckets = bucket["failed_executions"]["buckets"]
             for nested_bucket in nested_buckets:
-                event_id = nested_bucket["key"]
+                event_id = nested_bucket["event_id"]["buckets"][0]["key"]
                 workflow_name = nested_bucket["workflow_name"]["buckets"][0]["key"]
                 workflow_id = nested_bucket["workflow_id"]["buckets"][0]["key"]
                 error_code = nested_bucket["error_code"]["buckets"][0]["key"] if nested_bucket["error_code"]["buckets"] else None
