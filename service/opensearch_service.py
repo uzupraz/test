@@ -56,15 +56,7 @@ class OpensearchService(metaclass=Singleton):
         }
         query["aggs"] = aggs
 
-        response = self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
-        # Extract metrics from the response
-        total_executions = response['aggregations']['total_executions']['value']
-        failed_executions = response['aggregations']['failed_executions']['failed_count']['value']
-
-        return {
-            "total_executions": total_executions,
-            "failed_executions": failed_executions
-        }
+        return self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
 
 
     def get_execution_metrics_by_date(self, owner_id: str, start_date: str, end_date: str) -> dict:

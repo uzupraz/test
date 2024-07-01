@@ -34,15 +34,9 @@ class DashboardService(metaclass=Singleton):
         """
         log.info('Getting workflow stats. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
         active_workflows_count = self.workflow_repository.count_active_workflows(owner_id=owner_id)
+        response = self.opensearch_service.get_executions_metrics(owner_id, start_date, end_date)
 
-        executions_metrics = self.opensearch_service.get_executions_metrics(owner_id, start_date, end_date)
-
-        return WorkflowStats(
-            active_workflows_count=active_workflows_count,
-            failed_executions_count=executions_metrics.get('failed_executions'),
-            total_executions_count=executions_metrics.get('total_executions'),
-            system_status=SystemStatus.ONLINE.value
-        )
+        return self._map_workflow_stats(response, active_workflows_count)
 
 
     def get_workflow_execution_metrics_by_date(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowExecutionMetric]:
@@ -60,11 +54,7 @@ class DashboardService(metaclass=Singleton):
         log.info('Getting workflow execution events. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
         response = self.opensearch_service.get_execution_metrics_by_date(owner_id, start_date, end_date)
         metrics = [
-            WorkflowExecutionMetric(
-                date=bucket["key_as_string"],
-                failed_executions=bucket["failed_executions"]["failed_count"]["value"],
-                total_executions=bucket["total_executions"]["value"],
-            )
+            self._map_workflow_execution_metrics_by_date(bucket)
             for bucket in response["aggregations"]["by_date"]["buckets"]
         ]
         return metrics
@@ -85,6 +75,7 @@ class DashboardService(metaclass=Singleton):
         Raises:
             ServiceException: If there is an error while getting the workflow integrations.
         """
+        log.info('Getting workflow integrations. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
         response =  self.opensearch_service.get_workflow_integrations(owner_id, start_date, end_date)
         workflow_integrations = [
             self._map_workflow_integration_bucket(bucket)
@@ -108,6 +99,7 @@ class DashboardService(metaclass=Singleton):
         Raises:
             ServiceException: If there is an error while getting the workflow failed events.
         """
+        log.info('Getting workflow failed executions. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
         response = self.opensearch_service.get_workflow_failed_executions(owner_id, start_date, end_date)
         workflow_failed_executions = self._map_workflow_failed_executions_response(response)
         return workflow_failed_executions
@@ -148,7 +140,33 @@ class DashboardService(metaclass=Singleton):
         except ClientError as e:
             log.exception('Failed to get workflow failures.')
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t get workflow failures')
-        
+
+
+    def _map_workflow_stats(self, response:dict, active_workflows_count:int) -> WorkflowStats:
+        """
+        Maps the response returned by querying for workflow_stats to  WorkflowStats object.
+        """
+        # Extract metrics from the response
+        total_executions = response['aggregations']['total_executions']['value']
+        failed_executions = response['aggregations']['failed_executions']['failed_count']['value']
+        return WorkflowStats(
+            active_workflows_count=active_workflows_count,
+            failed_executions_count=failed_executions,
+            total_executions_count=total_executions,
+            system_status=SystemStatus.ONLINE.value
+        )
+
+
+    def _map_workflow_execution_metrics_by_date(self, bucket:dict) -> WorkflowExecutionMetric:
+        """
+        Maps the bucket returned by querying for workflow_execution_metrics_by_date to a WorkflowExecutionMetric object.
+        """
+        return WorkflowExecutionMetric(
+                date=bucket["key_as_string"],
+                failed_executions=bucket["failed_executions"]["failed_count"]["value"],
+                total_executions=bucket["total_executions"]["value"],
+                )
+
 
     def _map_workflow_integration_bucket(self, bucket: dict) -> WorkflowIntegration:
         """

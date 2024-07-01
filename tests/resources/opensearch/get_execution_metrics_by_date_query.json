@@ -17,8 +17,8 @@
                 {
                     "range": {
                         "event_timestamp": {
-                            "gte": "2024-05-20T08:19:24.908Z",
-                            "lte": "2024-06-20T08:19:24.908Z",
+                            "gte": "2024-06-16T12:27:48.184Z",
+                            "lte": "2024-06-20T12:27:48.184Z",
                             "format": "strict_date_optional_time"
                         }
                     }
@@ -27,38 +27,30 @@
         }
     },
     "aggs": {
-        "integrations": {
-            "terms": {
-                "field": "workflow_id"
+        "by_date": {
+            "date_histogram": {
+                "field": "event_timestamp",
+                "calendar_interval": "day",
+                "format": "yyyy-MM-dd"
             },
             "aggs": {
-                "workflow_name": {
-                    "terms": {
-                        "field": "workflow_name"
-                    }
-                },
-                "last_event_date": {
-                    "max": {
-                        "field": "event_timestamp"
+                "total_executions": {
+                    "cardinality": {
+                        "field": "execution_id"
                     }
                 },
                 "failed_executions": {
                     "filter": {
-                        "term": {
+                        "match_phrase": {
                             "status": "ERROR"
                         }
                     },
                     "aggs": {
-                        "unique_executions": {
+                        "failed_count": {
                             "cardinality": {
                                 "field": "execution_id"
                             }
                         }
-                    }
-                },
-                "total_executions": {
-                    "cardinality": {
-                        "field": "execution_id"
                     }
                 }
             }

@@ -1,0 +1,59 @@
+{
+    "from": 0,
+    "size": 0,
+    "query": {
+        "bool": {
+            "filter": [
+                {
+                    "match_phrase": {
+                        "owner_id": "nonexistent_owner"
+                    }
+                },
+                {
+                    "match_phrase": {
+                        "is_external": false
+                    }
+                },
+                {
+                    "range": {
+                        "event_timestamp": {
+                            "gte": "2024-06-16T12:27:48.184Z",
+                            "lte": "2024-06-20T12:27:48.184Z",
+                            "format": "strict_date_optional_time"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "aggs": {
+        "by_date": {
+            "date_histogram": {
+                "field": "event_timestamp",
+                "calendar_interval": "day",
+                "format": "yyyy-MM-dd"
+            },
+            "aggs": {
+                "total_executions": {
+                    "cardinality": {
+                        "field": "execution_id"
+                    }
+                },
+                "failed_executions": {
+                    "filter": {
+                        "match_phrase": {
+                            "status": "ERROR"
+                        }
+                    },
+                    "aggs": {
+                        "failed_count": {
+                            "cardinality": {
+                                "field": "execution_id"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,38 @@
+{
+    "took": 10,
+    "timed_out": false,
+    "_shards": {
+        "total": 1,
+        "successful": 1,
+        "skipped": 0,
+        "failed": 0
+    },
+    "hits": {
+        "total": {
+            "value": 10,
+            "relation": "eq"
+        },
+        "max_score": null,
+        "hits": []
+    },
+    "aggregations": {
+        "by_date": {
+            "buckets": [
+                {
+                    "key_as_string": "2024-06-17",
+                    "key": 1718582400000,
+                    "doc_count": 10,
+                    "failed_executions": {
+                        "doc_count": 0,
+                        "failed_count": {
+                            "value": 0
+                        }
+                    },
+                    "total_executions": {
+                        "value": 10
+                    }
+                }
+            ]
+        }
+    }
+}

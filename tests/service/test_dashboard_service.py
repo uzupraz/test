@@ -12,7 +12,8 @@ from tests.test_utils import TestUtils
 class TestDashboardService(unittest.TestCase):
     
 
-    test_resource_path = '/tests/resources/dashboard_service/'
+    test_resource_path = '/tests/resources/dashboard/'
+    test_opensearch_resource_path = '/tests/resources/opensearch/'
 
 
     def setUp(self) -> None:
@@ -41,11 +42,10 @@ class TestDashboardService(unittest.TestCase):
         owner_id = "owner_id"
         start_date = "2024-05-20T12:27:48.184Z"
         end_date = "2024-06-20T12:27:48.184Z"
+        mock_response_path = self.test_opensearch_resource_path + "get_executions_metrics_response.json"
 
-        mock_get_executions_metrics.return_value = {
-            "total_executions": 126,
-            "failed_executions": 6
-        }
+        mock_response = TestUtils.get_file_content(mock_response_path)
+        mock_get_executions_metrics.return_value = mock_response
         mock_count_active_workflows.return_value = 10
 
         actual_result = self.dashboard_service.get_workflow_stats(owner_id, start_date, end_date)

@@ -1,9 +1,9 @@
 {
-    "took": 1225,
+    "took": 466,
     "timed_out": false,
     "_shards": {
-        "total": 51,
-        "successful": 51,
+        "total": 37,
+        "successful": 37,
         "skipped": 0,
         "failed": 0
     },
@@ -12,7 +12,7 @@
             "value": 5,
             "relation": "eq"
         },
-        "max_score": 0,
+        "max_score": null,
         "hits": []
     },
     "aggregations": {
@@ -27,19 +27,8 @@
                         "sum_other_doc_count": 0,
                         "buckets": [
                             {
-                                "key": "Cg4xnePTpLeqXTDONo0Ke",
+                                "key": "1WivE8vEsxggA_JQt0TyR",
                                 "doc_count": 4,
-                                "date": {
-                                    "doc_count_error_upper_bound": 0,
-                                    "sum_other_doc_count": 0,
-                                    "buckets": [
-                                        {
-                                            "key": 1716808473000,
-                                            "key_as_string": "2024-05-27",
-                                            "doc_count": 4
-                                        }
-                                    ]
-                                },
                                 "workflow_id": {
                                     "doc_count_error_upper_bound": 0,
                                     "sum_other_doc_count": 0,
@@ -49,6 +38,22 @@
                                             "doc_count": 4
                                         }
                                     ]
+                                },
+                                
+                                "workflow_name": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": [
+                                        {
+                                            "key": "Workflow to convert JSON into WE ITC.",
+                                            "doc_count": 4
+                                        }
+                                    ]
+                                },
+                                "error_code": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": []
                                 },
                                 "event_id": {
                                     "doc_count_error_upper_bound": 0,
@@ -59,37 +64,11 @@
                                             "doc_count": 4
                                         }
                                     ]
-                                },
-                                "workflow_name": {
-                                    "doc_count_error_upper_bound": 0,
-                                    "sum_other_doc_count": 0,
-                                    "buckets": [
-                                        {
-                                            "key": "Workflow to convert JSON into WE ITC.",
-                                            "doc_count": 4
-                                        }
-                                    ]
-                                },
-                                "error_code": {
-                                    "doc_count_error_upper_bound": 0,
-                                    "sum_other_doc_count": 0,
-                                    "buckets": []
                                 }
                             },
                             {
-                                "key": "AIhZRwq0AR9O3VVJmWAjj",
+                                "key": "9reWJ1QH8_6_wmtIStH8N",
                                 "doc_count": 1,
-                                "date": {
-                                    "doc_count_error_upper_bound": 0,
-                                    "sum_other_doc_count": 0,
-                                    "buckets": [
-                                        {
-                                            "key": 1716810273000,
-                                            "key_as_string": "2024-05-27",
-                                            "doc_count": 1
-                                        }
-                                    ]
-                                },
                                 "workflow_id": {
                                     "doc_count_error_upper_bound": 0,
                                     "sum_other_doc_count": 0,
@@ -100,16 +79,6 @@
                                         }
                                     ]
                                 },
-                                "event_id": {
-                                    "doc_count_error_upper_bound": 0,
-                                    "sum_other_doc_count": 0,
-                                    "buckets": [
-                                        {
-                                            "key": "AIhZRwq0AR9O3VVJmWAjj",
-                                            "doc_count": 1
-                                        }
-                                    ]
-                                },
                                 "workflow_name": {
                                     "doc_count_error_upper_bound": 0,
                                     "sum_other_doc_count": 0,
@@ -124,6 +93,16 @@
                                     "doc_count_error_upper_bound": 0,
                                     "sum_other_doc_count": 0,
                                     "buckets": []
+                                },
+                                "event_id": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": [
+                                        {
+                                            "key": "AIhZRwq0AR9O3VVJmWAjj",
+                                            "doc_count": 4
+                                        }
+                                    ]
                                 }
                             }
                         ]

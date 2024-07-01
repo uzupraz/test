@@ -6,7 +6,7 @@
             "filter": [
                 {
                     "match_phrase": {
-                        "owner_id": "owner_id"
+                        "owner_id": "nonexistent_owner"
                     }
                 },
                 {
