@@ -1,0 +1,80 @@
+{
+    "took": 19,
+    "timed_out": false,
+    "_shards": {
+        "total": 46,
+        "successful": 46,
+        "skipped": 0,
+        "failed": 0
+    },
+    "hits": {
+        "total": {
+            "value": 46,
+            "relation": "eq"
+        },
+        "max_score": null,
+        "hits": []
+    },
+    "aggregations": {
+        "by_date": {
+            "buckets": [
+                {
+                    "key_as_string": "2024-06-17",
+                    "key": 1718582400000,
+                    "doc_count": 12,
+                    "failed_executions": {
+                        "doc_count": 0,
+                        "failed_count": {
+                            "value": 0
+                        }
+                    },
+                    "total_executions": {
+                        "value": 6
+                    }
+                },
+                {
+                    "key_as_string": "2024-06-18",
+                    "key": 1718668800000,
+                    "doc_count": 18,
+                    "failed_executions": {
+                        "doc_count": 0,
+                        "failed_count": {
+                            "value": 0
+                        }
+                    },
+                    "total_executions": {
+                        "value": 9
+                    }
+                },
+                {
+                    "key_as_string": "2024-06-19",
+                    "key": 1718755200000,
+                    "doc_count": 12,
+                    "failed_executions": {
+                        "doc_count": 0,
+                        "failed_count": {
+                            "value": 0
+                        }
+                    },
+                    "total_executions": {
+                        "value": 6
+                    }
+                },
+                {
+                    "key_as_string": "2024-06-20",
+                    "key": 1718841600000,
+                    "doc_count": 4,
+                    "failed_executions": {
+                        "doc_count": 0,
+                        "count": {
+                            "value": 0
+                        }
+                    },
+                    "total_executions": {
+                        "value": 2
+                    }
+                }
+            ]
+        }
+    }
+}

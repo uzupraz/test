@@ -10,10 +10,9 @@ from tests.test_utils import TestUtils
 
 
 class TestDashboardService(unittest.TestCase):
-    
 
-    test_resource_path = '/tests/resources/dashboard/'
-    test_opensearch_resource_path = '/tests/resources/opensearch/'
+
+    TEST_RESOURCE_PATH = '/tests/resources/dashboard/'
 
 
     def setUp(self) -> None:
@@ -31,7 +30,7 @@ class TestDashboardService(unittest.TestCase):
         self.workflow_repository = WorkflowRepository(app_config, aws_config)
         self.opensearch_service = OpensearchService(self.opensearch_config)
         self.dashboard_service = DashboardService(self.workflow_repository, self.opensearch_service)
-    
+
 
     @patch("service.dashboard_service.WorkflowRepository.count_active_workflows")
     @patch("service.dashboard_service.OpensearchService.get_executions_metrics")
@@ -42,7 +41,7 @@ class TestDashboardService(unittest.TestCase):
         owner_id = "owner_id"
         start_date = "2024-05-20T12:27:48.184Z"
         end_date = "2024-06-20T12:27:48.184Z"
-        mock_response_path = self.test_opensearch_resource_path + "get_executions_metrics_response.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_executions_metrics_response.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_get_executions_metrics.return_value = mock_response
@@ -61,6 +60,29 @@ class TestDashboardService(unittest.TestCase):
         mock_count_active_workflows.assert_called_with(owner_id=owner_id)
 
 
+    @patch("service.dashboard_service.WorkflowRepository.count_active_workflows")
+    @patch("service.dashboard_service.OpensearchService.get_executions_metrics")
+    def test_get_workflow_stats_for_invalid_field_in_response(self, mock_get_executions_metrics, mock_count_active_workflows):
+        """
+        Tests whether this function raises an Key error when invalid field is returned from open search response.
+        """
+        owner_id = "owner_id"
+        start_date = "2024-05-20T12:27:48.184Z"
+        end_date = "2024-06-20T12:27:48.184Z"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_executions_metrics_with_invalid_field_response.json"
+
+        mock_response = TestUtils.get_file_content(mock_response_path)
+        mock_get_executions_metrics.return_value = mock_response
+        mock_count_active_workflows.return_value = 10
+
+        with self.assertRaises(KeyError) as context:
+            self.dashboard_service.get_workflow_stats(owner_id, start_date, end_date)
+
+        self.assertIn('failed_count', str(context.exception))
+        mock_get_executions_metrics.assert_called_with(owner_id, start_date, end_date)
+        mock_count_active_workflows.assert_called_with(owner_id=owner_id)
+
+
     @patch("service.dashboard_service.OpensearchService.get_execution_metrics_by_date")
     def test_get_workflow_execution_metrics_by_date(self, mock_get_execution_metrics_by_date):
         """
@@ -70,7 +92,7 @@ class TestDashboardService(unittest.TestCase):
         start_date = "2024-06-22T11:28:38.317142"
         end_date = "2024-06-26T11:28:38.317142"
 
-        mock_response_path = self.test_resource_path + "get_workflow_execution_metrics_by_date_response.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_execution_metrics_by_date_response.json"
         mock_response = TestUtils.get_file_content(mock_response_path)
 
         mock_get_execution_metrics_by_date.return_value = mock_response
@@ -96,7 +118,28 @@ class TestDashboardService(unittest.TestCase):
 
         self.assertEqual(actual_result, expected_result)
         mock_get_execution_metrics_by_date.assert_called_with(owner_id, start_date, end_date)
-    
+
+
+    @patch("service.dashboard_service.OpensearchService.get_execution_metrics_by_date")
+    def test_get_workflow_execution_metrics_by_date_for_invalid_field_in_response(self, mock_get_execution_metrics_by_date):
+        """
+        Tests whether this function raises an Key error when invalid field is returned from open search response.
+        """
+        owner_id = "owner_id"
+        start_date = "2024-06-22T11:28:38.317142"
+        end_date = "2024-06-26T11:28:38.317142"
+
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_execution_metrics_by_date_with_invalid_field_response.json"
+        mock_response = TestUtils.get_file_content(mock_response_path)
+
+        mock_get_execution_metrics_by_date.return_value = mock_response
+
+        with self.assertRaises(KeyError) as context:
+            self.dashboard_service.get_workflow_execution_metrics_by_date(owner_id, start_date, end_date)
+
+        self.assertIn('failed_count', str(context.exception))
+        mock_get_execution_metrics_by_date.assert_called_with(owner_id, start_date, end_date)
+
 
     @patch("service.dashboard_service.OpensearchService.get_workflow_integrations")
     def test_get_workflow_integrations(self, mock_get_workflow_integrations):
@@ -107,7 +150,7 @@ class TestDashboardService(unittest.TestCase):
         start_date = "2024-06-22T11:28:38.317142"
         end_date = "2024-06-26T11:28:38.317142"
 
-        mock_response_path = self.test_resource_path + "get_workflow_integrations_response.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_integrations_response.json"
         mock_response = TestUtils.get_file_content(mock_response_path)
 
         mock_get_workflow_integrations.return_value = mock_response
@@ -129,6 +172,27 @@ class TestDashboardService(unittest.TestCase):
         mock_get_workflow_integrations.assert_called_with(owner_id, start_date, end_date)
 
 
+    @patch("service.dashboard_service.OpensearchService.get_workflow_integrations")
+    def test_get_workflow_integrations_for_invalid_field_in_response(self, mock_get_workflow_integrations):
+        """
+        Tests whether this function raises an Key error when invalid field is returned from open search response.
+        """
+        owner_id = "owner_id"
+        start_date = "2024-06-22T11:28:38.317142"
+        end_date = "2024-06-26T11:28:38.317142"
+
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_integrations_with_invalid_field_response.json"
+        mock_response = TestUtils.get_file_content(mock_response_path)
+
+        mock_get_workflow_integrations.return_value = mock_response
+
+        with self.assertRaises(KeyError) as context:
+            self.dashboard_service.get_workflow_integrations(owner_id, start_date, end_date)
+
+        self.assertIn('failed_executions', str(context.exception))
+        mock_get_workflow_integrations.assert_called_with(owner_id, start_date, end_date)
+
+
     @patch("service.dashboard_service.OpensearchService.get_workflow_failed_executions")
     def test_get_workflow_failed_executions(self, mock_get_workflow_failed_executions):
         """
@@ -138,7 +202,7 @@ class TestDashboardService(unittest.TestCase):
         start_date = "2024-04-22T11:28:38.317142"
         end_date = "2024-06-26T11:28:38.317142"
 
-        mock_response_path = self.test_resource_path + "get_workflow_failed_executions_response.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_failed_executions_response.json"
         mock_response = TestUtils.get_file_content(mock_response_path)
 
         mock_get_workflow_failed_executions.return_value = mock_response
@@ -167,4 +231,24 @@ class TestDashboardService(unittest.TestCase):
 
         self.assertEqual(actual_result, expected_result)
         mock_get_workflow_failed_executions.assert_called_with(owner_id, start_date, end_date)
-    
+
+
+    @patch("service.dashboard_service.OpensearchService.get_workflow_failed_executions")
+    def test_get_workflow_failed_executions_for_invalid_field_in_response(self, mock_get_workflow_failed_executions):
+        """
+        Tests whether this function raises an Key error when invalid field is returned from open search response.
+        """
+        owner_id = "owner_id"
+        start_date = "2024-04-22T11:28:38.317142"
+        end_date = "2024-06-26T11:28:38.317142"
+
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_failed_executions_with_invalid_field_response.json"
+        mock_response = TestUtils.get_file_content(mock_response_path)
+
+        mock_get_workflow_failed_executions.return_value = mock_response
+
+        with self.assertRaises(KeyError) as context:
+            self.dashboard_service.get_workflow_failed_executions(owner_id, start_date, end_date)
+
+        self.assertIn('workflow_name', str(context.exception))
+        mock_get_workflow_failed_executions.assert_called_with(owner_id, start_date, end_date)

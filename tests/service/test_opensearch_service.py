@@ -9,7 +9,7 @@ from opensearchpy.exceptions import OpenSearchException
 class TestOpensearchService(unittest.TestCase):
 
 
-    test_resource_path = '/tests/resources/opensearch/'
+    TEST_RESOURCE_PATH = '/tests/resources/opensearch/'
 
 
     def setUp(self):
@@ -32,8 +32,8 @@ class TestOpensearchService(unittest.TestCase):
         start_date = "2024-05-20T12:27:48.184Z"
         end_date = "2024-06-20T12:27:48.184Z"
 
-        mock_response_path = self.test_resource_path + "get_executions_metrics_response.json"
-        mock_query_path = self.test_resource_path + "get_executions_metrics_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_executions_metrics_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_executions_metrics_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -48,16 +48,16 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_executions_metrics_no_data_owner_id(self, mock_search):
+    def test_get_execution_metrics_with_non_existent_owner_id(self, mock_search):
         """
-        Tests if the function correctly handles no data for the specified owner_id.
+        Tests if the function correctly handles empty data for non existent owner_id.
         """
         owner_id = "nonexistent_owner"
         start_date = "2024-05-20T12:27:48.184Z"
         end_date = "2024-06-20T12:27:48.184Z"
 
-        mock_response_path = self.test_resource_path + "get_executions_metrics_no_data_owner_id_response.json"
-        mock_query_path = self.test_resource_path + "get_executions_metrics_no_data_owner_id_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_executions_metrics_for_non_existent_owner_id_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_executions_metrics_for_non_existent_owner_id_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -72,16 +72,16 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_executions_metrics_no_data_status_error(self, mock_search):
+    def test_get_executions_metrics_should_return_failed_count_zero_for_status_error(self, mock_search):
         """
-        Tests if the function correctly handles no data for the status ERROR.
+        Tests if the function correctly handles empty data for the status 'ERROR'.
         """
         owner_id = "owner_id"
         start_date = "2024-05-20T12:27:48.184Z"
         end_date = "2024-06-20T12:27:48.184Z"
 
-        mock_response_path = self.test_resource_path + "get_executions_metrics_no_data_status_error_response.json"
-        mock_query_path = self.test_resource_path + "get_executions_metrics_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_executions_metrics_with_zero_failed_count_for_status_error_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_executions_metrics_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -96,16 +96,16 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_executions_metrics_no_data_date_range(self, mock_search):
+    def test_get_executions_metrics_should_return_empty_data_for_specified_date_range(self, mock_search):
         """
-        Tests if the function correctly handles no data for the specified date range.
+        Tests if the function correctly handles empty data for the specified date range.
         """
         owner_id = "owner_id"
         start_date = "2024-05-20T12:27:48.184Z"
         end_date = "2024-06-20T12:27:48.184Z"
 
-        mock_response_path = self.test_resource_path + "get_executions_metrics_no_data_date_range_response.json"
-        mock_query_path = self.test_resource_path + "get_executions_metrics_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_executions_metrics_with_empty_data_for_specified_date_range_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_executions_metrics_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -138,8 +138,8 @@ class TestOpensearchService(unittest.TestCase):
         start_date = "2024-06-16T12:27:48.184Z"
         end_date = "2024-06-20T12:27:48.184Z"
 
-        mock_response_path = self.test_resource_path + "get_execution_metrics_by_date_response.json"
-        mock_query_path = self.test_resource_path + "get_execution_metrics_by_date_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_execution_metrics_by_date_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_execution_metrics_by_date_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -152,16 +152,16 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_execution_metrics_by_date_no_data_owner_id(self, mock_search):
+    def test_get_execution_metrics_by_date_with_non_existent_owner_id(self, mock_search):
         """
-        Tests if the function correctly handles no data for the specified owner_id.
+        Tests if the function correctly handles empty data for non existent owner_id.
         """
         owner_id = "nonexistent_owner"
         start_date = "2024-06-16T12:27:48.184Z"
         end_date = "2024-06-20T12:27:48.184Z"
 
-        mock_response_path = self.test_resource_path + "get_execution_metrics_by_date_no_data_owner_id_response.json"
-        mock_query_path = self.test_resource_path + "get_execution_metrics_by_date_no_data_owner_id_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_execution_metrics_by_date_for_non_existent_owner_id_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_execution_metrics_by_date_for_non_existent_owner_id_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -175,16 +175,16 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_execution_metrics_by_date_no_data_status_error(self, mock_search):
+    def test_get_execution_metrics_by_date_should_return_failed_count_zero_for_status_error(self, mock_search):
         """
-        Tests if the function correctly handles no data for the status ERROR.
+        Tests if the function correctly handles empty data for the status 'ERROR'.
         """
         owner_id = "owner_id"
         start_date = "2024-06-16T12:27:48.184Z"
         end_date = "2024-06-20T12:27:48.184Z"
 
-        mock_response_path = self.test_resource_path + "get_execution_metrics_by_date_no_data_status_error_response.json"
-        mock_query_path = self.test_resource_path + "get_execution_metrics_by_date_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_execution_metrics_by_date_with_zero_failed_count_for_status_error_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_execution_metrics_by_date_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -199,16 +199,16 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_execution_metrics_by_date_no_data_date_range(self, mock_search):
+    def test_get_execution_metrics_by_date_should_return_empty_data_for_specified_date_range(self, mock_search):
         """
-        Tests if the function correctly handles no data for the specified date range.
+        Tests if the function correctly handles empty data for the specified date range.
         """
         owner_id = "owner_id"
         start_date = "2024-06-16T12:27:48.184Z"
         end_date = "2024-06-20T12:27:48.184Z"
 
-        mock_response_path = self.test_resource_path + "get_execution_metrics_by_date_no_data_date_range_response.json"
-        mock_query_path = self.test_resource_path + "get_execution_metrics_by_date_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_execution_metrics_by_date_with_empty_data_for_specified_date_range_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_execution_metrics_by_date_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -237,8 +237,8 @@ class TestOpensearchService(unittest.TestCase):
         start_date = "2024-05-20T08:19:24.908Z"
         end_date = "2024-06-20T08:19:24.908Z"
 
-        mock_response_path = self.test_resource_path + "get_workflow_integrations_response.json"
-        mock_query_path = self.test_resource_path + "get_workflow_integrations_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_integrations_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_workflow_integrations_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -251,16 +251,16 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_workflow_integrations_no_data_owner_id(self, mock_search):
+    def test_get_workflow_integrations_with_non_existent_owner_id(self, mock_search):
         """
-        Tests if the function correctly handles no data for the specified owner_id.
+        Tests if the function correctly handles empty data for non existent owner_id.
         """
         owner_id = "nonexistent_owner"
         start_date = "2024-05-20T08:19:24.908Z"
         end_date = "2024-06-20T08:19:24.908Z"
 
-        mock_response_path = self.test_resource_path + "get_workflow_integrations_no_data_owner_id_response.json"
-        mock_query_path = self.test_resource_path + "get_workflow_integrations_no_data_owner_id_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_integrations_for_non_existent_owner_id_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_workflow_integrations_for_non_existent_owner_id_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -274,16 +274,16 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_workflow_integrations_no_data_status_error(self, mock_search):
+    def test_get_workflow_integrations_should_return_failed_count_zero_for_status_error(self, mock_search):
         """
-        Tests if the function correctly handles no data for the status ERROR.
+        Tests if the function correctly handles empty data for the status 'ERROR'.
         """
         owner_id = "owner_id"
         start_date = "2024-05-20T08:19:24.908Z"
         end_date = "2024-06-20T08:19:24.908Z"
 
-        mock_response_path = self.test_resource_path + "get_workflow_integrations_no_data_status_error_response.json"
-        mock_query_path = self.test_resource_path + "get_workflow_integrations_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_integrations_with_zero_failed_count_for_status_error_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_workflow_integrations_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -298,16 +298,16 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_workflow_integrations_no_data_date_range(self, mock_search):
+    def test_get_workflow_integrations_should_return_empty_data_for_specified_date_range(self, mock_search):
         """
-        Tests if the function correctly handles no data for the specified date range.
+        Tests if the function correctly handles empty data for the specified date range.
         """
         owner_id = "owner_id"
         start_date = "2024-05-20T08:19:24.908Z"
         end_date = "2024-06-20T08:19:24.908Z"
 
-        mock_response_path = self.test_resource_path + "get_workflow_integrations_no_data_date_range_response.json"
-        mock_query_path = self.test_resource_path + "get_workflow_integrations_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_integrations_with_empty_data_for_specified_date_range_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_workflow_integrations_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -339,8 +339,8 @@ class TestOpensearchService(unittest.TestCase):
         start_date = "2024-01-16T08:19:24.908Z"
         end_date = "2024-06-20T08:19:24.908Z"
 
-        mock_response_path = self.test_resource_path + "get_workflow_failed_executions_response.json"
-        mock_query_path = self.test_resource_path + "get_workflow_failed_executions_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_failed_executions_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_workflow_failed_executions_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -353,16 +353,16 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_workflow_failed_executions_no_data_owner_id(self, mock_search):
+    def test_get_workflow_failed_executions_with_non_existent_owner_id(self, mock_search):
         """
-        Tests if the function correctly handles no data for the specified owner_id.
+        Tests if the function correctly handles empty data for non existent owner_id.
         """
         owner_id = "nonexistent_owner"
         start_date = "2024-01-16T08:19:24.908Z"
         end_date = "2024-06-20T08:19:24.908Z"
 
-        mock_response_path = self.test_resource_path + "get_workflow_failed_executions_no_data_owner_id_response.json"
-        mock_query_path = self.test_resource_path + "get_workflow_failed_executions_no_data_owner_id_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_failed_executions_for_non_existent_owner_id_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_workflow_failed_executions_for_non_existent_owner_id_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -376,16 +376,16 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_workflow_failed_executions_no_data_date_range(self, mock_search):
+    def test_get_workflow_failed_executions_should_return_empty_data_for_specified_date_range(self, mock_search):
         """
-        Tests if the function correctly handles no data for the specified date range.
+        Tests if the function correctly handles empty data for the specified date range.
         """
         owner_id = "owner_id"
         start_date = "2024-01-16T08:19:24.908Z"
         end_date = "2024-06-20T08:19:24.908Z"
 
-        mock_response_path = self.test_resource_path + "get_workflow_failed_executions_no_data_date_range_response.json"
-        mock_query_path = self.test_resource_path + "get_workflow_failed_executions_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_failed_executions_with_empty_data_for_specified_date_range_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_workflow_failed_executions_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
@@ -399,16 +399,16 @@ class TestOpensearchService(unittest.TestCase):
 
 
     @patch("service.opensearch_service.OpenSearch.search")
-    def test_get_workflow_failed_executions_no_error_status(self, mock_search):
+    def test_get_workflow_failed_executions_should_return_empty_data_for_status_error(self, mock_search):
         """
-        Tests if the function correctly handles no data for status 'ERROR'.
+        Tests if the function correctly handles empty data for status 'ERROR'.
         """
         owner_id = "owner_id"
         start_date = "2024-01-16T08:19:24.908Z"
         end_date = "2024-06-20T08:19:24.908Z"
 
-        mock_response_path = self.test_resource_path + "get_workflow_failed_executions_no_error_status_response.json"
-        mock_query_path = self.test_resource_path + "get_workflow_failed_executions_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_failed_executions_with_empty_data_for_error_status_response.json"
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_workflow_failed_executions_query.json"
 
         mock_response = TestUtils.get_file_content(mock_response_path)
         mock_query = TestUtils.get_file_content(mock_query_path)
