@@ -39,8 +39,8 @@
                                         }
                                     ]
                                 },
-                                
-                                "workflow_name": {
+
+                                "invalid_workflow_name_field": {
                                     "doc_count_error_upper_bound": 0,
                                     "sum_other_doc_count": 0,
                                     "buckets": [
@@ -79,7 +79,7 @@
                                         }
                                     ]
                                 },
-                                "workflow": {
+                                "invalid_workflow_name_field": {
                                     "doc_count_error_upper_bound": 0,
                                     "sum_other_doc_count": 0,
                                     "buckets": [

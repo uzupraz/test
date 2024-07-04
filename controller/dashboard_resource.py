@@ -147,7 +147,8 @@ class WorkflowFailuresResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
-        user = g.get("user")
+        user_data = g.get("user")
+        user = User(**user_data)
         workflow_failures = dashboard_service.get_workflow_failures(user.organization_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflow_failures), 200

@@ -37,7 +37,7 @@
                             }
                         ]
                     },
-                    "failed": {
+                    "invalid_failed_executions_field": {
                         "doc_count": 0,
                         "unique_executions": {
                             "value": 0
