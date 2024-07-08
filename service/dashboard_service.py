@@ -174,7 +174,7 @@ class DashboardService(metaclass=Singleton):
         """
         workflow_name = bucket["workflow_name"]["buckets"][0]["key"]
         workflow_id = bucket["key"]
-        last_event_date = bucket["last_event_date"]["value"]
+        last_event_date = bucket["last_event_date"]["value_as_string"]
         failed_executions_count = bucket["failed_executions"]["unique_executions"][
             "value"
         ]
