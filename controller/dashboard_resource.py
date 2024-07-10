@@ -46,6 +46,7 @@ workflow_stats_response_dto = api.inherit('Get Workflow Stats Response',server_r
 workflow_integrations_response_dto = api.inherit('Get Workflow Integrations Response',server_response, {
     'payload': fields.List(fields.Nested(api.model('Workflow Integrations', {
         "failed_executions_count": fields.Integer(description='Total number of failed executions of an workflow'),
+        "total_executions_count": fields.Integer(description='Total number of executions of an workflow'),
         "failed_executions_ratio": fields.Float(description='Failure ratio of an workflow'),
         "last_event_date": fields.String(description='Last event date of the workflow'),
         "workflow": fields.Nested(api.model("Workflow", {
@@ -74,6 +75,7 @@ workflow_failed_events_response_dto = api.inherit('Get Workflow Failed Events Re
         "date": fields.String(description='Date of the event'),
         "error_code": fields.String(description='Error code'),
         "event_id": fields.String(description='Event ID'),
+        "execution_id": fields.String(description='Execution ID'),
         "workflow": fields.Nested(api.model("Workflow", {
             "id": fields.String(description='Workflow ID'),
             "name": fields.String(description='Workflow Name'),

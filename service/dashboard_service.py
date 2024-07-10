@@ -186,15 +186,16 @@ class DashboardService(metaclass=Singleton):
         )
 
         return WorkflowIntegration(
+            failed_executions_count=failed_executions_count,
+            total_executions_count=total_executions_count,
+            failed_executions_ratio=failed_executions_ratio,
+            last_event_date=last_event_date,
             workflow=WorkflowItem(
                 id=workflow_id,
                 name=workflow_name,
-            ),
-            last_event_date=last_event_date,
-            failed_executions_count=failed_executions_count,
-            failed_executions_ratio=failed_executions_ratio,
+            )
         )
-    
+
 
     def _map_workflow_failed_executions_response(self, response: dict) -> list[WorkflowFailedEvent]:
         """
@@ -207,6 +208,7 @@ class DashboardService(metaclass=Singleton):
             date = bucket["key_as_string"]
             nested_buckets = bucket["failed_executions"]["buckets"]
             for nested_bucket in nested_buckets:
+                execution_id = nested_bucket["key"]
                 event_id = nested_bucket["event_id"]["buckets"][0]["key"]
                 workflow_name = nested_bucket["workflow_name"]["buckets"][0]["key"]
                 workflow_id = nested_bucket["workflow_id"]["buckets"][0]["key"]
@@ -214,12 +216,13 @@ class DashboardService(metaclass=Singleton):
 
                 workflow_failed_event = WorkflowFailedEvent(
                     date=date,
+                    error_code=error_code,
+                    event_id=event_id,
+                    execution_id=execution_id,
                     workflow=WorkflowItem(
                         id=workflow_id,
                         name=workflow_name,
                     ),
-                    error_code=error_code,
-                    event_id=event_id,
                 )
                 workflow_failed_events.append(workflow_failed_event)
 
