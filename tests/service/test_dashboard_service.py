@@ -159,8 +159,9 @@ class TestDashboardService(unittest.TestCase):
         expected_result = [
             WorkflowIntegration(
                 failed_executions_count=0,
+                total_executions_count=66,
                 failed_executions_ratio=0,
-                last_event_date=1719313208000,
+                last_event_date="1719313208",
                 workflow=WorkflowItem(
                     id="KZlnumlwuVqnMoNGC9Rrj",
                     name="Workflow to convert JSON into WA ITC.",
@@ -211,21 +212,23 @@ class TestDashboardService(unittest.TestCase):
         expected_result = [
             WorkflowFailedEvent(
                 date="2024-05-27",
+                error_code=None,
+                event_id="Cg4xnePTpLeqXTDONo0Ke",
+                execution_id="1WivE8vEsxggA_JQt0TyR",
                 workflow=WorkflowItem(
                     id="VeDYTvy56weuVExSaPIqO",
                     name="Workflow to convert JSON into WE ITC.",
-                ),
-                error_code=None,
-                event_id="Cg4xnePTpLeqXTDONo0Ke"
+                )
             ),
             WorkflowFailedEvent(
                 date="2024-05-27",
+                error_code=None,
+                event_id="AIhZRwq0AR9O3VVJmWAjj",
+                execution_id="9reWJ1QH8_6_wmtIStH8N",
                 workflow=WorkflowItem(
                     id="VeDYTvy56weuVExSaPIqO",
                     name="Workflow to convert JSON into WE ITC.",
-                ),
-                error_code=None,
-                event_id="AIhZRwq0AR9O3VVJmWAjj"
+                )
             )
         ]
 
