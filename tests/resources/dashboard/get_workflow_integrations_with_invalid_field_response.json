@@ -1,0 +1,53 @@
+{
+    "took": 47,
+    "timed_out": false,
+    "_shards": {
+        "total": 37,
+        "successful": 37,
+        "skipped": 0,
+        "failed": 0
+    },
+    "hits": {
+        "total": {
+            "value": 257,
+            "relation": "eq"
+        },
+        "max_score": null,
+        "hits": []
+    },
+    "aggregations": {
+        "integrations": {
+            "doc_count_error_upper_bound": 0,
+            "sum_other_doc_count": 0,
+            "buckets": [
+                {
+                    "key": "KZlnumlwuVqnMoNGC9Rrj",
+                    "doc_count": 132,
+                    "last_event_date": {
+                        "value": 1719313208000,
+                        "value_as_string": "1719313208"
+                    },
+                    "workflow_name": {
+                        "doc_count_error_upper_bound": 0,
+                        "sum_other_doc_count": 0,
+                        "buckets": [
+                            {
+                                "key": "Workflow to convert JSON into WA ITC.",
+                                "doc_count": 132
+                            }
+                        ]
+                    },
+                    "invalid_failed_executions_field": {
+                        "doc_count": 0,
+                        "unique_executions": {
+                            "value": 0
+                        }
+                    },
+                    "total_executions": {
+                        "value": 66
+                    }
+                }
+            ]
+        }
+    }
+}

@@ -6,7 +6,6 @@ from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
 from configuration import OpensearchConfig
-from model import WorkflowExecutionMetric
 
 
 log = common_ctrl.log
@@ -57,18 +56,10 @@ class OpensearchService(metaclass=Singleton):
         }
         query["aggs"] = aggs
 
-        response = self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
-        # Extract metrics from the response
-        total_executions = response['aggregations']['total_executions']['value']
-        failed_executions = response['aggregations']['failed_executions']['failed_count']['value']
-
-        return {
-            "total_executions": total_executions,
-            "failed_executions": failed_executions
-        }
+        return self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
 
 
-    def get_execution_metrics_by_date(self, owner_id: str, start_date: str, end_date: str) -> list[WorkflowExecutionMetric]:
+    def get_execution_metrics_by_date(self, owner_id: str, start_date: str, end_date: str) -> dict:
         """
         Fetches the counts for fluent executions and failed events, aggregated by date.
 
@@ -78,7 +69,7 @@ class OpensearchService(metaclass=Singleton):
             end_date (str): The end date in ISO format.
 
         Returns:
-            list[WorkflowExecutionMetric]: A list of WorkflowExecutionMetric containing date, fluent executions count, and failed events count.
+            response[dict]: The response from the OpenSearch query. 
         """
         query = self._build_base_query(owner_id, start_date=start_date, end_date=end_date)
         aggs = {
@@ -113,18 +104,101 @@ class OpensearchService(metaclass=Singleton):
         }
         query["aggs"] = aggs
 
-        response = self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
+        return self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
 
-        metrics = [
-            WorkflowExecutionMetric(
-                date=bucket["key_as_string"],
-                failed_executions=bucket["failed_executions"]["failed_count"]["value"],
-                total_executions=bucket["total_executions"]["value"],
-            )
-            for bucket in response["aggregations"]["by_date"]["buckets"]
-        ]
-        return metrics
 
+    def get_workflow_integrations(self, owner_id: str, start_date: str, end_date: str) -> dict:
+        """
+        Fetches the active workflow integrations from OpenSearch.
+
+        Args:
+            owner_id (str): The owner ID.
+            start_date (str): The start date in ISO format.
+            end_date (str): The end date in ISO format.
+        
+        Returns:
+            response[dict]: The response from the OpenSearch query.
+        """
+        query = self._build_base_query(owner_id, start_date=start_date, end_date=end_date)
+        aggs = {
+            "integrations": {
+                "terms": {"field": "workflow_id"},
+                "aggs": {
+                    "workflow_name": {
+                        "terms": {"field": "workflow_name"},
+                    },
+                    "last_event_date": {
+                        "max": {"field": "event_timestamp"},
+                    },
+                    "failed_executions": {
+                        "filter": {
+                            "term": {"status": "ERROR"},
+                        },
+                        "aggs": {
+                            "unique_executions": {
+                                "cardinality": {
+                                    "field": "execution_id",
+                                }
+                            }
+                        },
+                    },
+                    "total_executions": {
+                        "cardinality": {"field": "execution_id"},
+                    },
+                },
+            }
+        }
+        query["aggs"] = aggs
+        return self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
+        
+
+    def get_workflow_failed_executions(self, owner_id: str, start_date: str, end_date: str) -> dict:
+        """
+        Fetches the failed workflow executions from OpenSearch.
+
+        Args:
+            owner_id (str): The owner ID.
+            start_date (str): The start date in ISO format.
+            end_date (str): The end date in ISO format.
+        
+        Returns:
+            response[dict]: The response from the OpenSearch query.
+        """
+        query = self._build_base_query(owner_id, start_date=start_date, end_date=end_date)
+        aggs = {
+            "by_date": {
+                "date_histogram": {
+                    "field": "event_timestamp",
+                    "interval": "day",
+                    "format": "yyyy-MM-dd",
+                },
+                "aggs": {
+                    "failed_executions": {
+                        "terms": {"field": "execution_id"},
+                        "aggs": {
+                            "event_id": {
+                                "terms": {"field": "event_id"},
+                            },
+                            "workflow_id": {
+                                "terms": {"field": "workflow_id"},
+                            },
+                            "workflow_name": {
+                                "terms": {"field": "workflow_name"},
+                            },
+                            "error_code": {
+                                "terms": {"field": "error_code"},
+                            },
+                        },
+                    }
+                },
+            }
+        }
+
+        query["query"]["bool"]["filter"].insert(0, {"match_phrase": {"status": "ERROR"}})
+        query["aggs"] = aggs
+
+        return self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
+    
 
     def _build_base_query(self, owner_id:str, start_date:str=None, end_date:str=None, is_external:bool=False, from_:int=0, size:int=0) -> dict:
         base_query = {

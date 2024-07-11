@@ -1,0 +1,114 @@
+{
+    "took": 466,
+    "timed_out": false,
+    "_shards": {
+        "total": 37,
+        "successful": 37,
+        "skipped": 0,
+        "failed": 0
+    },
+    "hits": {
+        "total": {
+            "value": 5,
+            "relation": "eq"
+        },
+        "max_score": null,
+        "hits": []
+    },
+    "aggregations": {
+        "by_date": {
+            "buckets": [
+                {
+                    "key_as_string": "2024-05-27",
+                    "key": 1716768000000,
+                    "doc_count": 5,
+                    "failed_executions": {
+                        "doc_count_error_upper_bound": 0,
+                        "sum_other_doc_count": 0,
+                        "buckets": [
+                            {
+                                "key": "1WivE8vEsxggA_JQt0TyR",
+                                "doc_count": 4,
+                                "workflow_id": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": [
+                                        {
+                                            "key": "VeDYTvy56weuVExSaPIqO",
+                                            "doc_count": 4
+                                        }
+                                    ]
+                                },
+
+                                "invalid_workflow_name_field": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": [
+                                        {
+                                            "key": "Workflow to convert JSON into WE ITC.",
+                                            "doc_count": 4
+                                        }
+                                    ]
+                                },
+                                "error_code": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": []
+                                },
+                                "event_id": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": [
+                                        {
+                                            "key": "Cg4xnePTpLeqXTDONo0Ke",
+                                            "doc_count": 4
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "key": "9reWJ1QH8_6_wmtIStH8N",
+                                "doc_count": 1,
+                                "workflow_id": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": [
+                                        {
+                                            "key": "VeDYTvy56weuVExSaPIqO",
+                                            "doc_count": 1
+                                        }
+                                    ]
+                                },
+                                "invalid_workflow_name_field": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": [
+                                        {
+                                            "key": "Workflow to convert JSON into WE ITC.",
+                                            "doc_count": 1
+                                        }
+                                    ]
+                                },
+                                "error_code": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": []
+                                },
+                                "event_id": {
+                                    "doc_count_error_upper_bound": 0,
+                                    "sum_other_doc_count": 0,
+                                    "buckets": [
+                                        {
+                                            "key": "AIhZRwq0AR9O3VVJmWAjj",
+                                            "doc_count": 4
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }
+}

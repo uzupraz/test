@@ -1,0 +1,67 @@
+{
+    "from": 0,
+    "size": 0,
+    "query": {
+        "bool": {
+            "filter": [
+                {
+                    "match_phrase": {
+                        "owner_id": "owner_id"
+                    }
+                },
+                {
+                    "match_phrase": {
+                        "is_external": false
+                    }
+                },
+                {
+                    "range": {
+                        "event_timestamp": {
+                            "gte": "2024-05-20T08:19:24.908Z",
+                            "lte": "2024-06-20T08:19:24.908Z",
+                            "format": "strict_date_optional_time"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "aggs": {
+        "integrations": {
+            "terms": {
+                "field": "workflow_id"
+            },
+            "aggs": {
+                "workflow_name": {
+                    "terms": {
+                        "field": "workflow_name"
+                    }
+                },
+                "last_event_date": {
+                    "max": {
+                        "field": "event_timestamp"
+                    }
+                },
+                "failed_executions": {
+                    "filter": {
+                        "term": {
+                            "status": "ERROR"
+                        }
+                    },
+                    "aggs": {
+                        "unique_executions": {
+                            "cardinality": {
+                                "field": "execution_id"
+                            }
+                        }
+                    }
+                },
+                "total_executions": {
+                    "cardinality": {
+                        "field": "execution_id"
+                    }
+                }
+            }
+        }
+    }
+}

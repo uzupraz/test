@@ -17,7 +17,7 @@
                 {
                     "range": {
                         "event_timestamp": {
-                            "gte": "2024-06-16T12:27:48.184Z",
+                            "gte": "2024-05-20T12:27:48.184Z",
                             "lte": "2024-06-20T12:27:48.184Z",
                             "format": "strict_date_optional_time"
                         }
@@ -27,30 +27,21 @@
         }
     },
     "aggs": {
-        "by_date": {
-            "date_histogram": {
-                "field": "event_timestamp",
-                "calendar_interval": "day",
-                "format": "yyyy-MM-dd"
+        "total_executions": {
+            "cardinality": {
+                "field": "execution_id"
+            }
+        },
+        "failed_executions": {
+            "filter": {
+                "match_phrase": {
+                    "status": "ERROR"
+                }
             },
             "aggs": {
-                "total_executions": {
+                "failed_count": {
                     "cardinality": {
                         "field": "execution_id"
-                    }
-                },
-                "failed_executions": {
-                    "filter": {
-                        "match_phrase": {
-                            "status": "ERROR"
-                        }
-                    },
-                    "aggs": {
-                        "failed_count": {
-                            "cardinality": {
-                                "field": "execution_id"
-                            }
-                        }
                     }
                 }
             }

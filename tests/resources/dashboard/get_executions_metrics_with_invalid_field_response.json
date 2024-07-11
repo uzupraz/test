@@ -1,0 +1,29 @@
+{
+    "took": 597,
+    "timed_out": false,
+    "_shards": {
+        "total": 46,
+        "successful": 46,
+        "skipped": 0,
+        "failed": 0
+    },
+    "hits": {
+        "total": {
+            "value": 242,
+            "relation": "eq"
+        },
+        "max_score": null,
+        "hits": []
+    },
+    "aggregations": {
+        "failed_executions": {
+            "doc_count": 6,
+            "invalid_failed_count_field": {
+                "value": 6
+            }
+        },
+        "total_executions": {
+            "value": 126
+        }
+    }
+}
