@@ -1,15 +1,15 @@
 {
-    "took": 19,
+    "took": 30,
     "timed_out": false,
     "_shards": {
-        "total": 46,
-        "successful": 46,
+        "total": 37,
+        "successful": 37,
         "skipped": 0,
         "failed": 0
     },
     "hits": {
         "total": {
-            "value": 46,
+            "value": 12,
             "relation": "eq"
         },
         "max_score": null,
@@ -19,9 +19,9 @@
         "by_date": {
             "buckets": [
                 {
-                    "key_as_string": "2024-06-17",
-                    "key": 1718582400000,
-                    "doc_count": 12,
+                    "key_as_string": "2024-06-23",
+                    "key": 1719100800000,
+                    "doc_count": 4,
                     "failed_executions": {
                         "doc_count": 0,
                         "failed_count": {
@@ -29,13 +29,13 @@
                         }
                     },
                     "total_executions": {
-                        "value": 6
+                        "value": 2
                     }
                 },
                 {
-                    "key_as_string": "2024-06-18",
-                    "key": 1718668800000,
-                    "doc_count": 18,
+                    "key_as_string": "2024-06-24",
+                    "key": 1719187200000,
+                    "doc_count": 4,
                     "failed_executions": {
                         "doc_count": 0,
                         "failed_count": {
@@ -43,26 +43,12 @@
                         }
                     },
                     "total_executions": {
-                        "value": 9
+                        "value": 2
                     }
                 },
                 {
-                    "key_as_string": "2024-06-19",
-                    "key": 1718755200000,
-                    "doc_count": 12,
-                    "failed_executions": {
-                        "doc_count": 0,
-                        "failed_count": {
-                            "value": 0
-                        }
-                    },
-                    "total_executions": {
-                        "value": 6
-                    }
-                },
-                {
-                    "key_as_string": "2024-06-20",
-                    "key": 1718841600000,
+                    "key_as_string": "2024-06-25",
+                    "key": 1719273600000,
                     "doc_count": 4,
                     "failed_executions": {
                         "doc_count": 0,

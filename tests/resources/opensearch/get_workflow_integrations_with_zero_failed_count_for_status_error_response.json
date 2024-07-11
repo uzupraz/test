@@ -1,0 +1,49 @@
+{
+    "took": 10,
+    "timed_out": false,
+    "_shards": {
+        "total": 1,
+        "successful": 1,
+        "skipped": 0,
+        "failed": 0
+    },
+    "hits": {
+        "total": {
+            "value": 10,
+            "relation": "eq"
+        },
+        "max_score": null,
+        "hits": []
+    },
+    "aggregations": {
+        "integrations": {
+            "buckets": [
+                {
+                    "key": "workflow_id",
+                    "doc_count": 10,
+                    "workflow_name": {
+                        "buckets": [
+                            {
+                                "key": "Workflow name",
+                                "doc_count": 10
+                            }
+                        ]
+                    },
+                    "last_event_date": {
+                        "value": 1718794823000,
+                        "value_as_string": "1718794823"
+                    },
+                    "failed_executions": {
+                        "doc_count": 0,
+                        "unique_executions": {
+                            "value": 0
+                        }
+                    },
+                    "total_executions": {
+                        "value": 10
+                    }
+                }
+            ]
+        }
+    }
+}
