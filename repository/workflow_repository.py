@@ -49,6 +49,26 @@ class WorkflowRepository(metaclass=Singleton):
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t save the workflow')
 
 
+    def find_datastudio_workflows(self, owner_id: str) -> list[dict]:
+        """Returns a list of workflows for the given owner where the mapping_id is present.
+
+        Args:
+            owner_id (str): The owner ID for which the workflows are to be returned.
+
+        Returns:
+            list[dict]: List of datastudio workflows for the given owner.
+        """
+        try:
+            workflows = self.workflow_table.query(
+                KeyConditionExpression=Key("ownerId").eq(owner_id) ,
+                FilterExpression=Attr("state").eq("ACTIVE") & Attr("mapping_id").exists()
+            )
+            return workflows["Items"]
+        except ClientError as e:
+            log.exception('Failed to list workflows. owner_id: %s', owner_id)
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t list the workflows')
+
+
     def count_active_workflows(self, owner_id: str) -> int:
         """
         Count the number of workflows with state 'ACTIVE' for a specific owner.
