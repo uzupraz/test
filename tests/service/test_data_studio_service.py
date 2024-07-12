@@ -1,6 +1,7 @@
 from decimal import Decimal
 import unittest
 from unittest.mock import MagicMock
+from botocore.exceptions import ClientError
 
 from model import DataStudioWorkflow
 from repository import WorkflowRepository
@@ -26,7 +27,7 @@ class TestDataStudioService(unittest.TestCase):
         self.dashboard_service = None
 
 
-    def test_get_workflows(self):
+    def test_get_workflows_should_return_list_of_workflows(self):
         """
         Test if the function correctly returns the list of workflows for a given owner.
         """
@@ -74,7 +75,7 @@ class TestDataStudioService(unittest.TestCase):
         self.data_studio_service.workflow_repository.find_datastudio_workflows.assert_called_once_with(owner_id)
 
 
-    def test_get_workflows_empty_response(self):
+    def test_get_workflows_should_handle_empty_response(self):
         """
         Test if the function correctly handles an empty response.
         """
@@ -88,7 +89,7 @@ class TestDataStudioService(unittest.TestCase):
         self.data_studio_service.workflow_repository.find_datastudio_workflows.assert_called_once_with(owner_id)
 
 
-    def test_get_workflows_missing_optional_fields(self):
+    def test_get_workflows_should_handle_missing_optional_fields(self):
         """
         Test if the function correctly handles workflows with missing optional fields.
         """
@@ -128,15 +129,14 @@ class TestDataStudioService(unittest.TestCase):
         self.data_studio_service.workflow_repository.find_datastudio_workflows.assert_called_once_with(owner_id)
 
 
-    def test_get_workflows_null_owner_id(self):
+    def test_get_workflows_should_throw_client_error_when_owner_id_is_null(self):
         """
-        Test if the function correctly handles a null owner_id.
+        Test if the function throws a ClientError when the owner_id is None.
         """
         owner_id = None
-        self.data_studio_service.workflow_repository.find_datastudio_workflows = MagicMock(return_value=[])
+        self.data_studio_service.workflow_repository.find_datastudio_workflows = MagicMock()
+        self.data_studio_service.workflow_repository.find_datastudio_workflows.side_effect = ClientError({'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'find_datastudio_workflows')
 
-        actual_result = self.data_studio_service.get_workflows(owner_id)
-        expected_result = []
-
-        self.assertEqual(expected_result, actual_result)
-        self.data_studio_service.workflow_repository.find_datastudio_workflows.assert_called_once_with(owner_id)
+        with self.assertRaises(ClientError):
+            self.data_studio_service.get_workflows(owner_id)
+        

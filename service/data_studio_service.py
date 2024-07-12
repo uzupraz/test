@@ -10,7 +10,7 @@ class DataStudioService(metaclass=Singleton):
         self.workflow_repository = workflow_repository
 
 
-    def get_mappings(self, owner_id: str) -> list:
+    def get_mappings(self, owner_id:str) -> list:
         """
         Returns a list of mappings for the given owner.
         Args:
@@ -21,7 +21,7 @@ class DataStudioService(metaclass=Singleton):
         return []
 
 
-    def get_workflows(self, owner_id: str) -> list[DataStudioWorkflow]:
+    def get_workflows(self, owner_id:str) -> list[DataStudioWorkflow]:
         """
         Returns a list of workflows for the given owner.
         Args:
