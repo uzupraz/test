@@ -85,7 +85,7 @@ class TestDataStudioService(unittest.TestCase):
 
     def test_get_workflows_should_throw_service_exception_when_find_data_studio_workflows_method_of_workflow_repository_throws_service_exception(self):
         """
-        Test if the function throws a ServiceException when the find_data_studio_workflows method of the workflow_repository throws a ServiceException.
+        Test if the function throws a ServiceException when the get_data_studio_workflows method of the workflow_repository throws a ServiceException.
         """
         owner_id = "test_owner_id"
         self.data_studio_service.workflow_repository.get_data_studio_workflows = MagicMock()
@@ -93,4 +93,6 @@ class TestDataStudioService(unittest.TestCase):
 
         with self.assertRaises(ServiceException):
             self.data_studio_service.get_workflows(owner_id)
+        
+        self.data_studio_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
         

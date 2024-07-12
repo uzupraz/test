@@ -140,3 +140,8 @@ class TestWorkflowRepository(unittest.TestCase):
 
         with self.assertRaises(ServiceException):
             self.workflow_repository.get_data_studio_workflows(owner_id)
+        
+        self.workflow_repository.workflow_table.query.assert_called_once_with(
+            KeyConditionExpression=Key('ownerId').eq(owner_id),
+            FilterExpression=Attr('state').eq('ACTIVE') & Attr('mapping_id').exists() & Attr('mapping_id').ne(None)
+        )
