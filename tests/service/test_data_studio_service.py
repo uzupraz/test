@@ -1,8 +1,9 @@
 from decimal import Decimal
 import unittest
 from unittest.mock import MagicMock
-from botocore.exceptions import ClientError
 
+from enums import ServiceStatus
+from exception import ServiceException
 from model import DataStudioWorkflow
 from service import DataStudioService
 
@@ -82,14 +83,14 @@ class TestDataStudioService(unittest.TestCase):
         self.data_studio_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
 
 
-    def test_get_workflows_should_throw_client_error_when_owner_id_is_null(self):
+    def test_get_workflows_should_throw_service_exception_when_find_data_studio_workflows_method_of_workflow_repository_throws_service_exception(self):
         """
-        Test if the function throws a ClientError when the owner_id is None.
+        Test if the function throws a ServiceException when the find_data_studio_workflows method of the workflow_repository throws a ServiceException.
         """
-        owner_id = None
+        owner_id = "test_owner_id"
         self.data_studio_service.workflow_repository.get_data_studio_workflows = MagicMock()
-        self.data_studio_service.workflow_repository.get_data_studio_workflows.side_effect = ClientError({'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'find_datastudio_workflows')
+        self.data_studio_service.workflow_repository.get_data_studio_workflows.side_effect = ServiceException(400, ServiceStatus.FAILURE, 'Test Error')
 
-        with self.assertRaises(ClientError):
+        with self.assertRaises(ServiceException):
             self.data_studio_service.get_workflows(owner_id)
         

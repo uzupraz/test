@@ -67,7 +67,7 @@ class WorkflowRepository(metaclass=Singleton):
             return workflows["Items"]
         except ClientError as e:
             log.exception('Failed to list data studio workflows. owner_id: %s', owner_id)
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t list the workflows')
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t list data studio workflows')
 
 
     def count_active_workflows(self, owner_id: str) -> int:
