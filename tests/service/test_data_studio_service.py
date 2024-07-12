@@ -34,20 +34,20 @@ class TestDataStudioService(unittest.TestCase):
         owner_id = "test_owner_id"
         mock_response_items = [
             {
-                "createdByName": "taskin",
+                "createdByName": "created_by_name",
                 "version": Decimal("1"),
                 "config": {"connections": [], "nodes": []},
                 "is_binary_event": False,
                 "is_sync_execution": True,
-                "groupName": "Taskin",
-                "state_machine_arn": "arn:aws:states:eu-central-1:451445658243:stateMachine:Taskin-JSON-ITC-WA",
+                "groupName": "group_name",
+                "state_machine_arn": "state_machine_arn",
                 "creationDate": "2024-03-30T01:22:50.846714",
-                "createdBy": "e5e086e2-2092-471e-8497-52ba7bf31ef6",
-                "name": "Workflow to convert JSON into WA ITC.",
+                "createdBy": "created_by_uuid",
+                "name": "workflow_name",
                 "ownerId": "test_owner_id",
                 "state": "ACTIVE",
-                "workflowId": "KZlnumlwuVqnMoNGC9Rrj",
-                "event_name": "es:workflow:test_owner_id:KZlnumlwuVqnMoNGC9Rrj",
+                "workflowId": "workflow_id",
+                "event_name": "event_name",
                 "mapping_id": "3eaddbdd-34cf-47fe-84fe-a0c971c6e4a6"
             },
         ]
@@ -57,15 +57,15 @@ class TestDataStudioService(unittest.TestCase):
         expected_result = [
             DataStudioWorkflow(
                 owner_id="test_owner_id",
-                workflow_id="KZlnumlwuVqnMoNGC9Rrj",
-                event_name="es:workflow:test_owner_id:KZlnumlwuVqnMoNGC9Rrj",
-                created_by="e5e086e2-2092-471e-8497-52ba7bf31ef6",
-                created_by_name="taskin",
+                workflow_id="workflow_id",
+                event_name="event_name",
+                created_by="created_by_uuid",
+                created_by_name="created_by_name",
                 last_updated=None,
                 state="ACTIVE",
                 version=1,
                 is_sync_execution=True,
-                state_machine_arn="arn:aws:states:eu-central-1:451445658243:stateMachine:Taskin-JSON-ITC-WA",
+                state_machine_arn="state_machine_arn",
                 is_binary_event=False,
                 mapping_id="3eaddbdd-34cf-47fe-84fe-a0c971c6e4a6" 
             )
@@ -96,12 +96,12 @@ class TestDataStudioService(unittest.TestCase):
         owner_id = "test_owner_id"
         mock_response_items = [
             {
-                "createdByName": "taskin",
+                "createdByName": "created_by_name",
                 "version": Decimal("2"),
                 "ownerId": "test_owner_id",
                 "state": "ACTIVE",
-                "workflowId": "KZlnumlwuVqnMoNGC9Rrj",
-                "event_name": "es:workflow:test_owner_id:KZlnumlwuVqnMoNGC9Rrj",
+                "workflowId": "workflow_id",
+                "event_name": "event_name",
                 # createdBy, state_machine_arn, etc. are missing
             }
         ]
@@ -111,10 +111,10 @@ class TestDataStudioService(unittest.TestCase):
         expected_result = [
             DataStudioWorkflow(
                 owner_id="test_owner_id",
-                workflow_id="KZlnumlwuVqnMoNGC9Rrj",
-                event_name="es:workflow:test_owner_id:KZlnumlwuVqnMoNGC9Rrj",
+                workflow_id="workflow_id",
+                event_name="event_name",
                 created_by=None,
-                created_by_name="taskin",
+                created_by_name="created_by_name",
                 last_updated=None,
                 state="ACTIVE",
                 version=2,
