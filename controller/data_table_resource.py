@@ -1,7 +1,8 @@
 from flask_restx import Namespace, Resource, fields
 from flask import g, request
 
-from configuration import AWSConfig
+from configuration import AWSConfig, AppConfig
+from repository import CustomerTableInfoRepository
 from .server_response import ServerResponse
 from service import DataTableService
 from .common_controller import server_response
@@ -12,7 +13,9 @@ api = Namespace("Data table API", description="API for the data table", path="/i
 log = api.logger
 
 aws_config = AWSConfig()
-data_table_service = DataTableService(aws_config=aws_config)
+app_config = AppConfig()
+customer_table_info_repository = CustomerTableInfoRepository(app_config=app_config, aws_config=aws_config)
+data_table_service = DataTableService(customer_table_info_repository=customer_table_info_repository)
 
 tables_response_dto = api.inherit('Data tables Response',server_response, {
     'payload': fields.List(fields.Nested(api.model('Data tables', {
@@ -24,6 +27,7 @@ tables_response_dto = api.inherit('Data tables Response',server_response, {
 
 @api.route('/tables')
 class DataTableResource(Resource):
+
 
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
