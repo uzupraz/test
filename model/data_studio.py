@@ -62,3 +62,22 @@ class DataStudioWorkflow:
     state_machine_arn: str
     is_binary_event: bool
     mapping_id: str
+
+
+    @classmethod
+    def from_dict(cls, data:dict) -> 'DataStudioWorkflow':
+        mapped_data = {
+            "owner_id": data.get("ownerId"),
+            "workflow_id": data.get("workflowId"),
+            "event_name": data.get("event_name"),
+            "created_by": data.get("createdBy"),
+            "created_by_name": data.get("createdByName"),
+            "last_updated": data.get("lastUpdated"),
+            "state": data.get("state"),
+            "version": data.get("version"),
+            "is_sync_execution": data.get("is_sync_execution"),
+            "state_machine_arn": data.get("state_machine_arn"),
+            "is_binary_event": data.get("is_binary_event"),
+            "mapping_id": data.get("mapping_id")
+        }
+        return cls(**mapped_data)

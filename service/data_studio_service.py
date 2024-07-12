@@ -31,19 +31,7 @@ class DataStudioService(metaclass=Singleton):
         """
         workflows_response = self.workflow_repository.get_data_studio_workflows(owner_id)
         workflows = [
-            DataStudioWorkflow(
-                owner_id=workflow_response.get('ownerId'),
-                workflow_id=workflow_response.get('workflowId'),
-                event_name=workflow_response.get('event_name'),
-                created_by=workflow_response.get('createdBy'),
-                created_by_name=workflow_response.get('createdByName'),
-                last_updated=workflow_response.get('lastUpdated'),
-                state=workflow_response.get('state'),
-                version=workflow_response.get('version'),
-                is_sync_execution=workflow_response.get('is_sync_execution'),
-                state_machine_arn=workflow_response.get('state_machine_arn'),
-                is_binary_event=workflow_response.get('is_binary_event'),
-                mapping_id=workflow_response.get('mapping_id')      
-            ) for workflow_response in workflows_response
+            DataStudioWorkflow.from_dict(workflow_response)
+            for workflow_response in workflows_response
         ]
         return workflows
