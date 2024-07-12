@@ -83,7 +83,7 @@ class TestDataStudioService(unittest.TestCase):
         self.data_studio_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
 
 
-    def test_get_workflows_should_throw_service_exception_when_find_data_studio_workflows_method_of_workflow_repository_throws_service_exception(self):
+    def test_get_workflows_should_throw_service_exception_when_get_data_studio_workflows_method_of_workflow_repository_throws_service_exception(self):
         """
         Test if the function throws a ServiceException when the get_data_studio_workflows method of the workflow_repository throws a ServiceException.
         """
