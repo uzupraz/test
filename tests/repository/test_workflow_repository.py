@@ -95,7 +95,7 @@ class TestWorkflowRepository(unittest.TestCase):
             self.workflow_repository.count_active_workflows(owner_id)
 
 
-    def test_find_datastudio_workflows_happy_case_should_return_correct_list(self):
+    def test_get_data_studio_workflows_happy_case_should_return_correct_list(self):
         """
         Test if the function correctly returns the list of datastudio workflows for a given owner.
         """
@@ -121,7 +121,7 @@ class TestWorkflowRepository(unittest.TestCase):
         ]
         self.workflow_repository.workflow_table.query = MagicMock(return_value={"Items": mock_response_items})
 
-        actual_result = self.workflow_repository.find_datastudio_workflows(owner_id)
+        actual_result = self.workflow_repository.get_data_studio_workflows(owner_id)
 
         self.assertEqual(mock_response_items, actual_result)
         self.workflow_repository.workflow_table.query.assert_called_once_with(
@@ -130,7 +130,7 @@ class TestWorkflowRepository(unittest.TestCase):
         )
 
 
-    def test_find_datastudio_workflows_when_client_error_is_thrown_should_raise_service_exception(self):
+    def test_get_data_studio_workflows_when_client_error_is_thrown_should_raise_service_exception(self):
         """
         Test if the function raises a ServiceException when a ClientError is thrown by DynamoDB.
         """
@@ -139,4 +139,4 @@ class TestWorkflowRepository(unittest.TestCase):
         self.workflow_repository.workflow_table.query.side_effect = ClientError({'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'query')
 
         with self.assertRaises(ServiceException):
-            self.workflow_repository.find_datastudio_workflows(owner_id)
+            self.workflow_repository.get_data_studio_workflows(owner_id)

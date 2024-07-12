@@ -49,7 +49,7 @@ class WorkflowRepository(metaclass=Singleton):
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t save the workflow')
 
 
-    def find_datastudio_workflows(self, owner_id:str) -> list[dict]:
+    def get_data_studio_workflows(self, owner_id:str) -> list[dict]:
         """Returns a list of workflows for the given owner where the mapping_id is present.
 
         Args:
@@ -58,6 +58,7 @@ class WorkflowRepository(metaclass=Singleton):
         Returns:
             list[dict]: List of datastudio workflows for the given owner.
         """
+        log.info('Getting data studio workflows. owner_id: %s', owner_id)
         try:
             workflows = self.workflow_table.query(
                 KeyConditionExpression=Key("ownerId").eq(owner_id) ,
@@ -65,7 +66,7 @@ class WorkflowRepository(metaclass=Singleton):
             )
             return workflows["Items"]
         except ClientError as e:
-            log.exception('Failed to list workflows. owner_id: %s', owner_id)
+            log.exception('Failed to list data studio workflows. owner_id: %s', owner_id)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t list the workflows')
 
 

@@ -29,7 +29,7 @@ class DataStudioService(metaclass=Singleton):
         Returns:
             list[DataStudioWorkflow]: List of workflows for the given owner.
         """
-        workflows_response = self.workflow_repository.find_datastudio_workflows(owner_id)
+        workflows_response = self.workflow_repository.get_data_studio_workflows(owner_id)
         workflows = [
             DataStudioWorkflow(
                 owner_id=workflow_response.get('ownerId'),
