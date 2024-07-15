@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from enums import ServiceStatus
 from exception import ServiceException
-from model import Workflow, Config
+from model import Workflow
 from service import DataStudioService
 from tests import TestUtils
 
@@ -46,11 +46,7 @@ class TestDataStudioService(unittest.TestCase):
                 is_sync_execution=True,
                 state_machine_arn="state_machine_arn",
                 is_binary_event=False,
-                mapping_id="3eaddbdd-34cf-47fe-84fe-a0c971c6e4a6",
-                config=Config(
-                    connections=[],
-                    nodes=[]
-                ) 
+                mapping_id="3eaddbdd-34cf-47fe-84fe-a0c971c6e4a6" 
             )
         ]
 

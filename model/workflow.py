@@ -27,15 +27,6 @@ class Config:
     connections: List[Connection] = field(default=None)
     nodes: List[Node] = field(default=None)
 
-    @classmethod
-    def from_dict(cls, data:dict) -> 'Config':
-        mapped_data = {
-            "start_at": data.get("startAt"),
-            "connections": [Connection(**connection) for connection in data.get("connections", [])],
-            "nodes": [Node(**node) for node in data.get("nodes", [])]
-        }
-        return cls(**mapped_data)
-
 
 @dataclass
 class SubWorkflow:
@@ -55,8 +46,7 @@ class Workflow:
     is_sync_execution: bool
     state_machine_arn: str
     is_binary_event: bool
-    mapping_id: str
-    config: Config
+    mapping_id: str | None = field(default=None)
 
 
     @classmethod
@@ -78,7 +68,6 @@ class Workflow:
             "is_sync_execution": data.get("is_sync_execution"),
             "state_machine_arn": data.get("state_machine_arn"),
             "is_binary_event": data.get("is_binary_event"),
-            "mapping_id": data.get("mapping_id"),
-            "config": Config.from_dict(data.get("config"))
+            "mapping_id": data.get("mapping_id")
         }
         return cls(**mapped_data)

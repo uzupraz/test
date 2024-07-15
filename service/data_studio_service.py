@@ -23,7 +23,7 @@ class DataStudioService(metaclass=Singleton):
 
     def get_workflows(self, owner_id:str) -> list[Workflow]:
         """
-        Returns a list of workflows for the given owner.
+        Returns a list of workflows for the given owner where the mapping_id is present.
         Args:
             owner_id (str): The owner ID for which the workflows are to be returned.
         Returns:

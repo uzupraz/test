@@ -46,7 +46,7 @@ class DataStudioWorkflowsResource(Resource):
         super().__init__(api, *args, **kwargs)
     
 
-    @api.doc(description="Get list of workflows")
+    @api.doc(description="Get a list of workflows for the given owner where the mapping_id is present.")
     @api.marshal_with(data_studio_workflows_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
