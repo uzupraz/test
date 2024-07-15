@@ -27,6 +27,15 @@ class Config:
     connections: List[Connection] = field(default=None)
     nodes: List[Node] = field(default=None)
 
+    @classmethod
+    def from_dict(cls, data:dict) -> 'Config':
+        mapped_data = {
+            "start_at": data.get("startAt"),
+            "connections": [Connection(**connection) for connection in data.get("connections", [])],
+            "nodes": [Node(**node) for node in data.get("nodes", [])]
+        }
+        return cls(**mapped_data)
+
 
 @dataclass
 class SubWorkflow:
@@ -37,16 +46,39 @@ class SubWorkflow:
 class Workflow:
     owner_id: str
     workflow_id: str
-    config: Config
+    event_name: str
     created_by: str
     created_by_name: str
-    creation_date: str
-    group_name: str
-    name: str
+    last_updated: str
     state: str
-    workflow_version: int
-    schema_version: int
+    version: int
+    is_sync_execution: bool
+    state_machine_arn: str
+    is_binary_event: bool
+    mapping_id: str
+    config: Config
+
 
     @classmethod
     def parse_from(cls, data: Dict[str, Any]) -> 'Workflow':
         return from_dict(data_class=Workflow, data=data)
+    
+
+    @classmethod
+    def from_dict(cls, data:dict) -> 'Workflow':
+        mapped_data = {
+            "owner_id": data.get("ownerId"),
+            "workflow_id": data.get("workflowId"),
+            "event_name": data.get("event_name"),
+            "created_by": data.get("createdBy"),
+            "created_by_name": data.get("createdByName"),
+            "last_updated": data.get("lastUpdated"),
+            "state": data.get("state"),
+            "version": data.get("version"),
+            "is_sync_execution": data.get("is_sync_execution"),
+            "state_machine_arn": data.get("state_machine_arn"),
+            "is_binary_event": data.get("is_binary_event"),
+            "mapping_id": data.get("mapping_id"),
+            "config": Config.from_dict(data.get("config"))
+        }
+        return cls(**mapped_data)

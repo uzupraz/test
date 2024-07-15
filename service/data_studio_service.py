@@ -1,4 +1,4 @@
-from model import DataStudioWorkflow
+from model import Workflow
 from repository import WorkflowRepository
 from utils import Singleton
 
@@ -21,17 +21,17 @@ class DataStudioService(metaclass=Singleton):
         return []
 
 
-    def get_workflows(self, owner_id:str) -> list[DataStudioWorkflow]:
+    def get_workflows(self, owner_id:str) -> list[Workflow]:
         """
         Returns a list of workflows for the given owner.
         Args:
             owner_id (str): The owner ID for which the workflows are to be returned.
         Returns:
-            list[DataStudioWorkflow]: List of workflows for the given owner.
+            list[Workflow]: List of workflows for the given owner.
         """
         workflows_response = self.workflow_repository.get_data_studio_workflows(owner_id)
         workflows = [
-            DataStudioWorkflow.from_dict(workflow_response)
+            Workflow.from_dict(workflow_response)
             for workflow_response in workflows_response
         ]
         return workflows

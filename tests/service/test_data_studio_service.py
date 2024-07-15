@@ -1,11 +1,11 @@
-from decimal import Decimal
 import unittest
 from unittest.mock import MagicMock
 
 from enums import ServiceStatus
 from exception import ServiceException
-from model import DataStudioWorkflow
+from model import Workflow, Config
 from service import DataStudioService
+from tests import TestUtils
 
 
 class TestDataStudioService(unittest.TestCase):
@@ -26,30 +26,15 @@ class TestDataStudioService(unittest.TestCase):
         Test if the function correctly returns the list of workflows for a given owner.
         """
         owner_id = "test_owner_id"
-        mock_response_items = [
-            {
-                "createdByName": "created_by_name",
-                "version": Decimal("1"),
-                "config": {"connections": [], "nodes": []},
-                "is_binary_event": False,
-                "is_sync_execution": True,
-                "groupName": "group_name",
-                "state_machine_arn": "state_machine_arn",
-                "creationDate": "2024-03-30T01:22:50.846714",
-                "createdBy": "created_by_uuid",
-                "name": "workflow_name",
-                "ownerId": "test_owner_id",
-                "state": "ACTIVE",
-                "workflowId": "workflow_id",
-                "event_name": "event_name",
-                "mapping_id": "3eaddbdd-34cf-47fe-84fe-a0c971c6e4a6"
-            },
-        ]
+
+        mock_response_path = '/tests/resources/workflows/get_data_studio_workflows_response.json'
+        mock_response_items = TestUtils.get_file_content(mock_response_path)
+
         self.data_studio_service.workflow_repository.get_data_studio_workflows = MagicMock(return_value=mock_response_items)
 
         actual_result = self.data_studio_service.get_workflows(owner_id)
         expected_result = [
-            DataStudioWorkflow(
+            Workflow(
                 owner_id="test_owner_id",
                 workflow_id="workflow_id",
                 event_name="event_name",
@@ -61,7 +46,11 @@ class TestDataStudioService(unittest.TestCase):
                 is_sync_execution=True,
                 state_machine_arn="state_machine_arn",
                 is_binary_event=False,
-                mapping_id="3eaddbdd-34cf-47fe-84fe-a0c971c6e4a6" 
+                mapping_id="3eaddbdd-34cf-47fe-84fe-a0c971c6e4a6",
+                config=Config(
+                    connections=[],
+                    nodes=[]
+                ) 
             )
         ]
 
