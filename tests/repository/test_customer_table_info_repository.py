@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 
@@ -13,16 +13,16 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
 
 
     def setUp(self):
-        self.app_config = AppConfig(customer_table_info_table_name='customer_table_info')
-        self.aws_config = AWSConfig(is_local=True, dynamodb_aws_region='eu-central-1')
+        app_config = Mock()
+        app_config.customer_table_info_table_name = 'customer_table_info'
+        aws_config = Mock()
+        aws_config.dynamodb_aws_region = 'eu-central-1'
 
         Singleton.clear_instance(CustomerTableInfoRepository)
-        self.customer_table_info_repo = CustomerTableInfoRepository(self.app_config, self.aws_config)
+        self.customer_table_info_repo = CustomerTableInfoRepository(app_config, aws_config)
 
 
     def tearDown(self):
-        self.app_config = None
-        self.aws_config = None
         self.customer_table_info_repo = None
 
 
@@ -58,23 +58,6 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
 
         mock_table.query.assert_called_once_with(KeyConditionExpression=Key('owner_id').eq(owner_id))
         self.assertEqual(result, [])
-
-
-    def test_get_tables_with_owner_value_as_none_should_throw_service_exception(self):
-        """
-        Should propagate ServiceException for owner as none.
-        """
-        owner_id = None
-        mock_table = MagicMock()
-        self.customer_table_info_repo.table = mock_table
-
-        with self.assertRaises(ServiceException) as context:
-            self.customer_table_info_repo.get_tables_for_owner(owner_id)
-
-        self.assertEqual(context.exception.status_code, 500)
-        self.assertEqual(context.exception.status, ServiceStatus.FAILURE.value)
-        self.assertEqual(context.exception.message, 'owner_id cannot be null or empty')
-        mock_table.query.assert_not_called()
 
 
     def test_get_tables_for_owner_with_service_exception(self):

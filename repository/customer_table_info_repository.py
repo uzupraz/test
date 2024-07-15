@@ -45,9 +45,6 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             ServiceException: If owner_id is null or empty or if there is an error querying the DynamoDB table.
         """
         log.info('Retrieving table details. owner_id: %s', owner_id)
-        if not owner_id:
-            raise ServiceException(500, ServiceStatus.FAILURE.value, 'owner_id cannot be null or empty')
-
         try:
             response = self.table.query(
                 KeyConditionExpression=Key('owner_id').eq(owner_id)
@@ -59,7 +56,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE.value, e.response['Error']['Message'])
 
 
-    def get_table_size(self, table_name:str) -> int:
+    def get_table_size(self, table_name:str) -> float:
         """
         Get the size of a specific table.
 
@@ -67,7 +64,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             table_name (str): The name of the table to retrieve size for.
 
         Returns:
-            int: The table size in kilobytes.
+            float: The table size in kilobytes.
 
         Raises:
             ServiceException: If there is an error describing the DynamoDB table.

@@ -21,7 +21,7 @@ tables_response_dto = api.inherit('Data tables Response',server_response, {
     'payload': fields.List(fields.Nested(api.model('Data tables', {
         "name": fields.String(description='Name of the table'),
         "id": fields.String(description='Id of the table'),
-        "size": fields.Integer(description='Size of the table in Kilo-bytes'),
+        "size": fields.Float(description='Size of the table in Kilo-bytes'),
     })))
 })
 

@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 
@@ -14,8 +14,10 @@ class TestDataTableService(unittest.TestCase):
 
 
     def setUp(self):
-        app_config = AppConfig(customer_table_info_table_name='customer_table_info')
-        aws_config = AWSConfig(is_local=True, dynamodb_aws_region='eu-central-1')
+        app_config = Mock()
+        app_config.customer_table_info_table_name = 'customer_table_info'
+        aws_config = Mock()
+        aws_config.dynamodb_aws_region = 'eu-central-1'
 
         Singleton.clear_instance(CustomerTableInfoRepository)
         self.customer_table_info_repo = CustomerTableInfoRepository(app_config, aws_config)
@@ -25,8 +27,6 @@ class TestDataTableService(unittest.TestCase):
 
 
     def tearDown(self):
-        self.app_config = None
-        self.aws_config = None
         self.customer_table_info_repo = None
         self.data_table_service = None
 
@@ -106,6 +106,20 @@ class TestDataTableService(unittest.TestCase):
         self.assertEqual(result[1].name, 'Table2')
         self.assertEqual(result[1].id, 'table456')
         self.assertEqual(result[1].size, 2048)
+
+
+    def test_list_tables_with_owner_value_as_none_should_throw_service_exception(self):
+        """
+        Should propagate ServiceException for owner as none.
+        """
+        owner_id = None
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.list_tables(owner_id)
+
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE.value)
+        self.assertEqual(context.exception.message, 'owner_id cannot be null or empty')
 
 
     def test_list_tables_throws_service_exception_while_getting_list_of_tables_from_repository(self):
