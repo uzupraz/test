@@ -46,7 +46,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         """
         log.info('Retrieving table details. owner_id: %s', owner_id)
         if not owner_id:
-            raise ServiceException(500, ServiceStatus.FAILURE, 'owner_id cannot be null or empty')
+            raise ServiceException(500, ServiceStatus.FAILURE.value, 'owner_id cannot be null or empty')
 
         try:
             response = self.table.query(
@@ -56,7 +56,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             return response.get('Items', [])
         except ClientError as e:
             log.exception('Failed to retrieve table details. owner_id: %s', owner_id)
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, e.response['Error']['Message'])
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE.value, e.response['Error']['Message'])
 
 
     def get_table_size(self, table_name:str) -> int:
@@ -76,10 +76,11 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             log.info('Retrieving the size of table. table_name: %s', table_name)
             response = self.dynamodb_client.describe_table(TableName=table_name)
             log.info('Successfully retrieved the size of table. table_name: %s', table_name)
-            return response['Table'] ['TableSizeBytes'] // 1024  # Convert bytes to kilobytes
+            # Convert bytes to kilobytes
+            return response['Table'] ['TableSizeBytes'] // 1024
         except ClientError as e:
             log.exception('Failed to retrieve the size of table. table_name: %s', table_name)
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, e.response['Error']['Message'])
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE.value, e.response['Error']['Message'])
 
 
     def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:
