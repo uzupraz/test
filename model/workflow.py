@@ -40,7 +40,6 @@ class Workflow:
     event_name: str
     created_by: str
     created_by_name: str
-    last_updated: str
     state: str
     version: int
     is_sync_execution: bool
@@ -57,17 +56,16 @@ class Workflow:
     @classmethod
     def from_dict(cls, data:dict) -> 'Workflow':
         mapped_data = {
-            "owner_id": data.get("ownerId"),
-            "workflow_id": data.get("workflowId"),
-            "event_name": data.get("event_name"),
-            "created_by": data.get("createdBy"),
-            "created_by_name": data.get("createdByName"),
-            "last_updated": data.get("lastUpdated"),
-            "state": data.get("state"),
-            "version": data.get("version"),
-            "is_sync_execution": data.get("is_sync_execution"),
-            "state_machine_arn": data.get("state_machine_arn"),
-            "is_binary_event": data.get("is_binary_event"),
-            "mapping_id": data.get("mapping_id")
+            "owner_id": data["ownerId"],
+            "workflow_id": data["workflowId"],
+            "event_name": data["event_name"],
+            "created_by": data["createdBy"],
+            "created_by_name": data["createdByName"],
+            "state": data["state"],
+            "version": data["version"],
+            "is_sync_execution": data["is_sync_execution"],
+            "state_machine_arn": data["state_machine_arn"],
+            "is_binary_event": data["is_binary_event"],
+            "mapping_id": data["mapping_id"]
         }
         return cls(**mapped_data)

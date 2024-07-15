@@ -40,7 +40,6 @@ class TestDataStudioService(unittest.TestCase):
                 event_name="event_name",
                 created_by="created_by_uuid",
                 created_by_name="created_by_name",
-                last_updated=None,
                 state="ACTIVE",
                 version=1,
                 is_sync_execution=True,
@@ -65,6 +64,22 @@ class TestDataStudioService(unittest.TestCase):
         expected_result = []
 
         self.assertEqual(expected_result, actual_result)
+        self.data_studio_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
+    
+
+    def test_get_workflows_should_raise_key_error_when_some_fields_are_missing_in_the_response(self):
+        """
+        Test if the function throws an error when some fields are missing in the response.
+        Here mapping_id is missing in the response.
+        """
+        owner_id = "test_owner_id"
+        mock_response_path = '/tests/resources/workflows/get_data_studio_workflows_response_with_some_missing_fields.json'
+        mock_response_items = TestUtils.get_file_content(mock_response_path)
+        self.data_studio_service.workflow_repository.get_data_studio_workflows = MagicMock(return_value=mock_response_items)
+
+        with self.assertRaises(KeyError):
+            self.data_studio_service.get_workflows(owner_id)
+        
         self.data_studio_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
 
 
