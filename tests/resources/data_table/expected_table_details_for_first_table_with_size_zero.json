@@ -1,0 +1,25 @@
+{
+    "Table": {
+        "TableName": "OriginalTable1",
+        "TableSizeBytes": 0,
+        "ItemCount": 42,
+        "CreationDateTime": "2023-01-01T12:00:00.000Z",
+        "KeySchema": [
+            {
+                "AttributeName": "id",
+                "KeyType": "HASH"
+                }
+            ],
+        "AttributeDefinitions": [
+            {
+                "AttributeName": "name",
+                "AttributeType": "S"
+                }
+            ],
+        "ProvisionedThroughput": {
+            "ReadCapacityUnits": 5,
+            "WriteCapacityUnits": 5
+        },
+        "TableStatus": "ACTIVE"
+    }
+}

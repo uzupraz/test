@@ -4,4 +4,4 @@ from dataclasses import dataclass
 class DataTable:
     name: str
     id: str
-    size: int
+    size: float

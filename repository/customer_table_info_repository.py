@@ -42,41 +42,40 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             List[Dict[str, Any]]: A list of table dictionaries containing table details for the specified owner_id.
 
         Raises:
-            ServiceException: If owner_id is null or empty or if there is an error querying the DynamoDB table.
+            ServiceException: If there is an error querying the DynamoDB table.
         """
-        log.info('Retrieving table details. owner_id: %s', owner_id)
+        log.info('Retrieving all tables. owner_id: %s', owner_id)
         try:
             response = self.table.query(
                 KeyConditionExpression=Key('owner_id').eq(owner_id)
             )
-            log.info('Successfully retrieved table details. owner_id: %s', owner_id)
+            log.info('Successfully retrieved all tables. owner_id: %s', owner_id)
             return response.get('Items', [])
         except ClientError as e:
             log.exception('Failed to retrieve table details. owner_id: %s', owner_id)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE.value, e.response['Error']['Message'])
 
 
-    def get_table_size(self, table_name:str) -> float:
+    def get_table_details(self, table_name:str) -> dict:
         """
-        Get the size of a specific table.
+        Get the details of a specific table.
 
         Args:
-            table_name (str): The name of the table to retrieve size for.
+            table_name (str): The name of the table to retrieve details for.
 
         Returns:
-            float: The table size in kilobytes.
+            dict: The response from the describe_table API.
 
         Raises:
             ServiceException: If there is an error describing the DynamoDB table.
         """
         try:
-            log.info('Retrieving the size of table. table_name: %s', table_name)
+            log.info('Retrieving details of table. table_name: %s', table_name)
             response = self.dynamodb_client.describe_table(TableName=table_name)
-            log.info('Successfully retrieved the size of table. table_name: %s', table_name)
-            # Convert bytes to kilobytes
-            return response['Table'] ['TableSizeBytes'] // 1024
+            log.info('Successfully retrieved details of table. table_name: %s', table_name)
+            return response
         except ClientError as e:
-            log.exception('Failed to retrieve the size of table. table_name: %s', table_name)
+            log.exception('Failed to retrieve details of table. table_name: %s', table_name)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE.value, e.response['Error']['Message'])
 
 

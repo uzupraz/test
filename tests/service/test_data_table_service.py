@@ -3,14 +3,17 @@ from unittest.mock import MagicMock, Mock
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 
+from tests.test_utils import TestUtils
 from repository.customer_table_info_repository import CustomerTableInfoRepository
 from service.data_table_service import DataTableService
-from configuration import AWSConfig, AppConfig
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton
 
 class TestDataTableService(unittest.TestCase):
+
+
+    TEST_RESOURCE_PATH = '/tests/resources/data_table/'
 
 
     def setUp(self):
@@ -36,22 +39,24 @@ class TestDataTableService(unittest.TestCase):
         Should return a list of DataTable objects for a valid owner_id.
         """
         owner_id = 'owner123'
-        table_details = [
-            {'original_table_name': 'originalTable1', 'table_name': 'Table1', 'table_id': 'table123'},
-            {'original_table_name': 'originalTable2', 'table_name': 'Table2', 'table_id': 'table456'}
-        ]
+        mock_tables_response_path = self.TEST_RESOURCE_PATH + "expected_tables_for_owner_happy_case.json"
+        tables = TestUtils.get_file_content(mock_tables_response_path)
+        self.customer_table_info_repo.table.query = MagicMock(return_value={'Items': tables})
 
-        self.customer_table_info_repo.table.query = MagicMock(return_value={'Items': table_details})
+        mock_first_table_details_response_path = self.TEST_RESOURCE_PATH + "expected_table_details_for_first_table_happy_case.json"
+        mock_first_table_details = TestUtils.get_file_content(mock_first_table_details_response_path)
+        mock_second_table_details_response_path = self.TEST_RESOURCE_PATH + "expected_table_details_for_second_table_happy_case.json"
+        mock_second_table_details = TestUtils.get_file_content(mock_second_table_details_response_path)
         self.customer_table_info_repo.dynamodb_client.describe_table = MagicMock(side_effect=[
-            {'Table': {'TableSizeBytes': 1024 * 1024}},
-            {'Table': {'TableSizeBytes': 2048 * 1024}}
+            mock_first_table_details,
+            mock_second_table_details
         ])
 
         result = self.data_table_service.list_tables(owner_id)
 
         self.customer_table_info_repo.table.query.assert_called_once_with(KeyConditionExpression=Key('owner_id').eq(owner_id))
-        self.customer_table_info_repo.dynamodb_client.describe_table.assert_any_call(TableName='originalTable1')
-        self.customer_table_info_repo.dynamodb_client.describe_table.assert_any_call(TableName='originalTable2')
+        self.customer_table_info_repo.dynamodb_client.describe_table.assert_any_call(TableName='OriginalTable1')
+        self.customer_table_info_repo.dynamodb_client.describe_table.assert_any_call(TableName='OriginalTable2')
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].name, 'Table1')
         self.assertEqual(result[0].id, 'table123')
@@ -79,33 +84,32 @@ class TestDataTableService(unittest.TestCase):
         Should handle tables with empty size (size 0).
         """
         owner_id = 'owner123'
-        expected_items = [
-            {'table_id': 'table123', 'table_name': 'Table1', 'original_table_name': 'OriginalTable1'},
-            {'table_id': 'table456', 'table_name': 'Table2', 'original_table_name': 'OriginalTable2'}
-        ]
-        self.customer_table_info_repo.table.query = MagicMock(return_value={'Items': expected_items})
-        # Mock describe_table to return 0 size for one table and a specific size for another
+        mock_tables_response_path = self.TEST_RESOURCE_PATH + "expected_tables_for_owner_happy_case.json"
+        tables = TestUtils.get_file_content(mock_tables_response_path)
+        self.customer_table_info_repo.table.query = MagicMock(return_value={'Items': tables})
+
+        mock_first_table_details_response_path = self.TEST_RESOURCE_PATH + "expected_table_details_for_first_table_with_size_zero.json"
+        mock_first_table_details = TestUtils.get_file_content(mock_first_table_details_response_path)
+        mock_second_table_details_response_path = self.TEST_RESOURCE_PATH + "expected_table_details_for_second_table_with_size_zero.json"
+        mock_second_table_details = TestUtils.get_file_content(mock_second_table_details_response_path)
         self.customer_table_info_repo.dynamodb_client.describe_table = MagicMock(side_effect=[
-            {'Table': {'TableSizeBytes': 0}},
-            {'Table': {'TableSizeBytes': 2048 * 1024}}
+            mock_first_table_details,
+            mock_second_table_details
         ])
 
         result = self.data_table_service.list_tables(owner_id)
 
         self.customer_table_info_repo.table.query.assert_called_once_with(KeyConditionExpression=Key('owner_id').eq(owner_id))
-        # Verify describe_table calls
         self.customer_table_info_repo.dynamodb_client.describe_table.assert_any_call(TableName='OriginalTable1')
         self.customer_table_info_repo.dynamodb_client.describe_table.assert_any_call(TableName='OriginalTable2')
 
-        # Verify the result contains tables with correct sizes
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].name, 'Table1')
         self.assertEqual(result[0].id, 'table123')
-        # Check for empty size handling
         self.assertEqual(result[0].size, 0)
         self.assertEqual(result[1].name, 'Table2')
         self.assertEqual(result[1].id, 'table456')
-        self.assertEqual(result[1].size, 2048)
+        self.assertEqual(result[1].size, 0)
 
 
     def test_list_tables_with_owner_value_as_none_should_throw_service_exception(self):
@@ -119,7 +123,7 @@ class TestDataTableService(unittest.TestCase):
 
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE.value)
-        self.assertEqual(context.exception.message, 'owner_id cannot be null or empty')
+        self.assertEqual(context.exception.message, 'owner id cannot be null or empty')
 
 
     def test_list_tables_throws_service_exception_while_getting_list_of_tables_from_repository(self):
@@ -145,11 +149,9 @@ class TestDataTableService(unittest.TestCase):
         while getting the size of the table.
         """
         owner_id = 'owner123'
-        expected_items = [
-            {'table_id': 'table123', 'table_name': 'Table1', 'original_table_name': 'OriginalTable1'},
-            {'table_id': 'table456', 'table_name': 'Table2', 'original_table_name': 'OriginalTable2'}
-        ]
-        self.customer_table_info_repo.table.query = MagicMock(return_value={'Items': expected_items})
+        mock_tables_response_path = self.TEST_RESOURCE_PATH + "expected_tables_for_owner_happy_case.json"
+        tables = TestUtils.get_file_content(mock_tables_response_path)
+        self.customer_table_info_repo.table.query = MagicMock(return_value={'Items': tables})
 
         # Mock describe_table to throw a ClientError
         self.customer_table_info_repo.dynamodb_client.describe_table = MagicMock(side_effect=ClientError({'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'describe_table'))

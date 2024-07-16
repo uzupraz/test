@@ -9,7 +9,11 @@ from .common_controller import server_response
 from enums import APIStatus
 from model import User
 
-api = Namespace("Data table API", description="API for the data table", path="/interconnecthub/data-table")
+api = Namespace(
+    name="Data Table API",
+    description="API for managing data tables within the Interconnect Hub. This API provides endpoints for creating, retrieving, updating, and deleting data tables, as well as fetching detailed information and statistics about them.",
+    path="/interconnecthub/data-table"
+)
 log = api.logger
 
 aws_config = AWSConfig()

@@ -1,0 +1,14 @@
+[
+    {
+        "owner_id": "owner123",
+        "table_id": "table123",
+        "table_name": "Table1",
+        "original_table_name": "OriginalTable1"
+    },
+    {
+        "owner_id": "owner123",
+        "table_id": "table456",
+        "table_name": "Table2",
+        "original_table_name": "OriginalTable2"
+    }
+]
