@@ -111,7 +111,7 @@ class TestWorkflowRepository(unittest.TestCase):
         self.assertEqual(mock_response_items, actual_result)
         self.workflow_repository.workflow_table.query.assert_called_once_with(
             KeyConditionExpression=Key('ownerId').eq(owner_id),
-            FilterExpression=Attr('state').eq('ACTIVE') & Attr('mapping_id').exists() & Attr('mapping_id').ne(None)
+            FilterExpression=Attr('mapping_id').exists() & Attr('mapping_id').ne(None)
         )
     
 
@@ -130,7 +130,7 @@ class TestWorkflowRepository(unittest.TestCase):
         self.assertEqual(mock_response_items, actual_result)
         self.workflow_repository.workflow_table.query.assert_called_once_with(
             KeyConditionExpression=Key('ownerId').eq(owner_id),
-            FilterExpression=Attr('state').eq('ACTIVE') & Attr('mapping_id').exists() & Attr('mapping_id').ne(None)
+            FilterExpression=Attr('mapping_id').exists() & Attr('mapping_id').ne(None)
         )
 
 
@@ -147,5 +147,5 @@ class TestWorkflowRepository(unittest.TestCase):
         
         self.workflow_repository.workflow_table.query.assert_called_once_with(
             KeyConditionExpression=Key('ownerId').eq(owner_id),
-            FilterExpression=Attr('state').eq('ACTIVE') & Attr('mapping_id').exists() & Attr('mapping_id').ne(None)
+            FilterExpression=Attr('mapping_id').exists() & Attr('mapping_id').ne(None)
         )
