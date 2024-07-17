@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 @dataclass
-class DataTable:
+class CustomerTable:
     name: str
     id: str
     size: float

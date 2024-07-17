@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch, call
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 
@@ -17,13 +17,25 @@ class TestDataTableService(unittest.TestCase):
 
 
     def setUp(self):
-        app_config = Mock()
-        app_config.customer_table_info_table_name = 'customer_table_info'
-        aws_config = Mock()
-        aws_config.dynamodb_aws_region = 'eu-central-1'
+        self.app_config = Mock()
+        self.aws_config = Mock()
+        self.mock_dynamodb_resource = Mock()
+        self.mock_dynamodb_client = Mock()
+        self.mock_table = Mock()
 
         Singleton.clear_instance(CustomerTableInfoRepository)
-        self.customer_table_info_repo = CustomerTableInfoRepository(app_config, aws_config)
+        with patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_dynamodb_resource') as mock_configure_resource, \
+             patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_dynamodb_client') as mock_configure_client, \
+             patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_table') as mock_configure_table:
+
+            self.mock_configure_resource = mock_configure_resource
+            self.mock_configure_client = mock_configure_client
+            self.mock_configure_table = mock_configure_table
+
+            self.mock_configure_resource.return_value = self.mock_dynamodb_resource
+            self.mock_configure_client.return_value = self.mock_dynamodb_client
+            self.mock_configure_table.return_value = self.mock_table
+            self.customer_table_info_repo = CustomerTableInfoRepository(self.app_config, self.aws_config)
 
         Singleton.clear_instance(DataTableService)
         self.data_table_service = DataTableService(self.customer_table_info_repo)
@@ -55,8 +67,11 @@ class TestDataTableService(unittest.TestCase):
         result = self.data_table_service.list_tables(owner_id)
 
         self.customer_table_info_repo.table.query.assert_called_once_with(KeyConditionExpression=Key('owner_id').eq(owner_id))
-        self.customer_table_info_repo.dynamodb_client.describe_table.assert_any_call(TableName='OriginalTable1')
-        self.customer_table_info_repo.dynamodb_client.describe_table.assert_any_call(TableName='OriginalTable2')
+        self.customer_table_info_repo.dynamodb_client.describe_table.assert_has_calls([
+            call(TableName='OriginalTable1'),
+            call(TableName='OriginalTable2')
+        ], any_order=False)
+
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].name, 'Table1')
         self.assertEqual(result[0].id, 'table123')
@@ -100,8 +115,10 @@ class TestDataTableService(unittest.TestCase):
         result = self.data_table_service.list_tables(owner_id)
 
         self.customer_table_info_repo.table.query.assert_called_once_with(KeyConditionExpression=Key('owner_id').eq(owner_id))
-        self.customer_table_info_repo.dynamodb_client.describe_table.assert_any_call(TableName='OriginalTable1')
-        self.customer_table_info_repo.dynamodb_client.describe_table.assert_any_call(TableName='OriginalTable2')
+        self.customer_table_info_repo.dynamodb_client.describe_table.assert_has_calls([
+            call(TableName='OriginalTable1'),
+            call(TableName='OriginalTable2')
+        ], any_order=False)
 
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].name, 'Table1')
@@ -110,20 +127,6 @@ class TestDataTableService(unittest.TestCase):
         self.assertEqual(result[1].name, 'Table2')
         self.assertEqual(result[1].id, 'table456')
         self.assertEqual(result[1].size, 0)
-
-
-    def test_list_tables_with_owner_value_as_none_should_throw_service_exception(self):
-        """
-        Should propagate ServiceException for owner as none.
-        """
-        owner_id = None
-
-        with self.assertRaises(ServiceException) as context:
-            self.data_table_service.list_tables(owner_id)
-
-        self.assertEqual(context.exception.status_code, 400)
-        self.assertEqual(context.exception.status, ServiceStatus.FAILURE.value)
-        self.assertEqual(context.exception.message, 'owner id cannot be null or empty')
 
 
     def test_list_tables_throws_service_exception_while_getting_list_of_tables_from_repository(self):
@@ -146,7 +149,7 @@ class TestDataTableService(unittest.TestCase):
     def test_get_tables_for_owner_returns_list_of_tables_but_throws_service_exception(self):
         """
         Returns list of tables from repository sucessfully but propagates ServiceException
-        while getting the size of the table.
+        while getting the details of the table.
         """
         owner_id = 'owner123'
         mock_tables_response_path = self.TEST_RESOURCE_PATH + "expected_tables_for_owner_happy_case.json"
@@ -159,8 +162,8 @@ class TestDataTableService(unittest.TestCase):
         with self.assertRaises(ServiceException) as context:
             self.data_table_service.list_tables(owner_id)
 
-        self.assertEqual(context.exception.status_code, 400)
-        self.assertEqual(context.exception.status, ServiceStatus.FAILURE.value)
-        self.assertEqual(context.exception.message, 'Test Error')
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to retrieve table details')
         self.customer_table_info_repo.table.query.assert_called_once_with(KeyConditionExpression=Key('owner_id').eq(owner_id))
         self.customer_table_info_repo.dynamodb_client.describe_table.assert_called_once_with(TableName='OriginalTable1')

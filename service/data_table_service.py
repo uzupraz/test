@@ -1,8 +1,6 @@
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from model import DataTable
-from exception import ServiceException
-from enums import ServiceStatus
+from model import CustomerTable
 from repository import CustomerTableInfoRepository
 
 log = common_ctrl.log
@@ -20,7 +18,7 @@ class DataTableService(metaclass=Singleton):
         self.customer_table_info_repository = customer_table_info_repository
 
 
-    def list_tables(self, owner_id:str) -> list[DataTable]:
+    def list_tables(self, owner_id:str) -> list[CustomerTable]:
         """
         Retrieves the list of DynamoDB tables that belong to the specified owner.
 
@@ -31,15 +29,12 @@ class DataTableService(metaclass=Singleton):
             List[DataTable]: A list of DataTable objects containing table details.
         """
         log.info('Retrieving all tables. owner_id: %s', owner_id)
-        if not owner_id:
-            log.exception('Failed to retrieve all tables. owner_id: %s', owner_id)
-            raise ServiceException(400, ServiceStatus.FAILURE.value, 'owner id cannot be null or empty')
         tables_response = self.customer_table_info_repository.get_tables_for_owner(owner_id)
         data_tables = []
 
         for table in tables_response:
             table_details_response = self.customer_table_info_repository.get_table_details(table['original_table_name'])
-            data_tables.append(DataTable(
+            data_tables.append(CustomerTable(
                 name=table['table_name'],
                 id=table['table_id'],
                 size=table_details_response['Table'] ['TableSizeBytes'] / 1024

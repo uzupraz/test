@@ -20,13 +20,20 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         """
         Initialize the CustomerTableInfoRepository with the AWS and App configurations.
 
+        DynamoDB Resource: The DynamoDB resource provides a higher-level interface that allows us to interact
+        with DynamoDB in an object-oriented manner. It simplifies operations such as creating tables, querying, updating items, etc.
+
+        DynamoDB Client: The DynamoDB client provides a lower-level interface that allows for direct interaction with
+        DynamoDB through API calls. This is particularly useful for operations that are not directly supported by
+        the resource interface, such as the describe_table operation used in the 'get_table_size' method.
+
         Args:
             app_config (AppConfig): The application configuration object.
             aws_config (AWSConfig): The AWS configuration object.
         """
         self.aws_config = aws_config
         self.app_config = app_config
-        self.dynamodb = self.__configure_dynamodb_resource()
+        self.dynamodb_resource = self.__configure_dynamodb_resource()
         self.dynamodb_client = self.__configure_dynamodb_client()
         self.table = self.__configure_table()
 
@@ -53,7 +60,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             return response.get('Items', [])
         except ClientError as e:
             log.exception('Failed to retrieve table details. owner_id: %s', owner_id)
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE.value, e.response['Error']['Message'])
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve tables')
 
 
     def get_table_details(self, table_name:str) -> dict:
@@ -76,7 +83,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             return response
         except ClientError as e:
             log.exception('Failed to retrieve details of table. table_name: %s', table_name)
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE.value, e.response['Error']['Message'])
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve table details')
 
 
     def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:
@@ -114,4 +121,4 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         Returns:
             boto3.resources.factory.dynamodb.Table: The DynamoDB table object.
         """
-        return self.dynamodb.Table(self.app_config.customer_table_info_table_name)
+        return self.dynamodb_resource.Table(self.app_config.customer_table_info_table_name)
