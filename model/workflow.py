@@ -37,16 +37,35 @@ class SubWorkflow:
 class Workflow:
     owner_id: str
     workflow_id: str
-    config: Config
+    event_name: str
     created_by: str
     created_by_name: str
-    creation_date: str
-    group_name: str
-    name: str
     state: str
-    workflow_version: int
-    schema_version: int
+    version: int
+    is_sync_execution: bool
+    state_machine_arn: str
+    is_binary_event: bool
+    mapping_id: str | None = field(default=None)
+
 
     @classmethod
     def parse_from(cls, data: Dict[str, Any]) -> 'Workflow':
         return from_dict(data_class=Workflow, data=data)
+    
+
+    @classmethod
+    def from_dict(cls, data:dict) -> 'Workflow':
+        mapped_data = {
+            "owner_id": data["ownerId"],
+            "workflow_id": data["workflowId"],
+            "event_name": data["event_name"],
+            "created_by": data["createdBy"],
+            "created_by_name": data["createdByName"],
+            "state": data["state"],
+            "version": data["version"],
+            "is_sync_execution": data["is_sync_execution"],
+            "state_machine_arn": data["state_machine_arn"],
+            "is_binary_event": data["is_binary_event"],
+            "mapping_id": data["mapping_id"]
+        }
+        return cls(**mapped_data)

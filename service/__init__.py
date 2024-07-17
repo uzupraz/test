@@ -5,3 +5,4 @@ from .s3_file_service import S3FileService
 from .dashboard_service import DashboardService
 from .opensearch_service import OpensearchService
 from .data_table_service import DataTableService
+from .data_studio_service import DataStudioService

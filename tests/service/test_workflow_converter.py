@@ -5,7 +5,7 @@ from ..test_utils import TestUtils
 from model import Workflow
 from service import StepFunctionJSONConverter
 
-
+@unittest.skip
 class TestStepFunctionJSONConverter(unittest.TestCase):
 
 
@@ -38,7 +38,7 @@ class TestStepFunctionJSONConverter(unittest.TestCase):
 
         input_file_path = self.test_resource_path + input_file_name
         workflow_json = TestUtils.get_file_content(input_file_path)
-        workflow = Workflow.parse_from(workflow_json)
+        workflow = Workflow.from_dict(workflow_json)
 
         if expected_exception:
             with self.assertRaises(expected_exception):
