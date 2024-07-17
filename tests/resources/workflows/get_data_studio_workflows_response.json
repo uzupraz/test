@@ -1,0 +1,22 @@
+[
+    {
+        "createdByName": "created_by_name",
+        "version": 1,
+        "config": {
+            "connections": [],
+            "nodes": []
+        },
+        "is_binary_event": false,
+        "is_sync_execution": true,
+        "groupName": "group_name",
+        "state_machine_arn": "state_machine_arn",
+        "creationDate": "2024-03-30T01:22:50.846714",
+        "createdBy": "created_by_uuid",
+        "name": "workflow_name",
+        "ownerId": "test_owner_id",
+        "state": "ACTIVE",
+        "workflowId": "workflow_id",
+        "event_name": "event_name",
+        "mapping_id": "3eaddbdd-34cf-47fe-84fe-a0c971c6e4a6"
+    }
+]
