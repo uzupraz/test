@@ -4,6 +4,7 @@ from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 
 from tests.test_utils import TestUtils
+from model import  CustomerTableInfo
 from repository.customer_table_info_repository import CustomerTableInfoRepository
 from exception import ServiceException
 from enums import ServiceStatus
@@ -49,12 +50,16 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         owner_id = 'owner123'
         mock_response_path = self.TEST_RESOURCE_PATH + "expected_tables_for_owner_happy_case.json"
         expected_items = TestUtils.get_file_content(mock_response_path)
+        expected_tables = [
+            CustomerTableInfo.from_dict(expected_item)
+            for expected_item in expected_items
+        ]
         self.mock_table.query.return_value = {'Items': expected_items}
 
         result = self.customer_table_info_repo.get_tables_for_owner(owner_id)
 
         self.mock_table.query.assert_called_once_with(KeyConditionExpression=Key('owner_id').eq(owner_id))
-        self.assertEqual(result, expected_items)
+        self.assertEqual(result, expected_tables)
 
 
     def test_get_tables_for_owner_should_return_empty_tables(self):

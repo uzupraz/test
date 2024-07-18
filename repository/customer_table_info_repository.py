@@ -7,6 +7,7 @@ from boto3.dynamodb.conditions import Key
 
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
+from model import CustomerTableInfo
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton
@@ -38,7 +39,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         self.table = self.__configure_table()
 
 
-    def get_tables_for_owner(self, owner_id:str) -> list[dict[str, any]]:
+    def get_tables_for_owner(self, owner_id:str) -> list[CustomerTableInfo]:
         """
         Get a list of tables for a particular owner_id.
 
@@ -46,7 +47,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             owner_id (str): The owner ID to query the table.
 
         Returns:
-            List[Dict[str, Any]]: A list of table dictionaries containing table details for the specified owner_id.
+            list[CustomerTableInfo]: List of table details for the specified owner_id.
 
         Raises:
             ServiceException: If there is an error querying the DynamoDB table.
@@ -57,7 +58,12 @@ class CustomerTableInfoRepository(metaclass=Singleton):
                 KeyConditionExpression=Key('owner_id').eq(owner_id)
             )
             log.info('Successfully retrieved all tables. owner_id: %s', owner_id)
-            return response.get('Items', [])
+            items = response.get('Items', [])
+            tables = [
+            CustomerTableInfo.from_dict(item)
+            for item in items
+            ]
+            return tables
         except ClientError as e:
             log.exception('Failed to retrieve table details. owner_id: %s', owner_id)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve tables')
