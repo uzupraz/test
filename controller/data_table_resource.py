@@ -11,7 +11,7 @@ from model import User
 
 api = Namespace(
     name="Data Table API",
-    description="API for managing data tables within the Interconnect Hub. This API provides endpoints for creating, retrieving, updating, and deleting data tables, as well as fetching detailed information and statistics about them.",
+    description="API for managing customer tables within the Interconnect Hub. This API provides endpoints for creating, retrieving, updating, and deleting data tables, as well as fetching detailed information and statistics about them.",
     path="/interconnecthub/data-table"
 )
 log = api.logger
@@ -21,8 +21,8 @@ app_config = AppConfig()
 customer_table_info_repository = CustomerTableInfoRepository(app_config=app_config, aws_config=aws_config)
 data_table_service = DataTableService(customer_table_info_repository=customer_table_info_repository)
 
-tables_response_dto = api.inherit('Data tables Response',server_response, {
-    'payload': fields.List(fields.Nested(api.model('Data tables', {
+tables_response_dto = api.inherit('Customer tables response',server_response, {
+    'payload': fields.List(fields.Nested(api.model('List of customer tables', {
         "name": fields.String(description='Name of the table'),
         "id": fields.String(description='Id of the table'),
         "size": fields.Float(description='Size of the table in Kilo-bytes'),
