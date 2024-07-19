@@ -30,13 +30,13 @@ class DataTableService(metaclass=Singleton):
         """
         log.info('Retrieving all tables. owner_id: %s', owner_id)
         tables_response = self.customer_table_info_repository.get_tables_for_owner(owner_id)
-        data_tables = []
+        owner_tables  = []
 
         for table in tables_response:
             table_details_response = self.customer_table_info_repository.get_table_details(table.original_table_name)
-            data_tables.append(ListTableResponse(
+            owner_tables .append(ListTableResponse(
                 name=table.table_name,
                 id=table.table_id,
                 size=table_details_response['Table'] ['TableSizeBytes'] / 1024
             ))
-        return data_tables
+        return owner_tables

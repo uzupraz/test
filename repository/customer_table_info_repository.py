@@ -4,6 +4,7 @@ import boto3.resources.factory
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
+import dacite
 
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
@@ -58,11 +59,10 @@ class CustomerTableInfoRepository(metaclass=Singleton):
                 KeyConditionExpression=Key('owner_id').eq(owner_id)
             )
             log.info('Successfully retrieved all tables. owner_id: %s', owner_id)
-            items = response.get('Items', [])
-            tables = [
-            CustomerTableInfo.from_dict(item)
-            for item in items
-            ]
+            tables = []
+            for item in response.get('Items', []):
+                table = dacite.from_dict(CustomerTableInfo, item)
+                tables.append(table)
             return tables
         except ClientError as e:
             log.exception('Failed to retrieve table details. owner_id: %s', owner_id)

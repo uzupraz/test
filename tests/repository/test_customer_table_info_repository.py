@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import Mock, patch
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
+import dacite
 
 from tests.test_utils import TestUtils
 from model import  CustomerTableInfo
@@ -50,10 +51,11 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         owner_id = 'owner123'
         mock_response_path = self.TEST_RESOURCE_PATH + "expected_tables_for_owner_happy_case.json"
         expected_items = TestUtils.get_file_content(mock_response_path)
-        expected_tables = [
-            CustomerTableInfo.from_dict(expected_item)
-            for expected_item in expected_items
-        ]
+        expected_tables = []
+        for expected_item in expected_items:
+            expected_table = dacite.from_dict(CustomerTableInfo, expected_item)
+            expected_tables.append(expected_table)
+
         self.mock_table.query.return_value = {'Items': expected_items}
 
         result = self.customer_table_info_repo.get_tables_for_owner(owner_id)

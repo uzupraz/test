@@ -39,8 +39,8 @@ if __name__ == '__main__':
                     "requestContext": {
                         "authorizer": {
                             "claims": {
-                                "sub": "this_is_owner_id",
-                                "custom:organizationId": "this_is_organization_id"
+                                "sub": "7QKd6EOPQL77ukqWAcb19",
+                                "custom:organizationId": "7QKd6EOPQL77ukqWAcb19"
                             }
                         }
                     }
