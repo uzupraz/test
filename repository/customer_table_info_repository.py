@@ -92,6 +92,34 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve table details')
 
 
+    def update_table_description(self, owner_id:str, table_id:str, description:str) -> None:
+        """
+        Updates the description of a specified table of particular owner.
+
+        Args:
+            owner_id (str): The owner of the table.
+            table_id (str): The ID of the table.
+            description (str): The new description for the table.
+
+        Raises:
+            ServiceException: If there is an error, updating the DynamoDB table.
+        """
+        try:
+            log.info('Updating description of table. owner_id: %s, table_id: %s', owner_id, table_id)
+            table_key = {'owner_id': owner_id, 'table_id': table_id}
+            update_expression = 'SET description = :desc'
+            expression_attribute_values = {':desc': description}
+            self.table.update_item(
+                Key=table_key,
+                UpdateExpression=update_expression,
+                ExpressionAttributeValues=expression_attribute_values
+            )
+            log.info('Successfully updated description of table. owner_id: %s, table_id: %s', owner_id, table_id)
+        except ClientError as e:
+            log.exception('Failed to update description of table. owner_id: %s, table_id: %s', owner_id, table_id)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to update description of table.')
+
+
     def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:
         """
         Configures and returns a DynamoDB service resource.

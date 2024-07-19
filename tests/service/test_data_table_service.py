@@ -167,3 +167,43 @@ class TestDataTableService(unittest.TestCase):
         self.assertEqual(context.exception.message, 'Failed to retrieve table details')
         self.customer_table_info_repo.table.query.assert_called_once_with(KeyConditionExpression=Key('owner_id').eq(owner_id))
         self.customer_table_info_repo.dynamodb_client.describe_table.assert_called_once_with(TableName='OriginalTable1')
+
+
+    def test_update_table_description_happy_case(self):
+        """
+        Should update the table description successfully.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        description = 'Updated description'
+
+        self.data_table_service.update_table_description(owner_id, table_id, description)
+
+        self.customer_table_info_repo.table.update_item.assert_called_once_with(
+            Key={'owner_id': owner_id, 'table_id': table_id},
+            UpdateExpression='SET description = :desc',
+            ExpressionAttributeValues={':desc': description}
+        )
+
+
+    def test_update_table_description_with_client_error(self):
+        """
+        Should propagate ServiceException when repository throws a ClientError.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        description = 'Updated description'
+        self.customer_table_info_repo.table.update_item.side_effect = ClientError(
+            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'update_item')
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.update_table_description(owner_id, table_id, description)
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to update description of table.')
+        self.customer_table_info_repo.table.update_item.assert_called_once_with(
+            Key={'owner_id': owner_id, 'table_id': table_id},
+            UpdateExpression='SET description = :desc',
+            ExpressionAttributeValues={':desc': description}
+        )

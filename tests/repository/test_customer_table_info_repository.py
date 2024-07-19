@@ -113,7 +113,7 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         """
         Should propagate ServiceException when DynamoDB throws a ClientError.
         """
-        table_name = 'Table1'
+        table_name = 'originalTable1'
         self.mock_dynamodb_client.describe_table.side_effect = ClientError(
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'describe_table')
 
@@ -141,3 +141,43 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.message, 'Failed to retrieve table details')
         self.mock_dynamodb_client.describe_table.assert_called_once_with(TableName=table_name)
+
+
+    def test_update_table_description_happy_case(self):
+        """
+        Should update the table description successfully.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        description = 'Updated description'
+
+        self.customer_table_info_repo.update_table_description(owner_id, table_id, description)
+
+        self.mock_table.update_item.assert_called_once_with(
+            Key={'owner_id': owner_id, 'table_id': table_id},
+            UpdateExpression='SET description = :desc',
+            ExpressionAttributeValues={':desc': description}
+        )
+
+
+    def test_update_table_description_with_client_error(self):
+        """
+        Should propagate ServiceException when DynamoDB throws a ClientError.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        description = 'Updated description'
+        self.mock_table.update_item.side_effect = ClientError(
+            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'update_item')
+
+        with self.assertRaises(ServiceException) as context:
+            self.customer_table_info_repo.update_table_description(owner_id, table_id, description)
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to update description of table.')
+        self.mock_table.update_item.assert_called_once_with(
+            Key={'owner_id': owner_id, 'table_id': table_id},
+            UpdateExpression='SET description = :desc',
+            ExpressionAttributeValues={':desc': description}
+        )
