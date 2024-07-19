@@ -59,13 +59,13 @@ class CustomerTableInfoRepository(metaclass=Singleton):
                 KeyConditionExpression=Key('owner_id').eq(owner_id)
             )
             log.info('Successfully retrieved all tables. owner_id: %s', owner_id)
-            tables = []
+            customer_info_tables = []
             for item in response.get('Items', []):
-                table = dacite.from_dict(CustomerTableInfo, item)
-                tables.append(table)
-            return tables
+                customer_info_table = dacite.from_dict(CustomerTableInfo, item)
+                customer_info_tables.append(customer_info_table)
+            return customer_info_tables
         except ClientError as e:
-            log.exception('Failed to retrieve table details. owner_id: %s', owner_id)
+            log.exception('Failed to retrieve all tables. owner_id: %s', owner_id)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve tables')
 
 

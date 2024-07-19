@@ -40,7 +40,7 @@ if __name__ == '__main__':
                         "authorizer": {
                             "claims": {
                                 "sub": "this_is_owner_id",
-                                "custom:organizationId": "this_is_owner_id"
+                                "custom:organizationId": "this_is_organization_id"
                             }
                         }
                     }
