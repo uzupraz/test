@@ -53,7 +53,7 @@ class DataTableResource(Resource):
 
 
 @api.route('/tables/<string:table_id>/update-table')
-class UpdateTableDescriptionAction(Resource):
+class UpdateTableAction(Resource):
 
 
     def __init__(self, api=None, *args, **kwargs):
