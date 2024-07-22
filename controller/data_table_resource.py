@@ -29,7 +29,7 @@ tables_response_dto = api.inherit('Customer tables response',server_response, {
     })))
 })
 
-update_description_dto = api.model('Update table description', {
+update_description_dto = api.model('Update table', {
     'description': fields.String(required=True, description='The new description for the table')
 })
 
@@ -52,7 +52,7 @@ class DataTableResource(Resource):
         return ServerResponse.success(payload=tables), 200
 
 
-@api.route('/tables/<string:table_id>/description')
+@api.route('/tables/<string:table_id>/update-table')
 class UpdateTableDescriptionAction(Resource):
 
 
@@ -60,7 +60,7 @@ class UpdateTableDescriptionAction(Resource):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description="Update the description of a table.")
+    @api.doc(description="Update the fields of a table.")
     @api.expect(update_description_dto, validate=True)
     @api.marshal_with(server_response, skip_none=True)
     def patch(self, table_id:str):
@@ -68,6 +68,6 @@ class UpdateTableDescriptionAction(Resource):
         user = g.get("user")
         user = User(**user)
         description = request.json['description']
-        data_table_service.update_table_description(owner_id=user.organization_id, table_id=table_id, description=description)
+        data_table_service.update_table(owner_id=user.organization_id, table_id=table_id, description=description)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(), 201

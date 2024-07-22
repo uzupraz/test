@@ -42,14 +42,14 @@ class DataTableService(metaclass=Singleton):
         return owner_tables
 
 
-    def update_table_description(self, owner_id:str, table_id:str, description:str) -> None:
+    def update_table(self, owner_id:str, table_id:str, description:str) -> None:
         """
-        Updates the description of a specified table.
+        Updates the fields of a specified table.
 
         Args:
             owner_id (str): The owner of the table.
             table_id (str): The ID of the table.
             description (str): The new description for the table.
         """
-        log.info('Updating table description. owner_id: %s, table_id: %s', owner_id, table_id)
-        self.customer_table_info_repository.update_table_description(owner_id, table_id, description)
+        log.info('Updating table. owner_id: %s, table_id: %s', owner_id, table_id)
+        self.customer_table_info_repository.update_table(owner_id, table_id, description)

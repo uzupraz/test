@@ -169,7 +169,7 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.dynamodb_client.describe_table.assert_called_once_with(TableName='OriginalTable1')
 
 
-    def test_update_table_description_happy_case(self):
+    def test_update_table_happy_case(self):
         """
         Should update the table description successfully.
         """
@@ -177,7 +177,7 @@ class TestDataTableService(unittest.TestCase):
         table_id = 'table123'
         description = 'Updated description'
 
-        self.data_table_service.update_table_description(owner_id, table_id, description)
+        self.data_table_service.update_table(owner_id, table_id, description)
 
         self.customer_table_info_repo.table.update_item.assert_called_once_with(
             Key={'owner_id': owner_id, 'table_id': table_id},
@@ -186,7 +186,7 @@ class TestDataTableService(unittest.TestCase):
         )
 
 
-    def test_update_table_description_with_client_error(self):
+    def test_update_table_with_client_error(self):
         """
         Should propagate ServiceException when repository throws a ClientError.
         """
@@ -197,7 +197,7 @@ class TestDataTableService(unittest.TestCase):
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'update_item')
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.update_table_description(owner_id, table_id, description)
+            self.data_table_service.update_table(owner_id, table_id, description)
 
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
