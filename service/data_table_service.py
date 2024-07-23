@@ -49,7 +49,8 @@ class DataTableService(metaclass=Singleton):
         Args:
             owner_id (str): The owner of the table.
             table_id (str): The ID of the table.
-            description (str): The new description for the table.
+            description (str): The description to update in the table.
         """
         log.info('Updating table. owner_id: %s, table_id: %s', owner_id, table_id)
+        log.debug('Updating description. description: %s', description)
         self.customer_table_info_repository.update_table(owner_id, table_id, description)

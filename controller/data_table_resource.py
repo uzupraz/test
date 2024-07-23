@@ -29,8 +29,8 @@ tables_response_dto = api.inherit('Customer tables response',server_response, {
     })))
 })
 
-update_description_dto = api.model('Update table', {
-    'description': fields.String(required=True, description='The new description for the table')
+update_table_dto = api.model('Update table description', {
+    'description': fields.String(required=True, description='The description to update in the table')
 })
 
 @api.route('/tables')
@@ -60,8 +60,8 @@ class UpdateTableAction(Resource):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description="Update the fields of a table.")
-    @api.expect(update_description_dto, validate=True)
+    @api.doc(description="Update the description field of a table.")
+    @api.expect(update_table_dto, validate=True)
     @api.marshal_with(server_response, skip_none=True)
     def patch(self, table_id:str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)

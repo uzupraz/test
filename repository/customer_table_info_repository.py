@@ -99,7 +99,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         Args:
             owner_id (str): The owner of the table.
             table_id (str): The ID of the table.
-            description (str): The new description for the table.
+            description (str): The description to update in the table.
 
         Raises:
             ServiceException: If there is an error, updating the DynamoDB table.
