@@ -17,3 +17,8 @@ class CustomerTableInfo:
     created_by: str = field(default=None)
     creation_time: str = field(default=None)
     total_indexes: int = field(default=None)
+
+
+@dataclass
+class UpdateTableRequest:
+    description: str

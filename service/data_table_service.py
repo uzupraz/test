@@ -1,6 +1,6 @@
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from model import ListTableResponse
+from model import ListTableResponse, UpdateTableRequest
 from repository import CustomerTableInfoRepository
 
 log = common_ctrl.log
@@ -42,15 +42,14 @@ class DataTableService(metaclass=Singleton):
         return owner_tables
 
 
-    def update_table(self, owner_id:str, table_id:str, description:str) -> None:
+    def update_table(self, owner_id:str, table_id:str, update_data:UpdateTableRequest) -> None:
         """
-        Updates the fields of a specified table.
+        Updates the fields of a customer's table.
 
         Args:
             owner_id (str): The owner of the table.
             table_id (str): The ID of the table.
-            description (str): The description to update in the table.
+            update_data (str): The data to update in the customer's table.
         """
-        log.info('Updating table. owner_id: %s, table_id: %s', owner_id, table_id)
-        log.debug('Updating description. description: %s', description)
-        self.customer_table_info_repository.update_table(owner_id, table_id, description)
+        log.debug('Updating customer table. update_data: %s', update_data)
+        self.customer_table_info_repository.update_table(owner_id, table_id, update_data)

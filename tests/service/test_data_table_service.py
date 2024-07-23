@@ -4,6 +4,7 @@ from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 
 from tests.test_utils import TestUtils
+from model import UpdateTableRequest
 from repository.customer_table_info_repository import CustomerTableInfoRepository
 from service.data_table_service import DataTableService
 from exception import ServiceException
@@ -175,14 +176,14 @@ class TestDataTableService(unittest.TestCase):
         """
         owner_id = 'owner123'
         table_id = 'table123'
-        description = 'Updated description'
+        update_data = UpdateTableRequest(description='Updated description')
 
-        self.data_table_service.update_table(owner_id, table_id, description)
+        self.data_table_service.update_table(owner_id, table_id, update_data)
 
         self.customer_table_info_repo.table.update_item.assert_called_once_with(
             Key={'owner_id': owner_id, 'table_id': table_id},
             UpdateExpression='SET description = :desc',
-            ExpressionAttributeValues={':desc': description}
+            ExpressionAttributeValues={':desc': update_data.description}
         )
 
 
@@ -192,18 +193,18 @@ class TestDataTableService(unittest.TestCase):
         """
         owner_id = 'owner123'
         table_id = 'table123'
-        description = 'Updated description'
+        update_data = UpdateTableRequest(description='Updated description')
         self.customer_table_info_repo.table.update_item.side_effect = ClientError(
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'update_item')
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.update_table(owner_id, table_id, description)
+            self.data_table_service.update_table(owner_id, table_id, update_data)
 
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
-        self.assertEqual(context.exception.message, 'Failed to update description of table.')
+        self.assertEqual(context.exception.message, 'Failed to update customer table.')
         self.customer_table_info_repo.table.update_item.assert_called_once_with(
             Key={'owner_id': owner_id, 'table_id': table_id},
             UpdateExpression='SET description = :desc',
-            ExpressionAttributeValues={':desc': description}
+            ExpressionAttributeValues={':desc': update_data.description}
         )

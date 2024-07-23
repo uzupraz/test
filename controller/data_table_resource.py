@@ -7,7 +7,7 @@ from .server_response import ServerResponse
 from service import DataTableService
 from .common_controller import server_response
 from enums import APIStatus
-from model import User
+from model import User, UpdateTableRequest
 
 api = Namespace(
     name="Data Table API",
@@ -29,12 +29,12 @@ tables_response_dto = api.inherit('Customer tables response',server_response, {
     })))
 })
 
-update_table_dto = api.model('Update table description', {
+update_table_dto = api.model('Update customer table', {
     'description': fields.String(required=True, description='The description to update in the table')
 })
 
 @api.route('/tables')
-class DataTableResource(Resource):
+class DataTableListResource(Resource):
 
 
     def __init__(self, api=None, *args, **kwargs):
@@ -45,29 +45,29 @@ class DataTableResource(Resource):
     @api.marshal_with(tables_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        user = g.get("user")
-        user = User(**user)
+        user_data = g.get("user")
+        user = User(**user_data)
         tables = data_table_service.list_tables(owner_id=user.organization_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=tables), 200
 
 
-@api.route('/tables/<string:table_id>/update-table')
-class UpdateTableAction(Resource):
+@api.route('/tables/<string:table_id>')
+class DataTableResource (Resource):
 
 
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description="Update the description field of a table.")
+    @api.doc(description="Update the fields in customer table.")
     @api.expect(update_table_dto, validate=True)
     @api.marshal_with(server_response, skip_none=True)
     def patch(self, table_id:str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        user = g.get("user")
-        user = User(**user)
-        description = request.json['description']
-        data_table_service.update_table(owner_id=user.organization_id, table_id=table_id, description=description)
+        user_data = g.get("user")
+        user = User(**user_data)
+        update_data = UpdateTableRequest(**request.json)
+        data_table_service.update_table(owner_id=user.organization_id, table_id=table_id, update_data=update_data)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
-        return ServerResponse.success(), 201
+        return ServerResponse.success(), 200

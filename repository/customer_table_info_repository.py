@@ -8,7 +8,7 @@ import dacite
 
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
-from model import CustomerTableInfo
+from model import CustomerTableInfo, UpdateTableRequest
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton
@@ -92,32 +92,32 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve table details')
 
 
-    def update_table(self, owner_id:str, table_id:str, description:str) -> None:
+    def update_table(self, owner_id:str, table_id:str, update_data:UpdateTableRequest) -> None:
         """
-        Updates the fields of a specified table of particular owner.
+        Updates the fields of a customer's table.
 
         Args:
             owner_id (str): The owner of the table.
             table_id (str): The ID of the table.
-            description (str): The description to update in the table.
+            update_data (UpdateTableRequest): The data to update in the customer's table.
 
         Raises:
             ServiceException: If there is an error, updating the DynamoDB table.
         """
         try:
-            log.info('Updating table. owner_id: %s, table_id: %s', owner_id, table_id)
+            log.info('Updating customer table. owner_id: %s, table_id: %s', owner_id, table_id)
             table_key = {'owner_id': owner_id, 'table_id': table_id}
             update_expression = 'SET description = :desc'
-            expression_attribute_values = {':desc': description}
+            expression_attribute_values = {':desc': update_data.description}
             self.table.update_item(
                 Key=table_key,
                 UpdateExpression=update_expression,
                 ExpressionAttributeValues=expression_attribute_values
             )
-            log.info('Successfully updated table. owner_id: %s, table_id: %s', owner_id, table_id)
+            log.info('Successfully updated customer table. owner_id: %s, table_id: %s', owner_id, table_id)
         except ClientError as e:
-            log.exception('Failed to update table. owner_id: %s, table_id: %s', owner_id, table_id)
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to update description of table.')
+            log.exception('Failed to update customer table. owner_id: %s, table_id: %s', owner_id, table_id)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to update customer table.')
 
 
     def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:
