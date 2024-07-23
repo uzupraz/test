@@ -95,4 +95,3 @@ class TestDataStudioService(unittest.TestCase):
             self.data_studio_service.get_workflows(owner_id)
         
         self.data_studio_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
-        

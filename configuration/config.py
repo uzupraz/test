@@ -12,6 +12,7 @@ class AppConfig(metaclass=Singleton):
     """
     log_level:str = os.getenv('APP_LOG_LEVEL', 'DEBUG').upper()
     workflow_table_name:str = os.getenv('APP_WORKFLOW_TABLENAME')
+    customer_table_info_table_name:str = os.getenv('APP_CUSTOMER_TABLE_INFO_TABLENAME')
     processor_templates_table_name:str = os.getenv('APP_PROCESSORTEMPLATES_TABLENAME')
 
 
