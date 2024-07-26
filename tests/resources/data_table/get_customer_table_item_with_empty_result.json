@@ -1,0 +1,16 @@
+{
+    "ResponseMetadata": {
+        "RequestId": "XXXXXXXXXXXXX",
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+            "server": "Server",
+            "date": "Thu, 01 Jan 1970 00:00:00 GMT",
+            "content-type": "application/x-amz-json-1.0",
+            "content-length": "2",
+            "connection": "keep-alive",
+            "x-amzn-requestid": "XXXXXXXXXXXXX",
+            "x-amz-crc32": "XXXXXXXX"
+        },
+        "RetryAttempts": 0
+    }
+}

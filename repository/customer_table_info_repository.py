@@ -8,7 +8,7 @@ import dacite
 
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
-from model import CustomerTableInfo, UpdateTableRequest
+from model import CustomerTableInfo
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton
@@ -53,20 +53,20 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         Raises:
             ServiceException: If there is an error querying the DynamoDB table.
         """
-        log.info('Retrieving all tables. owner_id: %s', owner_id)
+        log.info('Retrieving all customer tables. owner_id: %s', owner_id)
         try:
             response = self.table.query(
                 KeyConditionExpression=Key('owner_id').eq(owner_id)
             )
-            log.info('Successfully retrieved all tables. owner_id: %s', owner_id)
+            log.info('Successfully retrieved all customer tables. owner_id: %s', owner_id)
             customer_info_tables = []
             for item in response.get('Items', []):
                 customer_info_table = dacite.from_dict(CustomerTableInfo, item)
                 customer_info_tables.append(customer_info_table)
             return customer_info_tables
         except ClientError as e:
-            log.exception('Failed to retrieve all tables. owner_id: %s', owner_id)
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve tables')
+            log.exception('Failed to retrieve all customer tables. owner_id: %s', owner_id)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer tables')
 
 
     def get_table_details(self, table_name:str) -> dict:
@@ -83,23 +83,56 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             ServiceException: If there is an error describing the DynamoDB table.
         """
         try:
-            log.info('Retrieving details of table. table_name: %s', table_name)
+            log.info('Retrieving details of customer table. table_name: %s', table_name)
             response = self.dynamodb_client.describe_table(TableName=table_name)
-            log.info('Successfully retrieved details of table. table_name: %s', table_name)
+            log.info('Successfully retrieved details of customer table. table_name: %s', table_name)
             return response
         except ClientError as e:
-            log.exception('Failed to retrieve details of table. table_name: %s', table_name)
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve table details')
+            log.exception('Failed to retrieve details of customer table. table_name: %s', table_name)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer table details')
 
 
-    def update_table(self, owner_id:str, table_id:str, update_data:UpdateTableRequest) -> None:
+    def get_customer_table_item(self, owner_id:str, table_id:str) -> CustomerTableInfo:
+        """
+        Retrieves customer's table item based on owner_id and table_id.
+
+        Args:
+            owner_id (str): The ID of the owner.
+            table_id (str): The ID of the table.
+
+        Returns:
+            CustomerTableInfo: The info of the customer table.
+
+        Raises:
+            ServiceException: If the item does not exists or if there is an error querying the DynamoDB table.
+        """
+        try:
+            log.info('Retrieving customer table info. owner_id: %s, table_id: %s', owner_id, table_id)
+            response = self.table.get_item(
+                Key={'owner_id': owner_id, 'table_id': table_id}
+            )
+            item = response.get('Item')
+            if not item:
+                log.error('Customer table info does not exist. owner_id: %s, table_id: %s', owner_id, table_id)
+                raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer table info')
+            log.info('Successfully retrieved customer table info. owner_id: %s, table_id: %s', owner_id, table_id)
+            return dacite.from_dict(CustomerTableInfo, item)
+        except ClientError as e:
+            log.exception('Failed to retrieve customer table info. owner_id: %s, table_id: %s', owner_id, table_id)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer table info')
+
+
+    def update_table(self, owner_id:str, table_id:str, customer_table_info_to_update:CustomerTableInfo) -> CustomerTableInfo:
         """
         Updates the fields of a customer's table.
 
         Args:
             owner_id (str): The owner of the table.
             table_id (str): The ID of the table.
-            update_data (UpdateTableRequest): The data to update in the customer's table.
+            customer_table_info_to_update (CustomerTableInfo): The customer table info with data to update.
+
+        Returns:
+            CustomerTableInfo: The updated customer table info.
 
         Raises:
             ServiceException: If there is an error, updating the DynamoDB table.
@@ -108,13 +141,15 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             log.info('Updating customer table. owner_id: %s, table_id: %s', owner_id, table_id)
             table_key = {'owner_id': owner_id, 'table_id': table_id}
             update_expression = 'SET description = :desc'
-            expression_attribute_values = {':desc': update_data.description}
-            self.table.update_item(
+            expression_attribute_values = {':desc': customer_table_info_to_update.description}
+            response = self.table.update_item(
                 Key=table_key,
                 UpdateExpression=update_expression,
-                ExpressionAttributeValues=expression_attribute_values
+                ExpressionAttributeValues=expression_attribute_values,
+                ReturnValues="ALL_NEW"
             )
             log.info('Successfully updated customer table. owner_id: %s, table_id: %s', owner_id, table_id)
+            return dacite.from_dict(CustomerTableInfo, response.get('Attributes'))
         except ClientError as e:
             log.exception('Failed to update customer table. owner_id: %s, table_id: %s', owner_id, table_id)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to update customer table.')

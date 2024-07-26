@@ -2,9 +2,10 @@ import unittest
 from unittest.mock import MagicMock, Mock, patch, call
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
+import dacite
 
 from tests.test_utils import TestUtils
-from model import UpdateTableRequest
+from model import UpdateTableRequest, UpdateTableResponse, CustomerTableInfo
 from repository.customer_table_info_repository import CustomerTableInfoRepository
 from service.data_table_service import DataTableService
 from exception import ServiceException
@@ -165,36 +166,110 @@ class TestDataTableService(unittest.TestCase):
 
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
-        self.assertEqual(context.exception.message, 'Failed to retrieve table details')
+        self.assertEqual(context.exception.message, 'Failed to retrieve customer table details')
         self.customer_table_info_repo.table.query.assert_called_once_with(KeyConditionExpression=Key('owner_id').eq(owner_id))
         self.customer_table_info_repo.dynamodb_client.describe_table.assert_called_once_with(TableName='OriginalTable1')
 
 
     def test_update_table_happy_case(self):
         """
-        Should update the table description successfully.
+        Test case for updating a customer table description successfully.
+
+        Case: The table item exists and is updated successfully in DynamoDB.
+        Expected Result: The method updates the table item and returns the UpdateTableResponse object.
         """
         owner_id = 'owner123'
         table_id = 'table123'
         update_data = UpdateTableRequest(description='Updated description')
 
-        self.data_table_service.update_table(owner_id, table_id, update_data)
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
 
+        mock_updated_customer_table_info_path = self.TEST_RESOURCE_PATH + "update_customer_table_item_happy_case.json"
+        updated_customer_table_info = TestUtils.get_file_content(mock_updated_customer_table_info_path)
+        expected_customer_table_info = dacite.from_dict(CustomerTableInfo, updated_customer_table_info.get('Attributes'))
+
+        self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
+        self.customer_table_info_repo.table.update_item.return_value = updated_customer_table_info
+
+        result = self.data_table_service.update_table(owner_id, table_id, update_data)
+
+        self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
         self.customer_table_info_repo.table.update_item.assert_called_once_with(
             Key={'owner_id': owner_id, 'table_id': table_id},
             UpdateExpression='SET description = :desc',
-            ExpressionAttributeValues={':desc': update_data.description}
+            ExpressionAttributeValues={':desc': update_data.description},
+            ReturnValues='ALL_NEW'
         )
+        self.assertEqual(result, UpdateTableResponse.from_customer_table_info(expected_customer_table_info))
 
 
-    def test_update_table_with_client_error(self):
+    def test_update_table_throws_service_exception_when_no_item_found_while_retrieving_customer_table_info(self):
         """
-        Should propagate ServiceException when repository throws a ClientError.
+        Test case for handling a missing table item during update.
+
+        Case: The table item does not exist in DynamoDB.
+        Expected Result: The method raises a ServiceException indicating failure to retrieve the customer table info.
         """
         owner_id = 'owner123'
         table_id = 'table123'
         update_data = UpdateTableRequest(description='Updated description')
-        self.customer_table_info_repo.table.update_item.side_effect = ClientError(
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_with_empty_result.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+
+        self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.update_table(owner_id, table_id, update_data)
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to retrieve customer table info')
+        self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+        self.customer_table_info_repo.table.update_item.assert_not_called()
+
+
+    def test_update_table_throws_service_exception_when_client_error_occurs_while_retrieving_customer_table_info(self):
+        """
+        Test case for handling a ClientError during retrieval of a customer table item.
+
+        Case: A ClientError occurs during the DynamoDB get_item operation.
+        Expected Result: The method raises a ServiceException indicating failure to retrieve the customer table info.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        update_data = UpdateTableRequest(description='Updated description')
+
+        self.mock_table.get_item.side_effect = ClientError(
+            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'get_item')
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.update_table(owner_id, table_id, update_data)
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to retrieve customer table info')
+        self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+        self.customer_table_info_repo.table.update_item.assert_not_called()
+
+
+    def test_update_table_throws_service_exception_when_client_error_occurs_while_updatig_customer_table_info(self):
+        """
+        Test case for handling a ClientError during update of a customer table item.
+
+        Case: A ClientError occurs during the DynamoDB update_item operation.
+        Expected Result: The method raises a ServiceException indicating failure to update the customer table item.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        update_data = UpdateTableRequest(description='Updated description')
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+
+        self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
+        self.mock_table.update_item.side_effect = ClientError(
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'update_item')
 
         with self.assertRaises(ServiceException) as context:
@@ -203,8 +278,10 @@ class TestDataTableService(unittest.TestCase):
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.message, 'Failed to update customer table.')
+        self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
         self.customer_table_info_repo.table.update_item.assert_called_once_with(
             Key={'owner_id': owner_id, 'table_id': table_id},
             UpdateExpression='SET description = :desc',
-            ExpressionAttributeValues={':desc': update_data.description}
+            ExpressionAttributeValues={':desc': update_data.description},
+            ReturnValues='ALL_NEW'
         )
