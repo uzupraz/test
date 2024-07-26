@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock, Mock, patch, call
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
-import dacite
+from dacite import from_dict
 
 from tests.test_utils import TestUtils
 from model import UpdateTableRequest, UpdateTableResponse, CustomerTableInfo
@@ -187,7 +187,7 @@ class TestDataTableService(unittest.TestCase):
 
         mock_updated_customer_table_info_path = self.TEST_RESOURCE_PATH + "update_customer_table_item_happy_case.json"
         updated_customer_table_info = TestUtils.get_file_content(mock_updated_customer_table_info_path)
-        expected_customer_table_info = dacite.from_dict(CustomerTableInfo, updated_customer_table_info.get('Attributes'))
+        expected_customer_table_info = from_dict(CustomerTableInfo, updated_customer_table_info.get('Attributes'))
 
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
         self.customer_table_info_repo.table.update_item.return_value = updated_customer_table_info

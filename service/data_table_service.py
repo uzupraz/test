@@ -28,7 +28,7 @@ class DataTableService(metaclass=Singleton):
         Returns:
             List[ListTableResponse]: A list of tables containing table details.
         """
-        log.info('Retrieving all customer tables. owner_id: %s', owner_id)
+        log.info('Retrieving customer tables. owner_id: %s', owner_id)
         tables_response = self.customer_table_info_repository.get_tables_for_owner(owner_id)
         owner_tables  = []
 
@@ -56,10 +56,10 @@ class DataTableService(metaclass=Singleton):
         """
         log.debug('Updating customer table. update_data: %s', update_table_request)
         # Check if the item exists
-        customer_table_info_to_update = self.customer_table_info_repository.get_customer_table_item(owner_id, table_id)
+        customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
         # set the fields to update in an existing item
-        customer_table_info_to_update.description = update_table_request.description
-        updated_customer_table_info = self.customer_table_info_repository.update_table(owner_id, table_id, customer_table_info_to_update)
+        customer_table_info.description = update_table_request.description
+        updated_customer_table_info = self.customer_table_info_repository.update_table(customer_table_info)
         # Convert updated customer table info to UpdateTableResponse
         update_table_response = UpdateTableResponse.from_customer_table_info(updated_customer_table_info)
         return update_table_response
