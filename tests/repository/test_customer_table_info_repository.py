@@ -178,9 +178,9 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         with self.assertRaises(ServiceException) as context:
             self.customer_table_info_repo.get_customer_table_item(owner_id, table_id)
 
-        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
-        self.assertEqual(context.exception.message, 'Failed to retrieve customer table info')
+        self.assertEqual(context.exception.message, 'Customer table info does not exists')
         self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
 
 

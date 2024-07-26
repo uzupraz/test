@@ -61,8 +61,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             log.info('Successfully retrieved all customer tables. owner_id: %s', owner_id)
             customer_info_tables = []
             for item in response.get('Items', []):
-                customer_info_table = dacite.from_dict(CustomerTableInfo, item)
-                customer_info_tables.append(customer_info_table)
+                customer_info_tables.append(dacite.from_dict(CustomerTableInfo, item))
             return customer_info_tables
         except ClientError as e:
             log.exception('Failed to retrieve all customer tables. owner_id: %s', owner_id)
@@ -114,7 +113,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             item = response.get('Item')
             if not item:
                 log.error('Customer table info does not exist. owner_id: %s, table_id: %s', owner_id, table_id)
-                raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer table info')
+                raise ServiceException(400, ServiceStatus.FAILURE, 'Customer table info does not exists')
             log.info('Successfully retrieved customer table info. owner_id: %s, table_id: %s', owner_id, table_id)
             return dacite.from_dict(CustomerTableInfo, item)
         except ClientError as e:

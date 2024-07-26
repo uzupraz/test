@@ -63,8 +63,7 @@ class DataTableListResource(Resource):
     @api.marshal_with(list_tables_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        user_data = g.get("user")
-        user = User(**user_data)
+        user = User(**g.get("user"))
         tables = data_table_service.list_tables(owner_id=user.organization_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=tables), 200
@@ -83,8 +82,7 @@ class DataTableResource (Resource):
     @api.marshal_with(update_table_response_dto, skip_none=True)
     def put(self, table_id:str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        user_data = g.get("user")
-        user = User(**user_data)
+        user = User(**g.get("user"))
         update_table_request = UpdateTableRequest(**request.json)
         updated_customer_table_info = data_table_service.update_table(owner_id=user.organization_id, table_id=table_id, update_table_request=update_table_request)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
