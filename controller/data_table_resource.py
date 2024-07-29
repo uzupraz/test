@@ -51,6 +51,28 @@ update_table_response_dto = api.inherit('Update customer table response',server_
     }))
 })
 
+table_details_response_dto = api.model('Table Details Response', {
+    'description': fields.String(description='Description of the table'),
+    'created_by': fields.String(description='Creator of the table'),
+    'creation_time': fields.String(description='Table creation date time'),
+    'total_indexes': fields.Integer(description='Total indexes of the table'),
+    'read_capacity_units': fields.Integer(description='Read capacity units of the table'),
+    'write_capacity_units': fields.Integer(description='Write capacity units of the table'),
+    'backups': fields.String(description='Backup status of the table'),
+    'table_status': fields.String(description='Status of the table'),
+    'alarms': fields.String(description='Alarm status of the table'),
+    'next_backup_schedule': fields.String(description='The next backup schedule date time of the table'),
+    'last_backup_schedule': fields.String(description='The last backup schedule date time of the table'),
+    'indices': fields.List(fields.Nested(api.model('Index Info', {
+        'name': fields.String(description='Name of the index'),
+        'status': fields.String(description='Status of the index'),
+        'partition_key': fields.String(description='Partition key of the index'),
+        'sort_key': fields.String(description='Sort key of the index'),
+        'size': fields.Integer(description='Size of the index in KB'),
+        'item_count': fields.Integer(description='Item count of the index'),
+    })))
+})
+
 @api.route('/tables')
 class DataTableListResource(Resource):
 
@@ -87,3 +109,13 @@ class DataTableResource (Resource):
         updated_customer_table_info = data_table_service.update_table(owner_id=user.organization_id, table_id=table_id, update_table_request=update_table_request)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=updated_customer_table_info), 200
+
+
+    @api.doc(description="Get the details of a specific table by its ID.")
+    @api.marshal_with(table_details_response_dto, skip_none=True)
+    def get(self, table_id: str):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+        user = User(**g.get("user"))
+        table_details = data_table_service.get_table_details(owner_id=user.organization_id, table_id=table_id)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return table_details, 200

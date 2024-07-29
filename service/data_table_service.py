@@ -1,6 +1,6 @@
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse
+from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse, TableDetailsResponse
 from repository import CustomerTableInfoRepository
 
 log = common_ctrl.log
@@ -63,3 +63,20 @@ class DataTableService(metaclass=Singleton):
         # Convert updated customer table info to UpdateTableResponse
         update_table_response = UpdateTableResponse.from_customer_table_info(updated_customer_table_info)
         return update_table_response
+
+
+    def get_table_details(self, owner_id:str, table_id:str) -> TableDetailsResponse:
+        """
+        Retrieve the details of a specific table by its owner_id and table_id.
+
+        Args:
+            owner_id (str): The ID of the owner of the table.
+            table_id (str): The ID of the table.
+
+        Returns:
+            TableDetailsResponse: An object containing detailed information about the table.
+        """
+        log.info('Retrieving table details. owner_id: %s, table_id: %s', owner_id, table_id)
+        customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
+        table_details_response = TableDetailsResponse.from_customer_table_info(customer_table_info)
+        return table_details_response

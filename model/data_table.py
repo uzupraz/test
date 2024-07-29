@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import List
 
 from enums import BackupStatus, TableStatus, AlarmStatus
 from datetime import datetime, timezone
@@ -8,6 +9,16 @@ class ListTableResponse:
     name: str
     id: str
     size: float
+
+
+@dataclass
+class IndexInfo:
+    name: str
+    status: str
+    partition_key: str
+    sort_key: str
+    size: int
+    item_count: int
 
 
 @dataclass
@@ -27,6 +38,7 @@ class CustomerTableInfo:
     alarms: str = field(default=AlarmStatus.OK.value)
     next_backup_schedule: str = field(default=None)
     last_backup_schedule: str = field(default=None)
+    indices: List[IndexInfo] = field(default_factory=list)
 
 
 @dataclass
@@ -78,3 +90,47 @@ class UpdateTableResponse:
         last_backup_schedule=customer_table_info.last_backup_schedule
         )
         return update_table_response
+
+
+@dataclass
+class TableDetailsResponse:
+    description: str
+    created_by: str
+    creation_time: str
+    total_indexes: int
+    read_capacity_units: int
+    write_capacity_units: int
+    backups: str
+    table_status: str
+    alarms: str
+    next_backup_schedule: str
+    last_backup_schedule: str
+    indices: List[IndexInfo]
+
+
+    @classmethod
+    def from_customer_table_info(cls, customer_table_info:CustomerTableInfo) -> 'TableDetailsResponse':
+        """
+        Create an TableDetailsResponse instance from a CustomerTableInfo instance.
+
+        Args:
+            customer_table_info (CustomerTableInfo): The CustomerTableInfo instance to convert.
+
+        Returns:
+            TableDetailsResponse: The created TableDetailsResponse instance.
+        """
+        table_details_response = TableDetailsResponse(
+            description=customer_table_info.description,
+            created_by=customer_table_info.created_by,
+            creation_time=customer_table_info.creation_time,
+            total_indexes=customer_table_info.total_indexes,
+            read_capacity_units=customer_table_info.read_capacity_units,
+            write_capacity_units=customer_table_info.write_capacity_units,
+            backups=customer_table_info.backups,
+            table_status=customer_table_info.table_status,
+            alarms=customer_table_info.alarms,
+            next_backup_schedule=customer_table_info.next_backup_schedule,
+            last_backup_schedule=customer_table_info.last_backup_schedule,
+            indices=customer_table_info.indices
+        )
+        return table_details_response
