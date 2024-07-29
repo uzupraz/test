@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, Mock, patch, call
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 from dacite import from_dict
+from dataclasses import asdict
 
 from tests.test_utils import TestUtils
 from model import UpdateTableRequest, UpdateTableResponse, CustomerTableInfo
@@ -201,7 +202,7 @@ class TestDataTableService(unittest.TestCase):
             ExpressionAttributeValues={':desc': update_data.description},
             ReturnValues='ALL_NEW'
         )
-        self.assertEqual(result, UpdateTableResponse.from_customer_table_info(expected_customer_table_info))
+        self.assertEqual(result, from_dict(UpdateTableResponse, asdict(expected_customer_table_info)))
 
 
     def test_update_table_throws_service_exception_when_no_item_found_while_retrieving_customer_table_info(self):

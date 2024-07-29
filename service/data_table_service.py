@@ -1,3 +1,6 @@
+from dacite import from_dict
+from dataclasses import asdict
+
 from controller import common_controller as common_ctrl
 from utils import Singleton
 from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse, TableDetailsResponse
@@ -61,7 +64,7 @@ class DataTableService(metaclass=Singleton):
         customer_table_info.description = update_table_request.description
         updated_customer_table_info = self.customer_table_info_repository.update_table(customer_table_info)
         # Convert updated customer table info to UpdateTableResponse
-        update_table_response = UpdateTableResponse.from_customer_table_info(updated_customer_table_info)
+        update_table_response = from_dict(UpdateTableResponse, asdict(updated_customer_table_info))
         return update_table_response
 
 
