@@ -122,4 +122,4 @@ class DataTableResource (Resource):
         user = User(**g.get("user"))
         table_details = data_table_service.get_table_details(owner_id=user.organization_id, table_id=table_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
-        return table_details, 200
+        return ServerResponse.success(payload=table_details), 200

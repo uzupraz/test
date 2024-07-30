@@ -6,7 +6,7 @@ from dacite import from_dict
 from dataclasses import asdict
 
 from tests.test_utils import TestUtils
-from model import UpdateTableRequest, UpdateTableResponse, CustomerTableInfo
+from model import UpdateTableRequest, UpdateTableResponse, CustomerTableInfo, TableDetailsResponse
 from repository.customer_table_info_repository import CustomerTableInfoRepository
 from service.data_table_service import DataTableService
 from exception import ServiceException
@@ -286,3 +286,88 @@ class TestDataTableService(unittest.TestCase):
             ExpressionAttributeValues={':desc': update_data.description},
             ReturnValues='ALL_NEW'
         )
+
+
+    def test_get_table_details_with_one_index_happy_case(self):
+        """
+        Test case for retrieving table details with one index.
+
+        Case: The table item with one index exists in DynamoDB.
+        Expected Result: The method returns the TableDetailsResponse object with one index.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "expected_table_details_with_one_index.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
+
+        result = self.data_table_service.get_table_details(owner_id, table_id)
+
+        self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+        self.assertEqual(result, from_dict(TableDetailsResponse, customer_table_info_item.get('Item')))
+
+
+    def test_get_table_details_with_two_indeces_happy_case(self):
+        """
+        Test case for retrieving table details with two indices.
+
+        Case: The table item with two indices exists in DynamoDB.
+        Expected Result: The method returns the TableDetailsResponse object with two indices.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "expected_table_details_with_two_indeces.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
+
+        result = self.data_table_service.get_table_details(owner_id, table_id)
+
+        self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+        self.assertEqual(result, from_dict(TableDetailsResponse, customer_table_info_item.get('Item')))
+
+
+    def test_get_table_details_throws_service_exception_when_no_item_found_while_retrieving_customer_table_info(self):
+        """
+        Test case for handling a missing table item.
+
+        Case: The table item does not exist in DynamoDB.
+        Expected Result: The method raises a ServiceException indicating failure to retrieve the customer table info.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_with_empty_result.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.get_table_details(owner_id, table_id)
+
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Customer table info does not exists')
+        self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+
+
+    def test_get_table_details_throws_service_exception_when_client_error_occurs_while_retrieving_customer_table_info(self):
+        """
+        Test case for handling a ClientError during retrieval.
+
+        Case: A ClientError occurs during the DynamoDB get_item operation.
+        Expected Result: The method raises a ServiceException indicating failure to retrieve the customer table info.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+
+        self.mock_table.get_item.side_effect = ClientError(
+            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'get_item')
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.get_table_details(owner_id, table_id)
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to retrieve customer table info')
+        self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
