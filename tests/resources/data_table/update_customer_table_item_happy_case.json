@@ -1,0 +1,33 @@
+{
+    "Attributes": {
+        "owner_id": "owner123",
+        "table_id": "table123",
+        "table_name": "test_name",
+        "original_table_name": "test_original_name",
+        "description": "Updated description",
+        "created_by": "user",
+        "creation_time": "2023-01-01T00:00:00",
+        "total_indexes": 2,
+        "read_capacity_units": 5,
+        "write_capacity_units": 5,
+        "backups": "ENABLED",
+        "table_status": "ACTIVE",
+        "alarms": "OK",
+        "next_backup_schedule": "2023-01-01T00:00:00",
+        "last_backup_schedule": "2023-01-01T00:00:00"
+    },
+    "ResponseMetadata": {
+        "RequestId": "XXXXXXXXXXXXX",
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+            "server": "Server",
+            "date": "Thu, 01 Jan 1970 00:00:00 GMT",
+            "content-type": "application/x-amz-json-1.0",
+            "content-length": "2",
+            "connection": "keep-alive",
+            "x-amzn-requestid": "XXXXXXXXXXXXX",
+            "x-amz-crc32": "XXXXXXXX"
+        },
+        "RetryAttempts": 0
+    }
+}

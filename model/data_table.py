@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 
+from enums import BackupStatus, TableStatus, AlarmStatus
+
 @dataclass
 class ListTableResponse:
     name: str
@@ -13,7 +15,36 @@ class CustomerTableInfo:
     table_id: str
     table_name: str
     original_table_name: str
-    description: str = field(default=None)
-    created_by: str = field(default=None)
-    creation_time: str = field(default=None)
-    total_indexes: int = field(default=None)
+    description: str | None = field(default=None)
+    created_by: str | None = field(default=None)
+    creation_time: str | None = field(default=None)
+    total_indexes: int = field(default=0)
+    read_capacity_units: int = field(default=0)
+    write_capacity_units: int = field(default=0)
+    backups: str = field(default=BackupStatus.ENABLED.value)
+    table_status: str = field(default=TableStatus.ACTIVE.value)
+    alarms: str = field(default=AlarmStatus.OK.value)
+    next_backup_schedule: str | None = field(default=None)
+    last_backup_schedule: str | None = field(default=None)
+
+
+@dataclass
+class UpdateTableRequest:
+    description: str
+
+
+@dataclass
+class UpdateTableResponse:
+    table_id: str
+    table_name: str
+    description: str | None = field(default=None)
+    created_by: str | None = field(default=None)
+    creation_time: str | None = field(default=None)
+    total_indexes: int = field(default=0)
+    read_capacity_units: int = field(default=0)
+    write_capacity_units: int = field(default=0)
+    backups: str = field(default=BackupStatus.ENABLED.value)
+    table_status: str = field(default=TableStatus.ACTIVE.value)
+    alarms: str = field(default=AlarmStatus.OK.value)
+    next_backup_schedule: str | None = field(default=None)
+    last_backup_schedule: str | None = field(default=None)
