@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from enums import BackupStatus, TableStatus, AlarmStatus
+from enums import BackupStatus, TableStatus, AlarmStatus, IndexStatus
 
 @dataclass
 class ListTableResponse:
@@ -13,11 +13,11 @@ class ListTableResponse:
 @dataclass
 class IndexInfo:
     name: str
-    status: str
     partition_key: str
     sort_key: str
-    size: int
-    item_count: int
+    status: str = field(default=IndexStatus.ACTIVE.value)
+    size: int = field(default=0)
+    item_count: int = field(default=0)
 
 
 @dataclass

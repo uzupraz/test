@@ -1,1 +1,1 @@
-from .status import ServiceStatus, APIStatus, SystemStatus, BackupStatus, TableStatus, AlarmStatus
+from .status import ServiceStatus, APIStatus, SystemStatus, BackupStatus, TableStatus, AlarmStatus, IndexStatus

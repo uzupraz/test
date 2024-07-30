@@ -81,5 +81,5 @@ class DataTableService(metaclass=Singleton):
         """
         log.info('Retrieving table details. owner_id: %s, table_id: %s', owner_id, table_id)
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
-        table_details_response = TableDetailsResponse.from_customer_table_info(customer_table_info)
+        table_details_response = from_dict(TableDetailsResponse, asdict(customer_table_info))
         return table_details_response

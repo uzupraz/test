@@ -51,26 +51,30 @@ update_table_response_dto = api.inherit('Update customer table response',server_
     }))
 })
 
-table_details_response_dto = api.model('Table Details Response', {
-    'description': fields.String(description='Description of the table'),
-    'created_by': fields.String(description='Creator of the table'),
-    'creation_time': fields.String(description='Table creation date time'),
-    'total_indexes': fields.Integer(description='Total indexes of the table'),
-    'read_capacity_units': fields.Integer(description='Read capacity units of the table'),
-    'write_capacity_units': fields.Integer(description='Write capacity units of the table'),
-    'backups': fields.String(description='Backup status of the table'),
-    'table_status': fields.String(description='Status of the table'),
-    'alarms': fields.String(description='Alarm status of the table'),
-    'next_backup_schedule': fields.String(description='The next backup schedule date time of the table'),
-    'last_backup_schedule': fields.String(description='The last backup schedule date time of the table'),
-    'indices': fields.List(fields.Nested(api.model('Index Info', {
-        'name': fields.String(description='Name of the index'),
-        'status': fields.String(description='Status of the index'),
-        'partition_key': fields.String(description='Partition key of the index'),
-        'sort_key': fields.String(description='Sort key of the index'),
-        'size': fields.Integer(description='Size of the index in KB'),
-        'item_count': fields.Integer(description='Item count of the index'),
-    })))
+table_details_response_dto = api.inherit('Customer table details response',server_response, {
+    'payload': fields.Nested(api.model('Customer table details', {
+        'table_id': fields.String(required=True, description='Id of the table'),
+        'table_name': fields.String(required=True, description='Name of the table'),
+        'description': fields.String(description='Description of the table'),
+        'created_by': fields.String(description='Creator of the table'),
+        'creation_time': fields.String(description='Table creation date time'),
+        'total_indexes': fields.Integer(description='Total indexes of the table'),
+        'read_capacity_units': fields.Integer(description='Read capacity units of the table'),
+        'write_capacity_units': fields.Integer(description='Write capacity units of the table'),
+        'backups': fields.String(description='Backup status of the table'),
+        'table_status': fields.String(description='Status of the table'),
+        'alarms': fields.String(description='Alarm status of the table'),
+        'next_backup_schedule': fields.String(description='The next backup schedule date time of the table'),
+        'last_backup_schedule': fields.String(description='The last backup schedule date time of the table'),
+        'indices': fields.List(fields.Nested(api.model('Index Info', {
+            'name': fields.String(description='Name of the index'),
+            'status': fields.String(description='Status of the index'),
+            'partition_key': fields.String(description='Partition key of the index'),
+            'sort_key': fields.String(description='Sort key of the index'),
+            'size': fields.Integer(description='Size of the index in KB'),
+            'item_count': fields.Integer(description='Item count of the index')
+        })))
+    }))
 })
 
 @api.route('/tables')
@@ -113,7 +117,7 @@ class DataTableResource (Resource):
 
     @api.doc(description="Get the details of a specific table by its ID.")
     @api.marshal_with(table_details_response_dto, skip_none=True)
-    def get(self, table_id: str):
+    def get(self, table_id:str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
         user = User(**g.get("user"))
         table_details = data_table_service.get_table_details(owner_id=user.organization_id, table_id=table_id)

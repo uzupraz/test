@@ -35,3 +35,10 @@ class AlarmStatus(Enum):
     OK='OK'
     ALARM='ALARM'
     INSUFFICIENT_DATA='INSUFFICIENT_DATA'
+
+
+class IndexStatus(Enum):
+    CREATING='CREATING'
+    UPDATING='UPDATING'
+    DELETING='DELETING'
+    ACTIVE='ACTIVE'
