@@ -1,4 +1,5 @@
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from flask_restx import Namespace, Resource, fields, reqparse
 from flask import g, request
 
@@ -25,7 +26,7 @@ dashboard_service = DashboardService(workflow_repository=workflow_repository, op
 
 
 current_date = datetime.now()
-three_months_ago = current_date.replace(month=current_date.month - 3)
+three_months_ago = current_date - relativedelta(months=3)
 
 
 parser = reqparse.RequestParser()
