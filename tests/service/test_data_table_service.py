@@ -6,7 +6,7 @@ from dacite import from_dict
 from dataclasses import asdict
 
 from tests.test_utils import TestUtils
-from model import UpdateTableRequest, UpdateTableResponse, CustomerTableInfo, TableDetailsResponse
+from model import UpdateTableRequest, UpdateTableResponse, CustomerTableInfo, TableDetailsResponse, BackupDetail
 from repository.customer_table_info_repository import CustomerTableInfoRepository
 from service.data_table_service import DataTableService
 from exception import ServiceException
@@ -371,3 +371,134 @@ class TestDataTableService(unittest.TestCase):
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.message, 'Failed to retrieve customer table info')
         self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+
+
+    def test_get_table_backups_happy_case(self):
+        """
+        Test case for successfully retrieving table backups.
+
+        Case: The table info and backup details are correctly retrieved from DynamoDB.
+        Expected Result: The method returns the expected list of backup details.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "expected_table_details_with_one_index.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+
+        mock_backup_details_response_path = self.TEST_RESOURCE_PATH + "expected_backup_details_for_table_happy_case.json"
+        mock_bakcup_details = TestUtils.get_file_content(mock_backup_details_response_path)
+        expected_backup_details = [
+            BackupDetail(name=backupSummary['BackupName'],
+                         status=backupSummary['BackupStatus'],
+                         creation_time=backupSummary['BackupCreationDateTime'],
+                         type=backupSummary['BackupType'],
+                         size=backupSummary['BackupSizeBytes'] / 1024)
+            for backupSummary in mock_bakcup_details["BackupSummaries"]
+        ]
+
+        self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
+        self.customer_table_info_repo.dynamodb_client.list_backups.return_value = mock_bakcup_details
+
+        result = self.data_table_service.get_table_backups(owner_id, table_id)
+
+        self.customer_table_info_repo.table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+        self.customer_table_info_repo.dynamodb_client.list_backups.assert_called_once_with(TableName=customer_table_info_item.get('Item').get('original_table_name'))
+        self.assertEqual(result, expected_backup_details)
+
+
+    def test_get_table_backups_throws_service_exception_when_no_item_found_while_retrieving_customer_table_info(self):
+        """
+        Test case for handling a missing table item.
+
+        Case: The table item does not exist in DynamoDB.
+        Expected Result: The method raises a ServiceException indicating failure to retrieve the customer table info.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_with_empty_result.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.get_table_backups(owner_id, table_id)
+
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Customer table info does not exists')
+        self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+        self.customer_table_info_repo.dynamodb_client.list_backups.assert_not_called()
+
+
+    def test_get_table_backups_details_throws_service_exception_when_client_error_occurs_while_retrieving_customer_table_info(self):
+        """
+        Test case for handling a ClientError during retrieval.
+
+        Case: A ClientError occurs during the DynamoDB get_item operation.
+        Expected Result: The method raises a ServiceException indicating failure to retrieve the customer table info.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+
+        self.mock_table.get_item.side_effect = ClientError(
+            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'get_item')
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.get_table_details(owner_id, table_id)
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to retrieve customer table info')
+        self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+        self.customer_table_info_repo.dynamodb_client.list_backups.assert_not_called()
+
+
+    def test_get_table_backups_should_return_empty_list_when_no_backup_details_available_for_the_table(self):
+        """
+        Test case for handling no backup details available for the table.
+
+        Case: The table has no backup details in DynamoDB.
+        Expected Result: The method returns an empty list.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "expected_table_details_with_one_index.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+
+        self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
+        self.customer_table_info_repo.dynamodb_client.list_backups.return_value = {'BackupSummaries': [], 'LastEvaluatedBackupArn': None}
+
+        result = self.data_table_service.get_table_backups(owner_id, table_id)
+
+        self.customer_table_info_repo.table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+        self.customer_table_info_repo.dynamodb_client.list_backups.assert_called_once_with(TableName=customer_table_info_item.get('Item').get('original_table_name'))
+        self.assertEqual(result, [])
+
+
+    def test_get_table_backups_throws_service_exception_when_dynamoDB_throws_error_while_retrieving_backup_details(self):
+        """
+        Test case for handling a ClientError during backup details retrieval.
+
+        Case: A ClientError occurs during the DynamoDB list_backups operation.
+        Expected Result: The method raises a ServiceException indicating failure to retrieve backup details.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "expected_table_details_with_one_index.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+
+        self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
+        self.customer_table_info_repo.dynamodb_client.list_backups.side_effect = ClientError(
+            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'list_backups')
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.get_table_backups(owner_id, table_id)
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to retrieve backup details of dynamoDB table')
+        self.customer_table_info_repo.table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+        self.customer_table_info_repo.dynamodb_client.list_backups.assert_called_once_with(TableName=customer_table_info_item.get('Item').get('original_table_name'))

@@ -3,7 +3,7 @@
         "owner_id": "owner123",
         "table_id": "table123",
         "table_name": "test_table_name",
-        "original_table_name": "original_table_name",
+        "original_table_name": "originalTable1",
         "description": "Test description",
         "created_by": "user",
         "creation_time": "2023-01-01T00:00:00Z",

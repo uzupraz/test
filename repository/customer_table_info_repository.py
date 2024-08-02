@@ -8,7 +8,7 @@ from dacite import from_dict
 
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
-from model import CustomerTableInfo
+from model import CustomerTableInfo, BackupDetail
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton
@@ -150,6 +150,38 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         except ClientError as e:
             log.exception('Failed to update customer table. owner_id: %s, table_id: %s', customer_table_info.owner_id, customer_table_info.table_id)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to update customer table.')
+
+
+    def get_dynamoDB_table_backup_details(self, table_name:str) -> list[BackupDetail]:
+        """
+        Get the backup details of a specific DynamoDB table.
+
+        Args:
+            table_name (str): The name of the DynamoDB table to retrieve backup details for.
+
+        Returns:
+            list[BackupDetail]: The backup details of dynamoDB table.
+
+        Raises:
+            ServiceException: If there is an error, retrieving the backup details of dynamoDB table.
+        """
+        try:
+            log.info('Retrieving backup details of dynamoDB table. table_name: %s', table_name)
+            response = self.dynamodb_client.list_backups(TableName=table_name)
+            log.info('Successfully retrieved backup details of dynamoDB table. table_name: %s', table_name)
+            backup_details = [
+            BackupDetail(name=backupSummary['BackupName'],
+                         status=backupSummary['BackupStatus'],
+                         creation_time=backupSummary['BackupCreationDateTime'],
+                         type=backupSummary['BackupType'],
+                         size=backupSummary['BackupSizeBytes'] / 1024)
+            # the response contains the list of backupSummary i.e. response ={'BackupSummaries': [{details}]}
+            for backupSummary in response["BackupSummaries"]
+            ]
+            return backup_details
+        except ClientError as e:
+            log.exception('Failed to retrieve backup details of dynamoDB table. table_name: %s', table_name)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve backup details of dynamoDB table')
 
 
     def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:

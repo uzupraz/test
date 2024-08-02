@@ -77,6 +77,16 @@ table_details_response_dto = api.inherit('Customer table details response',serve
     }))
 })
 
+list_backups_response_dto = api.inherit('List of Backups Response', server_response, {
+    'payload': fields.List(fields.Nested(api.model('Backup List', {
+        'name': fields.String(description='Name of the backup'),
+        'status': fields.String(description='Status of the backup'),
+        'creation_time': fields.String(description='Backup creation date time'),
+        'type': fields.String(description='Type of the backup'),
+        'size': fields.Integer(description='Size of the backup in KB')
+    })))
+})
+
 @api.route('/tables')
 class DataTableListResource(Resource):
 
@@ -123,3 +133,19 @@ class DataTableResource (Resource):
         table_details = data_table_service.get_table_details(owner_id=user.organization_id, table_id=table_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=table_details), 200
+
+
+@api.route('/tables/<string:table_id>/backups')
+class TableBackupsResource(Resource):
+
+    def __init__(self, api=None, *args, **kwargs):
+        super().__init__(api, *args, **kwargs)
+
+    @api.doc(description="Get the list of backups for a specific table by its ID.")
+    @api.marshal_with(list_backups_response_dto, skip_none=True)
+    def get(self, table_id:str):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+        user = User(**g.get("user"))
+        backups = data_table_service.get_table_backups(owner_id=user.organization_id, table_id=table_id)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=backups), 200

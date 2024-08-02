@@ -17,8 +17,15 @@ class SystemStatus(Enum):
 
 
 class BackupStatus(Enum):
-    ENABLED='ENABLED'
-    DISABLED='DISABLED'
+    CREATING='CREATING'
+    ACTIVE='ACTIVE'
+    DELETED='DELETED'
+
+
+class BackupType(Enum):
+    USER='USER'
+    SYSTEM='SYSTEM'
+    AWS_BACKUP='AWS_BACKUP'
 
 
 class TableStatus(Enum):

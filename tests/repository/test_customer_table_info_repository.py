@@ -5,7 +5,7 @@ from boto3.dynamodb.conditions import Key
 from dacite import from_dict
 
 from tests.test_utils import TestUtils
-from model import  CustomerTableInfo, UpdateTableRequest
+from model import  CustomerTableInfo, BackupDetail
 from repository.customer_table_info_repository import CustomerTableInfoRepository
 from exception import ServiceException
 from enums import ServiceStatus
@@ -256,3 +256,56 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
             ExpressionAttributeValues={':desc': Customer_table_info.description},
             ReturnValues="ALL_NEW"
         )
+
+
+    def test_get_dynamoDB_table_backup_details_happy_case(self):
+        """
+        Should return the correct backup details of the table.
+        """
+        table_name = 'originalTable1'
+        mock_response_path = self.TEST_RESOURCE_PATH + "expected_backup_details_for_table_happy_case.json"
+        mock_response = TestUtils.get_file_content(mock_response_path)
+        expected_backup_details = [
+            BackupDetail(name=backupSummary['BackupName'],
+                         status=backupSummary['BackupStatus'],
+                         creation_time=backupSummary['BackupCreationDateTime'],
+                         type=backupSummary['BackupType'],
+                         size=backupSummary['BackupSizeBytes'] / 1024)
+            for backupSummary in mock_response["BackupSummaries"]
+        ]
+        self.mock_dynamodb_client.list_backups.return_value = mock_response
+
+        result = self.customer_table_info_repo.get_dynamoDB_table_backup_details(table_name)
+
+        self.mock_dynamodb_client.list_backups.assert_called_once_with(TableName=table_name)
+        self.assertEqual(result, expected_backup_details)
+
+
+    def test_get_dynamoDB_table_backup_details_return_empty_backup_details(self):
+        """
+        Should return an empty backup details when there are no backup details avialbale for the table.
+        """
+        table_name = 'originalTable1'
+        self.mock_dynamodb_client.list_backups.return_value = {'BackupSummaries': [], 'LastEvaluatedBackupArn': None}
+
+        result = self.customer_table_info_repo.get_dynamoDB_table_backup_details(table_name)
+
+        self.mock_dynamodb_client.list_backups.assert_called_once_with(TableName=table_name)
+        self.assertEqual(result, [])
+
+
+    def test_get_dynamoDB_table_backup_details_with_service_exception(self):
+        """
+        Should propagate ServiceException when DynamoDB throws a ClientError.
+        """
+        table_name = 'originalTable1'
+        self.mock_dynamodb_client.list_backups.side_effect = ClientError(
+            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'list_backups')
+
+        with self.assertRaises(ServiceException) as context:
+            self.customer_table_info_repo.get_dynamoDB_table_backup_details(table_name)
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to retrieve backup details of dynamoDB table')
+        self.mock_dynamodb_client.list_backups.assert_called_once_with(TableName=table_name)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from enums import BackupStatus, TableStatus, AlarmStatus, IndexStatus
+from enums import BackupStatus, TableStatus, AlarmStatus, IndexStatus, BackupType
 
 @dataclass
 class ListTableResponse:
@@ -32,7 +32,7 @@ class CustomerTableInfo:
     total_indexes: int = field(default=0)
     read_capacity_units: int = field(default=0)
     write_capacity_units: int = field(default=0)
-    backups: str = field(default=BackupStatus.ENABLED.value)
+    backups: str = field(default=BackupStatus.ACTIVE.value)
     table_status: str = field(default=TableStatus.ACTIVE.value)
     alarms: str = field(default=AlarmStatus.OK.value)
     next_backup_schedule: str | None = field(default=None)
@@ -55,7 +55,7 @@ class UpdateTableResponse:
     total_indexes: int = field(default=0)
     read_capacity_units: int = field(default=0)
     write_capacity_units: int = field(default=0)
-    backups: str = field(default=BackupStatus.ENABLED.value)
+    backups: str = field(default=BackupStatus.ACTIVE.value)
     table_status: str = field(default=TableStatus.ACTIVE.value)
     alarms: str = field(default=AlarmStatus.OK.value)
     next_backup_schedule: str | None = field(default=None)
@@ -72,9 +72,18 @@ class TableDetailsResponse:
     total_indexes: int = field(default=0)
     read_capacity_units: int = field(default=0)
     write_capacity_units: int = field(default=0)
-    backups: str = field(default=BackupStatus.ENABLED.value)
+    backups: str = field(default=BackupStatus.ACTIVE.value)
     table_status: str = field(default=TableStatus.ACTIVE.value)
     alarms: str = field(default=AlarmStatus.OK.value)
     next_backup_schedule: str | None = field(default=None)
     last_backup_schedule: str | None = field(default=None)
     indices: List[IndexInfo] = field(default_factory=list)
+
+
+@dataclass
+class BackupDetail:
+    name: str | None = field(default=None)
+    status: str = field(default=BackupStatus.ACTIVE.value)
+    creation_time: str | None = field(default=None)
+    type: str = field(default=BackupType.USER.value)
+    size: int = field(default=0)

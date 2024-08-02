@@ -3,7 +3,7 @@ from dataclasses import asdict
 
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse, TableDetailsResponse
+from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse, TableDetailsResponse, BackupDetail
 from repository import CustomerTableInfoRepository
 
 log = common_ctrl.log
@@ -83,3 +83,23 @@ class DataTableService(metaclass=Singleton):
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
         table_details_response = from_dict(TableDetailsResponse, asdict(customer_table_info))
         return table_details_response
+
+
+    def get_table_backups(self, owner_id:str, table_id:str) -> BackupDetail:
+        """
+        Retrieve the backup details of a specific table by its owner_id and table_id.
+
+        Args:
+            owner_id (str): The ID of the owner of the table.
+            table_id (str): The ID of the table.
+
+        Returns:
+            list[BackupDetail]: The backup details of dynamoDB table.
+
+        Raises:
+            ServiceException: If there is an error, retrieving the backup details of table.
+        """
+        log.info('Retrieving table backups. owner_id: %s, table_id: %s', owner_id, table_id)
+        customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
+        response = self.customer_table_info_repository.get_dynamoDB_table_backup_details(customer_table_info.original_table_name)
+        return response
