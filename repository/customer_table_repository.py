@@ -12,19 +12,15 @@ from utils import Singleton
 
 log = common_ctrl.log
 
-class CustomerTableContentRepository(metaclass=Singleton):
+class CustomerTableRepository(metaclass=Singleton):
 
 
     def __init__(self, app_config:AppConfig, aws_config:AWSConfig) -> None:
         """
-        Initialize the CustomerTableContentRepository with the AWS and App configurations.
+        Initialize the CustomerTableRepository with the AWS and App configurations.
 
         DynamoDB Resource: The DynamoDB resource provides a higher-level interface that allows us to interact
         with DynamoDB in an object-oriented manner. It simplifies operations such as creating tables, querying, updating items, etc.
-
-        DynamoDB Client: The DynamoDB client provides a lower-level interface that allows for direct interaction with
-        DynamoDB through API calls. This is particularly useful for operations that are not directly supported by
-        the resource interface, such as the describe_table operation used in the 'get_table_size' method.
 
         Args:
             app_config (AppConfig): The application configuration object.
@@ -33,10 +29,9 @@ class CustomerTableContentRepository(metaclass=Singleton):
         self.aws_config = aws_config
         self.app_config = app_config
         self.dynamodb_resource = self.__configure_dynamodb_resource()
-        self.dynamodb_client = self.__configure_dynamodb_client()
 
 
-    def get_table_content_using_table_name(self, table_name:str, limit: int, exclusive_start_key=None):
+    def get_table_content(self, table_name:str, limit:int, exclusive_start_key:dict=None):
         """
         Retrieve items from a DynamoDB table with optional pagination.
 
@@ -67,6 +62,7 @@ class CustomerTableContentRepository(metaclass=Singleton):
                 params['ExclusiveStartKey'] = exclusive_start_key
 
             response = table.scan(**params)
+            log.info('Successfully retrieved customer table content. table_name: %s', table_name)
             return response.get('Items', []), response.get('LastEvaluatedKey', None)
         except ClientError:
             log.exception('Failed to retrieve table items. table_name: %s', table_name)
@@ -85,17 +81,3 @@ class CustomerTableContentRepository(metaclass=Singleton):
         else:
             config = Config(region_name=self.aws_config.dynamodb_aws_region)
             return boto3.resource('dynamodb', config=config)
-
-
-    def __configure_dynamodb_client(self) -> boto3.client:
-        """
-        Configures and returns a DynamoDB client.
-
-        Returns:
-            boto3.client: The DynamoDB client.
-        """
-        if self.aws_config.is_local:
-            return boto3.client('dynamodb', region_name=self.aws_config.dynamodb_aws_region, endpoint_url='http://localhost:8000')
-        else:
-            config = Config(region_name=self.aws_config.dynamodb_aws_region)
-            return boto3.client('dynamodb', config=config)

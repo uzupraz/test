@@ -2,7 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from flask import g, request
 
 from configuration import AWSConfig, AppConfig
-from repository import CustomerTableInfoRepository, CustomerTableContentRepository
+from repository import CustomerTableInfoRepository, CustomerTableRepository
 from .server_response import ServerResponse
 from service import DataTableService
 from .common_controller import server_response
@@ -19,10 +19,10 @@ log = api.logger
 aws_config = AWSConfig()
 app_config = AppConfig()
 customer_table_info_repository = CustomerTableInfoRepository(app_config=app_config, aws_config=aws_config)
-customer_table_content_repository = CustomerTableContentRepository(app_config=app_config, aws_config=aws_config)
+customer_table_repository = CustomerTableRepository(app_config=app_config, aws_config=aws_config)
 data_table_service = DataTableService(
     customer_table_info_repository=customer_table_info_repository,
-    customer_table_content_repository=customer_table_content_repository
+    customer_table_repository=customer_table_repository
 )
 
 list_tables_response_dto = api.inherit('List customer tables response',server_response, {

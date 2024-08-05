@@ -10,7 +10,7 @@ from dataclasses import asdict
 from tests.test_utils import TestUtils
 from model import UpdateTableRequest, UpdateTableResponse, CustomerTableInfo
 from repository.customer_table_info_repository import CustomerTableInfoRepository
-from repository.customer_table_content_repository import CustomerTableContentRepository
+from repository.customer_table_repository import CustomerTableRepository
 from service.data_table_service import DataTableService
 from exception import ServiceException
 from enums import ServiceStatus
@@ -43,16 +43,13 @@ class TestDataTableService(unittest.TestCase):
             self.mock_configure_table.return_value = self.mock_table
             self.customer_table_info_repo = CustomerTableInfoRepository(self.app_config, self.aws_config)
 
-        Singleton.clear_instance(CustomerTableContentRepository)
-        with patch('repository.customer_table_content_repository.CustomerTableContentRepository._CustomerTableContentRepository__configure_dynamodb_resource') as mock_customer_table_content_configure_resource, \
-             patch('repository.customer_table_content_repository.CustomerTableContentRepository._CustomerTableContentRepository__configure_dynamodb_client') as mock_table_content_configure_client:
+        Singleton.clear_instance(CustomerTableRepository)
+        with patch('repository.customer_table_repository.CustomerTableRepository._CustomerTableRepository__configure_dynamodb_resource') as mock_customer_table_configure_resource:
 
-            self.mock_customer_table_content_configure_resource = mock_customer_table_content_configure_resource
-            self.mock_table_content_configure_client = mock_table_content_configure_client
+            self.mock_customer_table_configure_resource = mock_customer_table_configure_resource
 
-            self.mock_customer_table_content_configure_resource.return_value = self.mock_dynamodb_resource
-            self.mock_table_content_configure_client.return_value = self.mock_dynamodb_client
-            self.table_content_repo = CustomerTableContentRepository(self.app_config, self.aws_config)
+            self.mock_customer_table_configure_resource.return_value = self.mock_dynamodb_resource
+            self.table_content_repo = CustomerTableRepository(self.app_config, self.aws_config)
 
         Singleton.clear_instance(DataTableService)
         self.data_table_service = DataTableService(self.customer_table_info_repo, self.table_content_repo)
@@ -303,7 +300,7 @@ class TestDataTableService(unittest.TestCase):
         )
 
 
-    def test_get_table_content_using_table_id_happy_case(self):
+    def test_get_table_content_using_table_id_success_case(self):
         """
         Test case for retrieving table content successfully.
 
@@ -323,12 +320,12 @@ class TestDataTableService(unittest.TestCase):
         table_content_items = TestUtils.get_file_content(mock_table_content_items_path)
 
         self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
-        self.table_content_repo.get_table_content_using_table_name = MagicMock(return_value=(table_content_items, None))
+        self.table_content_repo.get_table_content = MagicMock(return_value=(table_content_items, None))
 
         result = self.data_table_service.get_table_content_using_table_id(owner_id, table_id, size, last_evaluated_key)
 
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
-        self.table_content_repo.get_table_content_using_table_name.assert_called_once_with(
+        self.table_content_repo.get_table_content.assert_called_once_with(
             table_name=customer_table_info_item['original_table_name'],
             limit=size,
             exclusive_start_key=None
@@ -359,12 +356,12 @@ class TestDataTableService(unittest.TestCase):
         table_content_items = TestUtils.get_file_content(mock_table_content_items_path)
 
         self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
-        self.table_content_repo.get_table_content_using_table_name = MagicMock(return_value=(table_content_items, {"next_key": "next_value"}))
+        self.table_content_repo.get_table_content = MagicMock(return_value=(table_content_items, {"next_key": "next_value"}))
 
         result = self.data_table_service.get_table_content_using_table_id(owner_id, table_id, size, last_evaluated_key)
 
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
-        self.table_content_repo.get_table_content_using_table_name.assert_called_once_with(
+        self.table_content_repo.get_table_content.assert_called_once_with(
             table_name=customer_table_info_item['original_table_name'],
             limit=size,
             exclusive_start_key=json.loads(last_evaluated_key)
@@ -406,7 +403,7 @@ class TestDataTableService(unittest.TestCase):
         """
         Test case for handling a ClientError during retrieval of table content.
 
-        Case: A ClientError occurs during the DynamoDB get_table_content_using_table_name operation.
+        Case: A ClientError occurs during the DynamoDB get_table_content operation.
         Expected Result: The method raises a ServiceException indicating failure to retrieve the table content.
         """
         owner_id = 'owner123'
@@ -423,7 +420,7 @@ class TestDataTableService(unittest.TestCase):
         mock_dynamodb_resource_table = MagicMock()
         self.table_content_repo.dynamodb_resource.Table.return_value = mock_dynamodb_resource_table
         mock_dynamodb_resource_table.scan.side_effect = ClientError(
-            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'get_table_content_using_table_name')
+            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'get_table_content')
 
         with self.assertRaises(ServiceException) as context:
             self.data_table_service.get_table_content_using_table_id(owner_id, table_id, size, last_evaluated_key)

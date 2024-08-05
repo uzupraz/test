@@ -6,23 +6,23 @@ from dataclasses import asdict
 from controller import common_controller as common_ctrl
 from utils import Singleton
 from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse, CustomerTableContent
-from repository import CustomerTableInfoRepository, CustomerTableContentRepository
+from repository import CustomerTableInfoRepository, CustomerTableRepository
 
 log = common_ctrl.log
 
 class DataTableService(metaclass=Singleton):
 
 
-    def __init__(self, customer_table_info_repository:CustomerTableInfoRepository, customer_table_content_repository:CustomerTableContentRepository) -> None:
+    def __init__(self, customer_table_info_repository:CustomerTableInfoRepository, customer_table_repository:CustomerTableRepository) -> None:
         """
         Initializes the DataTableService with the CustomerTableInfoRepository.
 
         Args:
             customer_table_info_repository (CustomerTableInfoRepository): The repository instance to access customer table information.
-            customer_table_content_repository (CustomerTableContentRepository): The repository instance to access tables information.
+            customer_table_repository (CustomerTableRepository): The repository instance to access tables information.
         """
         self.customer_table_info_repository = customer_table_info_repository
-        self.customer_table_content_repository = customer_table_content_repository
+        self.customer_table_repository = customer_table_repository
 
 
     def list_tables(self, owner_id:str) -> list[ListTableResponse]:
@@ -72,14 +72,26 @@ class DataTableService(metaclass=Singleton):
         return update_table_response
     
 
-    def get_table_content_using_table_id(self, owner_id:str, table_id:str, size:int, last_evaluated_key: str | None) -> CustomerTableContent:
+    def get_table_content_using_table_id(self, owner_id:str, table_id:str, size:int, last_evaluated_key:str|None=None) -> CustomerTableContent:
+        """
+        Get the contents of the table with provided table_id.
+
+        Args:
+            owner_id (str): The owner of the table.
+            table_id (str): The ID of the table.
+            size (int): Size of rows to fetch.
+            last_evaluated_key (str|None): Last evaluated key of previous request.
+
+        Returns:
+            CustomerTableContent: The customer table content in paginated form.
+        """
         log.info('Fetching table content. owner_id: %s, table_id: %s', owner_id, table_id)
         # Check if the item exists
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
         # Unquote query string to object
         last_evaluated_key = json.loads(urllib.parse.unquote(last_evaluated_key)) if last_evaluated_key is not None else None
         # querying database with exclusive start key
-        items, last_evaluated_key = self.customer_table_content_repository.get_table_content_using_table_name(
+        items, last_evaluated_key = self.customer_table_repository.get_table_content(
             table_name=customer_table_info.original_table_name, 
             limit=size,
             exclusive_start_key=last_evaluated_key

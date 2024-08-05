@@ -4,12 +4,14 @@ from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 from unittest.mock import MagicMock
 
-from repository.customer_table_content_repository import CustomerTableContentRepository
+from repository.customer_table_repository import CustomerTableRepository
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton
+from tests.test_utils import TestUtils
 
-class TestCustomerTableContentRepository(unittest.TestCase):
+
+class TestCustomerTableRepository(unittest.TestCase):
 
 
     TEST_RESOURCE_PATH = '/tests/resources/data_table/'
@@ -21,24 +23,19 @@ class TestCustomerTableContentRepository(unittest.TestCase):
         self.mock_dynamodb_resource = Mock()
         self.mock_dynamodb_client = Mock()
 
-        Singleton.clear_instance(CustomerTableContentRepository)
-        with patch('repository.customer_table_content_repository.CustomerTableContentRepository._CustomerTableContentRepository__configure_dynamodb_resource') as mock_configure_resource, \
-             patch('repository.customer_table_content_repository.CustomerTableContentRepository._CustomerTableContentRepository__configure_dynamodb_client') as mock_configure_client:
+        Singleton.clear_instance(CustomerTableRepository)
+        with patch('repository.customer_table_repository.CustomerTableRepository._CustomerTableRepository__configure_dynamodb_resource') as mock_configure_resource:
 
             self.mock_configure_resource = mock_configure_resource
-            self.mock_configure_client = mock_configure_client
-
             self.mock_configure_resource.return_value = self.mock_dynamodb_resource
-            self.mock_configure_client.return_value = self.mock_dynamodb_client
-
-            self.customer_table_content_repository = CustomerTableContentRepository(self.app_config, self.aws_config)
+            self.customer_table_repository = CustomerTableRepository(self.app_config, self.aws_config)
 
 
     def tearDown(self):
-        self.customer_table_content_repository = None
+        self.customer_table_repository = None
 
 
-    def test_get_table_content_using_table_name_success(self):
+    def test_get_table_content_success_case(self):
         """
         Test case for successfully retrieving table content.
 
@@ -49,10 +46,8 @@ class TestCustomerTableContentRepository(unittest.TestCase):
         exclusive_start_key = None
 
         # Mock response from DynamoDB scan
-        mock_items = [
-            {"ItemId": "item1", "Attribute1": "Value1", "Attribute2": "Value2"},
-            {"ItemId": "item2", "Attribute1": "Value3", "Attribute2": "Value4"}
-        ]
+        mock_table_content_items_path = self.TEST_RESOURCE_PATH + "get_table_content_items_happy_case.json"
+        mock_items = TestUtils.get_file_content(mock_table_content_items_path)
         mock_last_evaluated_key = {"key": "value"}
 
         mock_table = MagicMock()
@@ -63,7 +58,7 @@ class TestCustomerTableContentRepository(unittest.TestCase):
         }
 
         # Call the method under test
-        items, last_evaluated_key = self.customer_table_content_repository.get_table_content_using_table_name(table_name, limit, exclusive_start_key)
+        items, last_evaluated_key = self.customer_table_repository.get_table_content(table_name, limit, exclusive_start_key)
 
         # Assertions
         self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
@@ -72,7 +67,7 @@ class TestCustomerTableContentRepository(unittest.TestCase):
         self.assertEqual(last_evaluated_key, mock_last_evaluated_key)
 
 
-    def test_get_table_content_using_table_name_throws_service_exception(self):
+    def test_get_table_content_throws_service_exception(self):
         """
         Test case for handling ClientError while retrieving table content.
 
@@ -91,7 +86,7 @@ class TestCustomerTableContentRepository(unittest.TestCase):
 
         # Call the method under test and assert exception
         with self.assertRaises(ServiceException) as context:
-            self.customer_table_content_repository.get_table_content_using_table_name(table_name, limit, exclusive_start_key)
+            self.customer_table_repository.get_table_content(table_name, limit, exclusive_start_key)
 
         # Assertions
         self.assertEqual(context.exception.status_code, 500)
