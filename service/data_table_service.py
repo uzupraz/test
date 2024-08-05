@@ -1,24 +1,28 @@
+import json
+import urllib.parse
 from dacite import from_dict
 from dataclasses import asdict
 
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse
-from repository import CustomerTableInfoRepository
+from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse, CustomerTableContent
+from repository import CustomerTableInfoRepository, CustomerTableContentRepository
 
 log = common_ctrl.log
 
 class DataTableService(metaclass=Singleton):
 
 
-    def __init__(self, customer_table_info_repository:CustomerTableInfoRepository) -> None:
+    def __init__(self, customer_table_info_repository:CustomerTableInfoRepository, customer_table_content_repository:CustomerTableContentRepository) -> None:
         """
         Initializes the DataTableService with the CustomerTableInfoRepository.
 
         Args:
             customer_table_info_repository (CustomerTableInfoRepository): The repository instance to access customer table information.
+            customer_table_content_repository (CustomerTableContentRepository): The repository instance to access tables information.
         """
         self.customer_table_info_repository = customer_table_info_repository
+        self.customer_table_content_repository = customer_table_content_repository
 
 
     def list_tables(self, owner_id:str) -> list[ListTableResponse]:
@@ -66,3 +70,28 @@ class DataTableService(metaclass=Singleton):
         # Convert updated customer table info to UpdateTableResponse
         update_table_response = from_dict(UpdateTableResponse, asdict(updated_customer_table_info))
         return update_table_response
+    
+
+    def get_table_content_using_table_id(self, owner_id:str, table_id:str, size:int, last_evaluated_key: str | None) -> CustomerTableContent:
+        log.info('Fetching table content. owner_id: %s, table_id: %s', owner_id, table_id)
+        # Check if the item exists
+        customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
+        # Unquote query string to object
+        last_evaluated_key = json.loads(urllib.parse.unquote(last_evaluated_key)) if last_evaluated_key is not None else None
+        # querying database with exclusive start key
+        items, last_evaluated_key = self.customer_table_content_repository.get_table_content_using_table_name(
+            table_name=customer_table_info.original_table_name, 
+            limit=size,
+            exclusive_start_key=last_evaluated_key
+        )
+        # Encoding last evaluated_key into url quote
+        encoded_last_evaluated_key = None
+        if last_evaluated_key is not None and isinstance(last_evaluated_key, dict):
+            encoded_last_evaluated_key = urllib.parse.quote(json.dumps(last_evaluated_key))
+
+        return CustomerTableContent(
+            items=items,
+            size=size,
+            has_more=last_evaluated_key is not None,
+            last_evaluated_key=encoded_last_evaluated_key
+        )

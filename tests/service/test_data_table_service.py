@@ -1,4 +1,6 @@
 import unittest
+import urllib.parse
+import json
 from unittest.mock import MagicMock, Mock, patch, call
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
@@ -8,6 +10,7 @@ from dataclasses import asdict
 from tests.test_utils import TestUtils
 from model import UpdateTableRequest, UpdateTableResponse, CustomerTableInfo
 from repository.customer_table_info_repository import CustomerTableInfoRepository
+from repository.customer_table_content_repository import CustomerTableContentRepository
 from service.data_table_service import DataTableService
 from exception import ServiceException
 from enums import ServiceStatus
@@ -40,12 +43,24 @@ class TestDataTableService(unittest.TestCase):
             self.mock_configure_table.return_value = self.mock_table
             self.customer_table_info_repo = CustomerTableInfoRepository(self.app_config, self.aws_config)
 
+        Singleton.clear_instance(CustomerTableContentRepository)
+        with patch('repository.customer_table_content_repository.CustomerTableContentRepository._CustomerTableContentRepository__configure_dynamodb_resource') as mock_customer_table_content_configure_resource, \
+             patch('repository.customer_table_content_repository.CustomerTableContentRepository._CustomerTableContentRepository__configure_dynamodb_client') as mock_table_content_configure_client:
+
+            self.mock_customer_table_content_configure_resource = mock_customer_table_content_configure_resource
+            self.mock_table_content_configure_client = mock_table_content_configure_client
+
+            self.mock_customer_table_content_configure_resource.return_value = self.mock_dynamodb_resource
+            self.mock_table_content_configure_client.return_value = self.mock_dynamodb_client
+            self.table_content_repo = CustomerTableContentRepository(self.app_config, self.aws_config)
+
         Singleton.clear_instance(DataTableService)
-        self.data_table_service = DataTableService(self.customer_table_info_repo)
+        self.data_table_service = DataTableService(self.customer_table_info_repo, self.table_content_repo)
 
 
     def tearDown(self):
         self.customer_table_info_repo = None
+        self.table_content_repo = None
         self.data_table_service = None
 
 
@@ -286,3 +301,135 @@ class TestDataTableService(unittest.TestCase):
             ExpressionAttributeValues={':desc': update_data.description},
             ReturnValues='ALL_NEW'
         )
+
+
+    def test_get_table_content_using_table_id_happy_case(self):
+        """
+        Test case for retrieving table content successfully.
+
+        Case: The table content is fetched successfully.
+        Expected Result: The method returns a CustomerTableContentResponse object with the content and has_more flag.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        size = 10
+        last_evaluated_key = None
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+
+        mock_table_content_items_path = self.TEST_RESOURCE_PATH + "get_table_content_items_happy_case.json"
+        table_content_items = TestUtils.get_file_content(mock_table_content_items_path)
+
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+        self.table_content_repo.get_table_content_using_table_name = MagicMock(return_value=(table_content_items, None))
+
+        result = self.data_table_service.get_table_content_using_table_id(owner_id, table_id, size, last_evaluated_key)
+
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.table_content_repo.get_table_content_using_table_name.assert_called_once_with(
+            table_name=customer_table_info_item['original_table_name'],
+            limit=size,
+            exclusive_start_key=None
+        )
+
+        self.assertEqual(len(result.items), len(table_content_items))
+        self.assertEqual(result.size, size)
+        self.assertFalse(result.has_more)
+        self.assertIsNone(result.last_evaluated_key)
+
+
+    def test_get_table_content_using_table_id_with_last_evaluated_key(self):
+        """
+        Test case for retrieving table content with last_evaluated_key.
+
+        Case: The table content is fetched successfully with a last_evaluated_key.
+        Expected Result: The method returns a CustomerTableContentResponse object with the content, has_more flag, and encoded last_evaluated_key.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        size = 10
+        last_evaluated_key = '{"some_key": "some_value"}'
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        mock_table_content_items_path = self.TEST_RESOURCE_PATH + "get_table_content_items_happy_case.json"
+        table_content_items = TestUtils.get_file_content(mock_table_content_items_path)
+
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+        self.table_content_repo.get_table_content_using_table_name = MagicMock(return_value=(table_content_items, {"next_key": "next_value"}))
+
+        result = self.data_table_service.get_table_content_using_table_id(owner_id, table_id, size, last_evaluated_key)
+
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.table_content_repo.get_table_content_using_table_name.assert_called_once_with(
+            table_name=customer_table_info_item['original_table_name'],
+            limit=size,
+            exclusive_start_key=json.loads(last_evaluated_key)
+        )
+
+        self.assertEqual(len(result.items), len(table_content_items))
+        self.assertEqual(result.size, size)
+        self.assertTrue(result.has_more)
+        self.assertEqual(result.last_evaluated_key, urllib.parse.quote(json.dumps({"next_key": "next_value"})))
+
+
+    def test_get_table_content_using_table_id_throws_service_exception_when_no_item_found(self):
+        """
+        Test case for handling a missing table item during retrieval of table content.
+
+        Case: The table item does not exist in DynamoDB.
+        Expected Result: The method raises a ServiceException indicating failure to retrieve the customer table info.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        size = 10
+        last_evaluated_key = None
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_with_empty_result.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+
+        self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.get_table_content_using_table_id(owner_id, table_id, size, last_evaluated_key)
+
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Customer table info does not exists')
+        self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+
+
+    def test_get_table_content_using_table_id_throws_service_exception_when_client_error_occurs(self):
+        """
+        Test case for handling a ClientError during retrieval of table content.
+
+        Case: A ClientError occurs during the DynamoDB get_table_content_using_table_name operation.
+        Expected Result: The method raises a ServiceException indicating failure to retrieve the table content.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        size = 10
+        last_evaluated_key = None
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        mock_dynamodb_resource_table = MagicMock()
+        self.table_content_repo.dynamodb_resource.Table.return_value = mock_dynamodb_resource_table
+        mock_dynamodb_resource_table.scan.side_effect = ClientError(
+            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'get_table_content_using_table_name')
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.get_table_content_using_table_id(owner_id, table_id, size, last_evaluated_key)
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to retrieve table items')
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        mock_dynamodb_resource_table.scan.assert_called_once_with(Limit=size)

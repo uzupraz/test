@@ -48,3 +48,11 @@ class UpdateTableResponse:
     alarms: str = field(default=AlarmStatus.OK.value)
     next_backup_schedule: str | None = field(default=None)
     last_backup_schedule: str | None = field(default=None)
+
+
+@dataclass
+class CustomerTableContent:
+    items: list[any]
+    size: int
+    has_more: bool
+    last_evaluated_key: str | None

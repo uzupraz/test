@@ -2,7 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from flask import g, request
 
 from configuration import AWSConfig, AppConfig
-from repository import CustomerTableInfoRepository
+from repository import CustomerTableInfoRepository, CustomerTableContentRepository
 from .server_response import ServerResponse
 from service import DataTableService
 from .common_controller import server_response
@@ -19,7 +19,11 @@ log = api.logger
 aws_config = AWSConfig()
 app_config = AppConfig()
 customer_table_info_repository = CustomerTableInfoRepository(app_config=app_config, aws_config=aws_config)
-data_table_service = DataTableService(customer_table_info_repository=customer_table_info_repository)
+customer_table_content_repository = CustomerTableContentRepository(app_config=app_config, aws_config=aws_config)
+data_table_service = DataTableService(
+    customer_table_info_repository=customer_table_info_repository,
+    customer_table_content_repository=customer_table_content_repository
+)
 
 list_tables_response_dto = api.inherit('List customer tables response',server_response, {
     'payload': fields.List(fields.Nested(api.model('List of customer tables', {
@@ -50,6 +54,16 @@ update_table_response_dto = api.inherit('Update customer table response',server_
         'last_backup_schedule': fields.String(required=True, description='The last backup schedule date time of the table')
     }))
 })
+
+table_content_response_dto = api.inherit('Table content response',server_response, {
+    'payload': api.model('TableContentResponse', {
+        'size': fields.Integer(description='Items per page'),
+        'items': fields.List(fields.Nested(any),description='List of items'),
+        'has_more': fields.Boolean(required=True, description="Does next page exist or not"),
+        'last_evaluated_key': fields.String(required=False, description="Used for start evaluation")
+    })
+})
+
 
 @api.route('/tables')
 class DataTableListResource(Resource):
@@ -87,3 +101,30 @@ class DataTableResource (Resource):
         updated_customer_table_info = data_table_service.update_table(owner_id=user.organization_id, table_id=table_id, update_table_request=update_table_request)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=updated_customer_table_info), 200
+    
+
+@api.route('/tables/<string:table_id>/contents')
+class DataTableContentResource (Resource):
+
+
+    def __init__(self, api=None, *args, **kwargs):
+        super().__init__(api, *args, **kwargs)
+
+
+    @api.doc(description='Get the table content of the provided table id.')
+    @api.marshal_with(table_content_response_dto, skip_none=True)
+    def get(self, table_id:str):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+
+        size = request.args.get('size', default=10, type=int)
+        last_evaluated_key = request.args.get('last_evaluated_key', default=None, type=str)
+        user = User(**g.get('user'))
+
+        response_payload = data_table_service.get_table_content_using_table_id(
+            owner_id=user.organization_id,
+            table_id=table_id,
+            size=size,
+            last_evaluated_key=last_evaluated_key
+        )
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=response_payload), 200
