@@ -3,12 +3,12 @@ import boto3.resources
 import boto3.resources.factory
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from dacite import from_dict
 
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
-from model import CustomerTableInfo, BackupDetail
+from model import CustomerTableInfo, DynamoDBTableDetails, BackupDetail
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton
@@ -68,27 +68,28 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer tables')
 
 
-    def get_table_details(self, table_name:str) -> dict:
+    def get_dynamoDB_table_details(self, table_name:str) -> DynamoDBTableDetails:
         """
-        Get the details of a specific table.
+        Get the details of a specific dynamoDB table.
 
         Args:
-            table_name (str): The name of the table to retrieve details for.
+            table_name (str): The name of the dynamoDB table to retrieve details for.
 
         Returns:
-            dict: The response from the describe_table API.
+            DynamoDBTableDetails: The object of DynamoDBTableDetails with table size.
 
         Raises:
             ServiceException: If there is an error describing the DynamoDB table.
         """
         try:
-            log.info('Retrieving details of customer table. table_name: %s', table_name)
+            log.info('Retrieving details of customer dynamoDB table. table_name: %s', table_name)
             response = self.dynamodb_client.describe_table(TableName=table_name)
-            log.info('Successfully retrieved details of customer table. table_name: %s', table_name)
-            return response
+            log.info('Successfully retrieved details of customer dynamoDB table. table_name: %s', table_name)
+            table_size = response['Table'] ['TableSizeBytes'] / 1024
+            return DynamoDBTableDetails(size=table_size)
         except ClientError as e:
-            log.exception('Failed to retrieve details of customer table. table_name: %s', table_name)
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer table details')
+            log.exception('Failed to retrieve details of customer dynamoDB table. table_name: %s', table_name)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer dynamoDB table details')
 
 
     def get_table_item(self, owner_id:str, table_id:str) -> CustomerTableInfo:
@@ -121,9 +122,9 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer table info')
 
 
-    def update_table(self, customer_table_info:CustomerTableInfo) -> CustomerTableInfo:
+    def update_description(self, customer_table_info:CustomerTableInfo) -> CustomerTableInfo:
         """
-        Updates the fields of a customer's table.
+        Updates the description field of a customer's table.
 
         Args:
             customer_table_info (CustomerTableInfo): The customer table info with data to update.
@@ -135,21 +136,22 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             ServiceException: If there is an error, updating the DynamoDB table.
         """
         try:
-            log.info('Updating customer table. owner_id: %s, table_id: %s', customer_table_info.owner_id, customer_table_info.table_id)
+            log.info('Updating customer table description. owner_id: %s, table_id: %s', customer_table_info.owner_id, customer_table_info.table_id)
             table_key = {'owner_id': customer_table_info.owner_id, 'table_id': customer_table_info.table_id}
             update_expression = 'SET description = :desc'
             expression_attribute_values = {':desc': customer_table_info.description}
             response = self.table.update_item(
                 Key=table_key,
                 UpdateExpression=update_expression,
+                ConditionExpression=Attr('owner_id').exists() & Attr('table_id').exists(),
                 ExpressionAttributeValues=expression_attribute_values,
                 ReturnValues="ALL_NEW"
             )
-            log.info('Successfully updated customer table. owner_id: %s, table_id: %s', customer_table_info.owner_id, customer_table_info.table_id)
+            log.info('Successfully updated customer table description. owner_id: %s, table_id: %s', customer_table_info.owner_id, customer_table_info.table_id)
             return from_dict(CustomerTableInfo, response.get('Attributes'))
         except ClientError as e:
             log.exception('Failed to update customer table. owner_id: %s, table_id: %s', customer_table_info.owner_id, customer_table_info.table_id)
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to update customer table.')
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to update customer table description')
 
 
     def get_dynamoDB_table_backup_details(self, table_name:str) -> list[BackupDetail]:

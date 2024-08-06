@@ -3,7 +3,7 @@ from dataclasses import asdict
 
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse, TableDetailsResponse, BackupDetail
+from model import ListTableResponse, UpdateTableRequest, TableDetails, BackupDetail
 from repository import CustomerTableInfoRepository
 
 log = common_ctrl.log
@@ -32,22 +32,22 @@ class DataTableService(metaclass=Singleton):
             List[ListTableResponse]: A list of tables containing table details.
         """
         log.info('Retrieving customer tables. owner_id: %s', owner_id)
-        tables_response = self.customer_table_info_repository.get_tables_for_owner(owner_id)
+        tables = self.customer_table_info_repository.get_tables_for_owner(owner_id)
         owner_tables  = []
 
-        for table in tables_response:
-            table_details_response = self.customer_table_info_repository.get_table_details(table.original_table_name)
+        for table in tables:
+            dynamoDB_table_details = self.customer_table_info_repository.get_dynamoDB_table_details(table.original_table_name)
             owner_tables .append(ListTableResponse(
                 name=table.table_name,
                 id=table.table_id,
-                size=table_details_response['Table'] ['TableSizeBytes'] / 1024
+                size=dynamoDB_table_details.size
             ))
         return owner_tables
 
 
-    def update_table(self, owner_id:str, table_id:str, update_table_request:UpdateTableRequest) -> UpdateTableResponse:
+    def update_description(self, owner_id:str, table_id:str, update_table_request:UpdateTableRequest) -> TableDetails:
         """
-        Updates the fields of a customer's table.
+        Updates the description field of a customer's table.
 
         Args:
             owner_id (str): The owner of the table.
@@ -55,20 +55,24 @@ class DataTableService(metaclass=Singleton):
             update_table_request (UpdateTableRequest): The data to update in the customer's table.
 
         Returns:
-            UpdateTableResponse: The customer table details after update.
+            TableDetails: The customer table details after update.
         """
         log.debug('Updating customer table. update_data: %s', update_table_request)
         # Check if the item exists
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
         # set the fields to update in an existing item
         customer_table_info.description = update_table_request.description
-        updated_customer_table_info = self.customer_table_info_repository.update_table(customer_table_info)
+        updated_customer_table_info = self.customer_table_info_repository.update_description(customer_table_info)
+        dynamoDB_table_details = self.customer_table_info_repository.get_dynamoDB_table_details(updated_customer_table_info.original_table_name)
         # Convert updated customer table info to UpdateTableResponse
-        update_table_response = from_dict(UpdateTableResponse, asdict(updated_customer_table_info))
-        return update_table_response
+        updated_table = from_dict(TableDetails, asdict(updated_customer_table_info))
+        for index in updated_table.indices:
+            # table size equals index size
+            index.size = dynamoDB_table_details.size
+        return updated_table
 
 
-    def get_table_details(self, owner_id:str, table_id:str) -> TableDetailsResponse:
+    def get_table_details(self, owner_id:str, table_id:str) -> TableDetails:
         """
         Retrieve the details of a specific table by its owner_id and table_id.
 
@@ -77,12 +81,16 @@ class DataTableService(metaclass=Singleton):
             table_id (str): The ID of the table.
 
         Returns:
-            TableDetailsResponse: An object containing detailed information about the table.
+            TableDetails: An object containing detailed information about the table.
         """
         log.info('Retrieving table details. owner_id: %s, table_id: %s', owner_id, table_id)
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
-        table_details_response = from_dict(TableDetailsResponse, asdict(customer_table_info))
-        return table_details_response
+        table_details = from_dict(TableDetails, asdict(customer_table_info))
+        dynamoDB_table_details = self.customer_table_info_repository.get_dynamoDB_table_details(customer_table_info.original_table_name)
+        for index in table_details.indices:
+            # table size equals index size
+            index.size = dynamoDB_table_details.size
+        return table_details
 
 
     def get_table_backups(self, owner_id:str, table_id:str) -> BackupDetail:
