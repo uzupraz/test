@@ -98,7 +98,7 @@ class TestCustomerTableRepository(unittest.TestCase):
 
     def test_get_table_content_throws_service_exception(self):
         """
-        Test case for handling ClientError while retrieving table content.
+        Test case for handling ClientError while fetching customer table items.
 
         Expected Result: The method raises a ServiceException.
         """

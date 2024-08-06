@@ -31,7 +31,7 @@ class CustomerTableRepository(metaclass=Singleton):
         self.dynamodb_resource = self.__configure_dynamodb_resource()
 
 
-    def get_table_content(self, table_name:str, limit:int, exclusive_start_key:dict=None) -> tuple[list,str|None]:
+    def get_table_content(self, table_name:str, limit:int, exclusive_start_key:dict=None) -> tuple[list, str|None]:
         """
         Retrieve items from a DynamoDB table with optional pagination.
 

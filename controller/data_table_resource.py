@@ -58,7 +58,7 @@ update_table_response_dto = api.inherit('Update customer table response',server_
 
 table_content_response_dto = api.inherit('Table content response',server_response, {
     'payload': api.model('TableContentResponse', {
-        'items': fields.List(fields.Nested(any),description='List of items'),
+        'items': fields.List(fields.Nested(any), description='List of items'),
         'pagination': fields.Nested(api.model('Pagination parameters', {
             'size': fields.Integer(description='Items per page'),
             'last_evaluated_key': fields.String(required=False, description="A key which was evaluated in previous request & will be used as exclusive start key in current request")
