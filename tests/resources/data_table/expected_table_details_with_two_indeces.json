@@ -15,8 +15,8 @@
         "backup": "ENABLED",
         "auto_backup_status": "ENABLED",
         "table_status": "ACTIVE",
-        "next_backup_schedule_cron_pattern": "0 0 1 */1 *",
-        "last_backup_schedule_cron_pattern": "0 0 1 */1 *",
+        "next_backup_schedule_cron_pattern": "0 0 * * *",
+        "last_backup_schedule_cron_pattern": "0 0 * * *",
         "indices": [
             {
                 "name": "index1",

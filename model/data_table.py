@@ -36,8 +36,8 @@ class CustomerTableInfo:
     backup: str = field(default=Backup.ENABLED.value)
     auto_backup_status: str = field(default=AutoBackupStatus.ENABLED.value)
     table_status: str = field(default=TableStatus.ACTIVE.value)
-    next_backup_schedule_cron_pattern: str | None = field(default='0 0 1 */1 *')
-    last_backup_schedule_cron_pattern: str | None = field(default='0 0 1 */1 *')
+    next_backup_schedule_cron_pattern: str | None = field(default='0 0 * * *')
+    last_backup_schedule_cron_pattern: str | None = field(default='0 0 * * *')
     indices: List[IndexInfo] = field(default_factory=list)
 
 
@@ -72,8 +72,8 @@ class TableDetails:
     backup: str = field(default=Backup.ENABLED.value)
     auto_backup_status: str = field(default=AutoBackupStatus.ENABLED.value)
     table_status: str = field(default=TableStatus.ACTIVE.value)
-    next_backup_schedule_cron_pattern: str | None = field(default='0 0 1 */1 *')
-    last_backup_schedule_cron_pattern: str | None = field(default='0 0 1 */1 *')
+    next_backup_schedule_cron_pattern: str | None = field(default='0 0 * * *')
+    last_backup_schedule_cron_pattern: str | None = field(default='0 0 * * *')
     indices: List[IndexDetails] = field(default_factory=list)
 
 
