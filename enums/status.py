@@ -16,9 +16,20 @@ class SystemStatus(Enum):
     ONLINE='ONLINE'
 
 
-class BackupStatus(Enum):
+class Backup(Enum):
     ENABLED='ENABLED'
     DISABLED='DISABLED'
+
+
+class AutoBackupStatus(Enum):
+    ENABLED='ENABLED'
+    DISABLED='DISABLED'
+
+
+class BackupStatus(Enum):
+    CREATING='CREATING'
+    ACTIVE='ACTIVE'
+    DELETED='DELETED'
 
 
 class TableStatus(Enum):
@@ -29,12 +40,6 @@ class TableStatus(Enum):
     INACCESSIBLE_ENCRYPTION_CREDENTIALS='INACCESSIBLE_ENCRYPTION_CREDENTIALS'
     ARCHIVING='ARCHIVING'
     ARCHIVED='ARCHIVED'
-
-
-class AlarmStatus(Enum):
-    OK='OK'
-    ALARM='ALARM'
-    INSUFFICIENT_DATA='INSUFFICIENT_DATA'
 
 
 class IndexStatus(Enum):

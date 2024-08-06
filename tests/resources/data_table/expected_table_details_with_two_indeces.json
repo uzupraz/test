@@ -3,25 +3,26 @@
         "owner_id": "owner123",
         "table_id": "table123",
         "table_name": "test_table_name",
-        "original_table_name": "original_table_name",
+        "original_table_name": "OriginalTable1",
+        "partition_key": "partition_key",
+        "sort_key": "sort_key",
         "description": "Test description",
         "created_by": "user",
         "creation_time": "2023-01-01T00:00:00Z",
-        "total_indexes": 2,
+        "total_indices": 2,
         "read_capacity_units": 5,
         "write_capacity_units": 5,
-        "backups": "ENABLED",
+        "backup": "ENABLED",
+        "auto_backup_status": "ENABLED",
         "table_status": "ACTIVE",
-        "alarms": "OK",
-        "next_backup_schedule": "2023-01-02T00:00:00Z",
-        "last_backup_schedule": "2022-12-31T00:00:00Z",
+        "next_backup_schedule_cron_pattern": "0 0 1 */1 *",
+        "last_backup_schedule_cron_pattern": "0 0 1 */1 *",
         "indices": [
             {
                 "name": "index1",
                 "status": "ACTIVE",
                 "partition_key": "pk1",
                 "sort_key": "sk1",
-                "size": 2048,
                 "item_count": 200
             },
             {
@@ -29,7 +30,6 @@
                 "status": "CREATING",
                 "partition_key": "pk2",
                 "sort_key": "sk2",
-                "size": 512,
                 "item_count": 50
             }
         ]
