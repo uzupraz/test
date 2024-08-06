@@ -31,7 +31,7 @@ class CustomerTableRepository(metaclass=Singleton):
         self.dynamodb_resource = self.__configure_dynamodb_resource()
 
 
-    def get_table_content(self, table_name:str, limit:int, exclusive_start_key:dict=None):
+    def get_table_content(self, table_name:str, limit:int, exclusive_start_key:dict=None) -> tuple:
         """
         Retrieve items from a DynamoDB table with optional pagination.
 
@@ -62,7 +62,7 @@ class CustomerTableRepository(metaclass=Singleton):
                 params['ExclusiveStartKey'] = exclusive_start_key
 
             response = table.scan(**params)
-            log.info('Successfully retrieved customer table content. table_name: %s', table_name)
+            log.info('Successfully retrieved table items. table_name: %s', table_name)
             return response.get('Items', []), response.get('LastEvaluatedKey', None)
         except ClientError:
             log.exception('Failed to retrieve table items. table_name: %s', table_name)

@@ -1,5 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 from flask import g, request
+from dacite import from_dict
 
 from configuration import AWSConfig, AppConfig
 from repository import CustomerTableInfoRepository, CustomerTableRepository
@@ -103,24 +104,24 @@ class DataTableResource (Resource):
         return ServerResponse.success(payload=updated_customer_table_info), 200
     
 
-@api.route('/tables/<string:table_id>/contents')
-class DataTableContentResource (Resource):
+@api.route('/tables/<string:table_id>/items')
+class DataTableItemsResource (Resource):
 
 
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description='Get the table content of the provided table id.')
+    @api.doc(description='Get the table items of the provided table id.')
     @api.marshal_with(table_content_response_dto, skip_none=True)
     def get(self, table_id:str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
         size = request.args.get('size', default=10, type=int)
         last_evaluated_key = request.args.get('last_evaluated_key', default=None, type=str)
-        user = User(**g.get('user'))
+        user = from_dict(User, g.get('user'))
 
-        response_payload = data_table_service.get_table_content_using_table_id(
+        response_payload = data_table_service.get_table_content(
             owner_id=user.organization_id,
             table_id=table_id,
             size=size,

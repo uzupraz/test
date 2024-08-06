@@ -300,7 +300,7 @@ class TestDataTableService(unittest.TestCase):
         )
 
 
-    def test_get_table_content_using_table_id_success_case(self):
+    def test_get_table_content_success_case(self):
         """
         Test case for retrieving table content successfully.
 
@@ -322,7 +322,7 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
         self.table_content_repo.get_table_content = MagicMock(return_value=(table_content_items, None))
 
-        result = self.data_table_service.get_table_content_using_table_id(owner_id, table_id, size, last_evaluated_key)
+        result = self.data_table_service.get_table_content(owner_id, table_id, size, last_evaluated_key)
 
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
         self.table_content_repo.get_table_content.assert_called_once_with(
@@ -333,11 +333,10 @@ class TestDataTableService(unittest.TestCase):
 
         self.assertEqual(len(result.items), len(table_content_items))
         self.assertEqual(result.size, size)
-        self.assertFalse(result.has_more)
         self.assertIsNone(result.last_evaluated_key)
 
 
-    def test_get_table_content_using_table_id_with_last_evaluated_key(self):
+    def test_get_table_content_with_last_evaluated_key(self):
         """
         Test case for retrieving table content with last_evaluated_key.
 
@@ -358,7 +357,7 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
         self.table_content_repo.get_table_content = MagicMock(return_value=(table_content_items, {"next_key": "next_value"}))
 
-        result = self.data_table_service.get_table_content_using_table_id(owner_id, table_id, size, last_evaluated_key)
+        result = self.data_table_service.get_table_content(owner_id, table_id, size, last_evaluated_key)
 
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
         self.table_content_repo.get_table_content.assert_called_once_with(
@@ -369,11 +368,10 @@ class TestDataTableService(unittest.TestCase):
 
         self.assertEqual(len(result.items), len(table_content_items))
         self.assertEqual(result.size, size)
-        self.assertTrue(result.has_more)
         self.assertEqual(result.last_evaluated_key, urllib.parse.quote(json.dumps({"next_key": "next_value"})))
 
 
-    def test_get_table_content_using_table_id_throws_service_exception_when_no_item_found(self):
+    def test_get_table_content_throws_service_exception_when_no_item_found(self):
         """
         Test case for handling a missing table item during retrieval of table content.
 
@@ -391,7 +389,7 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.get_table_content_using_table_id(owner_id, table_id, size, last_evaluated_key)
+            self.data_table_service.get_table_content(owner_id, table_id, size, last_evaluated_key)
 
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
@@ -399,7 +397,7 @@ class TestDataTableService(unittest.TestCase):
         self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
 
 
-    def test_get_table_content_using_table_id_throws_service_exception_when_client_error_occurs(self):
+    def test_get_table_content_throws_service_exception_when_client_error_occurs(self):
         """
         Test case for handling a ClientError during retrieval of table content.
 
@@ -423,7 +421,7 @@ class TestDataTableService(unittest.TestCase):
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'get_table_content')
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.get_table_content_using_table_id(owner_id, table_id, size, last_evaluated_key)
+            self.data_table_service.get_table_content(owner_id, table_id, size, last_evaluated_key)
 
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)

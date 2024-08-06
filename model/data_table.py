@@ -54,5 +54,4 @@ class UpdateTableResponse:
 class CustomerTableContent:
     items: list[any]
     size: int
-    has_more: bool
     last_evaluated_key: str | None

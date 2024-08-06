@@ -72,7 +72,7 @@ class DataTableService(metaclass=Singleton):
         return update_table_response
     
 
-    def get_table_content_using_table_id(self, owner_id:str, table_id:str, size:int, last_evaluated_key:str|None=None) -> CustomerTableContent:
+    def get_table_content(self, owner_id:str, table_id:str, size:int, last_evaluated_key:str|None=None) -> CustomerTableContent:
         """
         Get the contents of the table with provided table_id.
 
@@ -104,6 +104,5 @@ class DataTableService(metaclass=Singleton):
         return CustomerTableContent(
             items=items,
             size=size,
-            has_more=last_evaluated_key is not None,
             last_evaluated_key=encoded_last_evaluated_key
         )
