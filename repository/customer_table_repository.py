@@ -31,7 +31,7 @@ class CustomerTableRepository(metaclass=Singleton):
         self.dynamodb_resource = self.__configure_dynamodb_resource()
 
 
-    def get_table_content(self, table_name:str, limit:int, exclusive_start_key:dict=None) -> tuple:
+    def get_table_content(self, table_name:str, limit:int, exclusive_start_key:dict=None) -> tuple[list,str|None]:
         """
         Retrieve items from a DynamoDB table with optional pagination.
 
@@ -67,7 +67,7 @@ class CustomerTableRepository(metaclass=Singleton):
         except ClientError:
             log.exception('Failed to retrieve table items. table_name: %s', table_name)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve table items')
-       
+      
 
     def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:
         """

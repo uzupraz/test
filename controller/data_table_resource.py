@@ -58,10 +58,11 @@ update_table_response_dto = api.inherit('Update customer table response',server_
 
 table_content_response_dto = api.inherit('Table content response',server_response, {
     'payload': api.model('TableContentResponse', {
-        'size': fields.Integer(description='Items per page'),
         'items': fields.List(fields.Nested(any),description='List of items'),
-        'has_more': fields.Boolean(required=True, description="Does next page exist or not"),
-        'last_evaluated_key': fields.String(required=False, description="Used for start evaluation")
+        'pagination': fields.Nested(api.model('Pagination parameters', {
+            'size': fields.Integer(description='Items per page'),
+            'last_evaluated_key': fields.String(required=False, description="A key which was evaluated in previous request & will be used as exclusive start key in current request")
+        }))
     })
 })
 
@@ -112,7 +113,9 @@ class DataTableItemsResource (Resource):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description='Get the table items of the provided table id.')
+    @api.doc(size='Get the table items of the provided table id.')
+    @api.param('size', 'Number of items to retrieve', type=int, default=10)
+    @api.param('last_evaluated_key', 'Pagination key for the next set of items', type=str)
     @api.marshal_with(table_content_response_dto, skip_none=True)
     def get(self, table_id:str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)

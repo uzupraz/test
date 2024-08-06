@@ -5,7 +5,7 @@ from dataclasses import asdict
 
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse, CustomerTableContent
+from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse, CustomerTableContent, CustomerTableContentPagination
 from repository import CustomerTableInfoRepository, CustomerTableRepository
 
 log = common_ctrl.log
@@ -101,8 +101,11 @@ class DataTableService(metaclass=Singleton):
         if last_evaluated_key is not None and isinstance(last_evaluated_key, dict):
             encoded_last_evaluated_key = urllib.parse.quote(json.dumps(last_evaluated_key))
 
+
         return CustomerTableContent(
             items=items,
-            size=size,
-            last_evaluated_key=encoded_last_evaluated_key
+            pagination=CustomerTableContentPagination(
+                size=size,
+                last_evaluated_key=encoded_last_evaluated_key
+            )
         )
