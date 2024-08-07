@@ -1,5 +1,5 @@
 import json
-import urllib.parse
+import base64
 from dacite import from_dict
 from dataclasses import asdict
 
@@ -89,7 +89,9 @@ class DataTableService(metaclass=Singleton):
         # Check if the item exists
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
         # Unquote query string to object
-        last_evaluated_key = json.loads(urllib.parse.unquote(last_evaluated_key)) if last_evaluated_key is not None else None
+        if last_evaluated_key is not None:
+            last_evaluated_key = json.loads(base64.b64decode(last_evaluated_key).decode('utf-8'))
+
         # querying database with exclusive start key
         items, last_evaluated_key = self.customer_table_repository.get_table_content(
             table_name=customer_table_info.original_table_name, 
@@ -99,7 +101,8 @@ class DataTableService(metaclass=Singleton):
         # Encoding last evaluated_key into url quote
         encoded_last_evaluated_key = None
         if last_evaluated_key is not None and isinstance(last_evaluated_key, dict):
-            encoded_last_evaluated_key = urllib.parse.quote(json.dumps(last_evaluated_key))
+            key = json.dumps(last_evaluated_key).encode('utf-8')
+            encoded_last_evaluated_key = base64.b64encode(key).decode('utf-8')
 
 
         return CustomerTableContent(

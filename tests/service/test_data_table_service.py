@@ -1,5 +1,4 @@
 import unittest
-import urllib.parse
 import json
 from unittest.mock import MagicMock, Mock, patch, call
 from botocore.exceptions import ClientError
@@ -346,7 +345,7 @@ class TestDataTableService(unittest.TestCase):
         owner_id = 'owner123'
         table_id = 'table123'
         size = 10
-        last_evaluated_key = '{"some_key": "some_value"}'
+        last_evaluated_key = 'eyJzb21lX2tleSI6ICJzb21lX3ZhbHVlIn0='
 
         mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
         customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
@@ -363,12 +362,12 @@ class TestDataTableService(unittest.TestCase):
         self.table_content_repo.get_table_content.assert_called_once_with(
             table_name=customer_table_info_item['original_table_name'],
             limit=size,
-            exclusive_start_key=json.loads(last_evaluated_key)
+            exclusive_start_key=json.loads(TestUtils.decode_base64(last_evaluated_key))
         )
 
         self.assertEqual(len(result.items), len(table_content_items))
         self.assertEqual(result.pagination.size, size)
-        self.assertEqual(result.pagination.last_evaluated_key, urllib.parse.quote(json.dumps({"next_key": "next_value"})))
+        self.assertEqual(result.pagination.last_evaluated_key, TestUtils.encode_to_base64(json.dumps({"next_key": "next_value"})))
 
 
     def test_get_table_content_throws_service_exception_when_no_item_found(self):
