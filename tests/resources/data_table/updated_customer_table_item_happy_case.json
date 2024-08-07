@@ -15,8 +15,7 @@
         "backup": "ON",
         "auto_backup_status": "ENABLED",
         "table_status": "ACTIVE",
-        "next_backup_schedule": "0 0 * * *",
-        "last_backup_schedule": "0 0 * * *",
+        "backup_schedule": "0 0 * * *",
         "indexes": [
             {
                 "name": "index1",

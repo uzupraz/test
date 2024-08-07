@@ -37,8 +37,7 @@ class CustomerTableInfo:
     backup: str = field(default=Backup.ENABLED.value)
     auto_backup_status: str = field(default=AutoBackupStatus.ENABLED.value)
     table_status: str = field(default=TableStatus.ACTIVE.value)
-    next_backup_schedule: str | None = field(default='0 0 * * *')
-    last_backup_schedule: str | None = field(default='0 0 * * *')
+    backup_schedule: str | None = field(default='0 0 * * *')
     indexes: List[IndexInfo] = field(default_factory=list)
 
 

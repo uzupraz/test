@@ -50,8 +50,7 @@ table_info_response_dto = api.inherit('Customer table info response',server_resp
         'backup': fields.String(required=True, description='Backup state of the table'),
         'auto_backup_status': fields.String(required=True, description='Auto backup status of the table'),
         'table_status': fields.String(required=True, description='Status of the table'),
-        'next_backup_schedule': fields.String(required=True, description='The next backup schedule cron pattern'),
-        'last_backup_schedule': fields.String(required=True, description='The last backup schedule cron pattern'),
+        'backup_schedule': fields.String(required=True, description='The backup schedule cron pattern'),
         'indexes': fields.List(fields.Nested(api.model('Index Info', {
             'name': fields.String(description='Name of the index'),
             'status': fields.String(description='Status of the index'),
@@ -89,7 +88,7 @@ class DataTableResource (Resource):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description="Update the description in customer table.")
+    @api.doc(description="Update the description in customer table and returns the updated table info.")
     @api.expect(update_table_request_dto, validate=True)
     @api.marshal_with(table_info_response_dto, skip_none=True)
     def put(self, table_id:str):
