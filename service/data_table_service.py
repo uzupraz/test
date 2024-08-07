@@ -9,6 +9,7 @@ from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse, Cu
 from repository import CustomerTableInfoRepository, CustomerTableRepository
 
 log = common_ctrl.log
+UTF_8 = 'utf-8'
 
 class DataTableService(metaclass=Singleton):
 
@@ -90,7 +91,7 @@ class DataTableService(metaclass=Singleton):
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
         # Decoding last evaluated_key from base64
         if last_evaluated_key is not None:
-            last_evaluated_key = json.loads(base64.b64decode(last_evaluated_key).decode('utf-8'))
+            last_evaluated_key = json.loads(base64.b64decode(last_evaluated_key).decode(UTF_8))
 
         # querying database with exclusive start key
         items, last_evaluated_key = self.customer_table_repository.get_table_items(
@@ -101,8 +102,8 @@ class DataTableService(metaclass=Singleton):
         # Encoding last evaluated_key into base64
         encoded_last_evaluated_key = None
         if last_evaluated_key is not None and isinstance(last_evaluated_key, dict):
-            key = json.dumps(last_evaluated_key).encode('utf-8')
-            encoded_last_evaluated_key = base64.b64encode(key).decode('utf-8')
+            key = json.dumps(last_evaluated_key).encode(UTF_8)
+            encoded_last_evaluated_key = base64.b64encode(key).decode(UTF_8)
 
 
         return CustomerTableItem(

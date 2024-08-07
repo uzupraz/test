@@ -299,12 +299,12 @@ class TestDataTableService(unittest.TestCase):
         )
 
 
-    def test_get_table_content_success_case(self):
+    def test_get_table_items_success_case(self):
         """
-        Test case for retrieving table content successfully.
+        Test case for retrieving table items successfully.
 
-        Case: The table content is fetched successfully.
-        Expected Result: The method returns a CustomerTableContentResponse object with the content and has_more flag.
+        Case: The table items is fetched successfully.
+        Expected Result: The method returns a CustomerTableItem object with the items and pagination which is CustomerTableItemPagination.
         """
         owner_id = 'owner123'
         table_id = 'table123'
@@ -335,12 +335,12 @@ class TestDataTableService(unittest.TestCase):
         self.assertIsNone(result.pagination.last_evaluated_key)
 
 
-    def test_get_table_content_with_last_evaluated_key(self):
+    def test_get_table_items_with_last_evaluated_key(self):
         """
-        Test case for retrieving table content with last_evaluated_key.
+        Test case for retrieving table items with last_evaluated_key.
 
-        Case: The table content is fetched successfully with a last_evaluated_key.
-        Expected Result: The method returns a CustomerTableContentResponse object with the content, has_more flag, and encoded last_evaluated_key.
+        Case: The table items is fetched successfully with a last_evaluated_key.
+        Expected Result: The method returns a CustomerTableItem object with the items and pagination which is CustomerTableItemPagination.
         """
         owner_id = 'owner123'
         table_id = 'table123'
@@ -370,12 +370,12 @@ class TestDataTableService(unittest.TestCase):
         self.assertEqual(result.pagination.last_evaluated_key, TestUtils.encode_to_base64(json.dumps({"next_key": "next_value"})))
 
 
-    def test_get_table_content_throws_service_exception_when_no_item_found(self):
+    def test_get_table_items_gets_service_exception_when_customer_table_info_not_found(self):
         """
-        Test case for handling a missing table item during retrieval of table content.
+        Test case for handling a missing table item during retrieval of table items.
 
         Case: The table item does not exist in DynamoDB.
-        Expected Result: The method raises a ServiceException indicating failure to retrieve the customer table info.
+        Expected Result: The method gets a ServiceException indicating failure to retrieve the customer table info.
         """
         owner_id = 'owner123'
         table_id = 'table123'
@@ -396,12 +396,12 @@ class TestDataTableService(unittest.TestCase):
         self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
 
 
-    def test_get_table_content_throws_service_exception_when_client_error_occurs(self):
+    def test_get_table_items_throws_service_exception_when_client_error_occurs(self):
         """
-        Test case for handling a ClientError during retrieval of table content.
+        Test case for handling a ClientError during retrieval of table items.
 
-        Case: A ClientError occurs during the DynamoDB get_table_content operation.
-        Expected Result: The method raises a ServiceException indicating failure to retrieve the table content.
+        Case: A ClientError occurs during the DynamoDB get_table_items operation.
+        Expected Result: The method raises a ServiceException indicating failure to retrieve the table items.
         """
         owner_id = 'owner123'
         table_id = 'table123'
