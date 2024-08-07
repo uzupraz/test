@@ -3,7 +3,7 @@ from dataclasses import asdict
 
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from model import ListTableResponse, UpdateTableRequest, TableDetails
+from model import ListTableResponse, UpdateTableRequest, CustomerTableInfo
 from repository import CustomerTableInfoRepository
 
 log = common_ctrl.log
@@ -36,16 +36,16 @@ class DataTableService(metaclass=Singleton):
         owner_tables  = []
 
         for table in tables:
-            dynamoDB_table_details = self.customer_table_info_repository.get_dynamoDB_table_details(table.original_table_name)
-            owner_tables .append(ListTableResponse(
+            table_size = self.customer_table_info_repository.get_table_size(table.original_table_name)
+            owner_tables.append(ListTableResponse(
                 name=table.table_name,
                 id=table.table_id,
-                size=dynamoDB_table_details.size
+                size=table_size
             ))
         return owner_tables
 
 
-    def update_description(self, owner_id:str, table_id:str, update_table_request:UpdateTableRequest) -> TableDetails:
+    def update_description(self, owner_id:str, table_id:str, update_table_request:UpdateTableRequest) -> CustomerTableInfo:
         """
         Updates the description field of a customer's table.
 
@@ -55,7 +55,7 @@ class DataTableService(metaclass=Singleton):
             update_table_request (UpdateTableRequest): The data to update in the customer's table.
 
         Returns:
-            TableDetails: The customer table details after update.
+            CustomerTableInfo: The customer table info after update.
         """
         log.debug('Updating customer table. update_data: %s', update_table_request)
         # Check if the item exists
@@ -63,31 +63,29 @@ class DataTableService(metaclass=Singleton):
         # set the fields to update in an existing item
         customer_table_info.description = update_table_request.description
         updated_customer_table_info = self.customer_table_info_repository.update_description(customer_table_info)
-        dynamoDB_table_details = self.customer_table_info_repository.get_dynamoDB_table_details(updated_customer_table_info.original_table_name)
-        # Convert updated customer table info to UpdateTableResponse
-        updated_table = from_dict(TableDetails, asdict(updated_customer_table_info))
-        for index in updated_table.indices:
+
+        table_size = self.customer_table_info_repository.get_table_size(updated_customer_table_info.original_table_name)
+        for index in updated_customer_table_info.indexes:
             # table size equals index size
-            index.size = dynamoDB_table_details.size
-        return updated_table
+            index.size = table_size
+        return updated_customer_table_info
 
 
-    def get_table_details(self, owner_id:str, table_id:str) -> TableDetails:
+    def get_table_info(self, owner_id:str, table_id:str) -> CustomerTableInfo:
         """
-        Retrieve the details of a specific table by its owner_id and table_id.
+        Retrieve the info of a specific table by its owner_id and table_id.
 
         Args:
             owner_id (str): The ID of the owner of the table.
             table_id (str): The ID of the table.
 
         Returns:
-            TableDetails: An object containing detailed information about the table.
+            CustomerTableInfo: An object containing detailed information about the customer table.
         """
-        log.info('Retrieving table details. owner_id: %s, table_id: %s', owner_id, table_id)
+        log.info('Retrieving customer table info. owner_id: %s, table_id: %s', owner_id, table_id)
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
-        table_details = from_dict(TableDetails, asdict(customer_table_info))
-        dynamoDB_table_details = self.customer_table_info_repository.get_dynamoDB_table_details(customer_table_info.original_table_name)
-        for index in table_details.indices:
+        table_size = self.customer_table_info_repository.get_table_size(customer_table_info.original_table_name)
+        for index in customer_table_info.indexes:
             # table size equals index size
-            index.size = dynamoDB_table_details.size
-        return table_details
+            index.size = table_size
+        return customer_table_info

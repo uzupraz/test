@@ -17,8 +17,8 @@ class SystemStatus(Enum):
 
 
 class Backup(Enum):
-    ENABLED='ENABLED'
-    DISABLED='DISABLED'
+    ENABLED='ON'
+    DISABLED='OFF'
 
 
 class AutoBackupStatus(Enum):
