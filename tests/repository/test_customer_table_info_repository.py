@@ -5,8 +5,8 @@ from boto3.dynamodb.conditions import Key, Attr
 from dacite import from_dict
 
 from tests.test_utils import TestUtils
-from model import  CustomerTableInfo, DynamoDBTableDetails, BackupDetail
-from repository.customer_table_info_repository import CustomerTableInfoRepository
+from model import  CustomerTableInfo
+from repository.customer_table_info_repository import CustomerTableInfoRepository, BackupDetail
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton
@@ -94,22 +94,22 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         self.mock_table.query.assert_called_once_with(KeyConditionExpression=Key('owner_id').eq(owner_id))
 
 
-    def test_get_dynamoDB_table_details_happy_case(self):
+    def test_get_table_size_happy_case(self):
         """
-        Should return the correct details of the dynamoDB table.
+        Should return the correct size of the dynamoDB table.
         """
         table_name = 'originalTable1'
-        mock_dynamoDB_table_details_path = self.TEST_RESOURCE_PATH + "expected_dynamoDB_table_details_for_first_table_happy_case.json"
-        mock_dynamoDB_table_details = TestUtils.get_file_content(mock_dynamoDB_table_details_path)
-        self.mock_dynamodb_client.describe_table.return_value = mock_dynamoDB_table_details
+        mock_dynamodb_table_details_path = self.TEST_RESOURCE_PATH + "expected_dynamodb_table_details_for_first_table_happy_case.json"
+        mock_dynamodb_table_details = TestUtils.get_file_content(mock_dynamodb_table_details_path)
+        self.mock_dynamodb_client.describe_table.return_value = mock_dynamodb_table_details
 
-        result = self.customer_table_info_repo.get_dynamoDB_table_details(table_name)
+        result = self.customer_table_info_repo.get_table_size(table_name)
 
         self.mock_dynamodb_client.describe_table.assert_called_once_with(TableName=table_name)
-        self.assertEqual(result, DynamoDBTableDetails(size=mock_dynamoDB_table_details['Table'] ['TableSizeBytes'] / 1024))
+        self.assertEqual(result, mock_dynamodb_table_details['Table'] ['TableSizeBytes'] / 1024)
 
 
-    def test_get_dynamoDB_table_details_with_service_exception(self):
+    def test_get_table_size_with_service_exception(self):
         """
         Should propagate ServiceException when DynamoDB throws a ClientError.
         """
@@ -118,15 +118,15 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'describe_table')
 
         with self.assertRaises(ServiceException) as context:
-            self.customer_table_info_repo.get_dynamoDB_table_details(table_name)
+            self.customer_table_info_repo.get_table_size(table_name)
 
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
-        self.assertEqual(context.exception.message, 'Failed to retrieve customer dynamoDB table details')
+        self.assertEqual(context.exception.message, 'Failed to retrieve size of customer table')
         self.mock_dynamodb_client.describe_table.assert_called_once_with(TableName=table_name)
 
 
-    def test_get_dynamoDB_table_details_when_table_not_found_throws_service_exception(self):
+    def test_get_table_size_when_table_not_found_throws_service_exception(self):
         """
         Should propagate ServiceException when DynamoDB throws a ResourceNotFoundException.
         """
@@ -135,11 +135,11 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
             {'Error': {'Message': 'Requested resource not found'}, 'ResponseMetadata': {'HTTPStatusCode': 404}}, 'describe_table')
 
         with self.assertRaises(ServiceException) as context:
-            self.customer_table_info_repo.get_dynamoDB_table_details(table_name)
+            self.customer_table_info_repo.get_table_size(table_name)
 
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
-        self.assertEqual(context.exception.message, 'Failed to retrieve customer dynamoDB table details')
+        self.assertEqual(context.exception.message, 'Failed to retrieve size of customer table')
         self.mock_dynamodb_client.describe_table.assert_called_once_with(TableName=table_name)
 
 
@@ -180,7 +180,7 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
 
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
-        self.assertEqual(context.exception.message, 'Customer table info does not exists')
+        self.assertEqual(context.exception.message, 'Customer table item does not exists')
         self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
 
 
@@ -201,7 +201,7 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
 
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
-        self.assertEqual(context.exception.message, 'Failed to retrieve customer table info')
+        self.assertEqual(context.exception.message, 'Failed to retrieve customer table item')
         self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
 
 
@@ -215,7 +215,7 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         Customer_table_info = CustomerTableInfo(
             owner_id='owner123', table_id='table123',
             table_name='test_table_name', original_table_name='OriginalTable1',
-            description='Updated description', partition_key='partition_key', sort_key='sort_key')
+            description='Test description', partition_key='partition_key', sort_key='sort_key')
 
         mock_response_path = self.TEST_RESOURCE_PATH + "updated_customer_table_item_happy_case.json"
         expected_item = TestUtils.get_file_content(mock_response_path)
@@ -243,7 +243,7 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         Customer_table_info = CustomerTableInfo(
             owner_id='owner123', table_id='table123',
             table_name='test_table_name', original_table_name='OriginalTable1',
-            description='Updated description', partition_key='partition_key', sort_key='sort_key')
+            description='Test description', partition_key='partition_key', sort_key='sort_key')
         self.mock_table.update_item.side_effect = ClientError(
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'update_item')
 
@@ -262,7 +262,7 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         )
 
 
-    def test_get_dynamoDB_table_backup_details_happy_case(self):
+    def test_get_table_backup_details_happy_case(self):
         """
         Should return the correct backup details of the table.
         """
@@ -279,26 +279,26 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         ]
         self.mock_dynamodb_client.list_backups.return_value = mock_response
 
-        result = self.customer_table_info_repo.get_dynamoDB_table_backup_details(table_name)
+        result = self.customer_table_info_repo.get_table_backup_details(table_name)
 
         self.mock_dynamodb_client.list_backups.assert_called_once_with(TableName=table_name)
         self.assertEqual(result, expected_backup_details)
 
 
-    def test_get_dynamoDB_table_backup_details_return_empty_backup_details(self):
+    def test_get_table_backup_details_return_empty_backup_details(self):
         """
         Should return an empty backup details when there are no backup details avialbale for the table.
         """
         table_name = 'originalTable1'
         self.mock_dynamodb_client.list_backups.return_value = {'BackupSummaries': [], 'LastEvaluatedBackupArn': None}
 
-        result = self.customer_table_info_repo.get_dynamoDB_table_backup_details(table_name)
+        result = self.customer_table_info_repo.get_table_backup_details(table_name)
 
         self.mock_dynamodb_client.list_backups.assert_called_once_with(TableName=table_name)
         self.assertEqual(result, [])
 
 
-    def test_get_dynamoDB_table_backup_details_with_service_exception(self):
+    def test_get_table_backup_details_with_service_exception(self):
         """
         Should propagate ServiceException when DynamoDB throws a ClientError.
         """
@@ -307,9 +307,9 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'list_backups')
 
         with self.assertRaises(ServiceException) as context:
-            self.customer_table_info_repo.get_dynamoDB_table_backup_details(table_name)
+            self.customer_table_info_repo.get_table_backup_details(table_name)
 
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
-        self.assertEqual(context.exception.message, 'Failed to retrieve backup details of dynamoDB table')
+        self.assertEqual(context.exception.message, 'Failed to retrieve backup details of customer table')
         self.mock_dynamodb_client.list_backups.assert_called_once_with(TableName=table_name)

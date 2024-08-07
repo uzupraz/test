@@ -8,7 +8,7 @@ from dacite import from_dict
 
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
-from model import CustomerTableInfo, DynamoDBTableDetails, BackupDetail
+from model import CustomerTableInfo, BackupDetail
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton
@@ -68,28 +68,27 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer tables')
 
 
-    def get_dynamoDB_table_details(self, table_name:str) -> DynamoDBTableDetails:
+    def get_table_size(self, table_name:str) -> float:
         """
-        Get the details of a specific dynamoDB table.
+        Get the size of a specific dynamoDB table.
 
         Args:
-            table_name (str): The name of the dynamoDB table to retrieve details for.
+            table_name (str): The name of the dynamoDB table to retrieve size for.
 
         Returns:
-            DynamoDBTableDetails: The object of DynamoDBTableDetails with table size.
+            float: The table size.
 
         Raises:
             ServiceException: If there is an error describing the DynamoDB table.
         """
         try:
-            log.info('Retrieving details of customer dynamoDB table. table_name: %s', table_name)
+            log.info('Retrieving size of customer table. table_name: %s', table_name)
             response = self.dynamodb_client.describe_table(TableName=table_name)
-            log.info('Successfully retrieved details of customer dynamoDB table. table_name: %s', table_name)
-            table_size = response['Table'] ['TableSizeBytes'] / 1024
-            return DynamoDBTableDetails(size=table_size)
+            log.info('Successfully retrieved size of customer table. table_name: %s', table_name)
+            return response['Table'] ['TableSizeBytes'] / 1024
         except ClientError as e:
-            log.exception('Failed to retrieve details of customer dynamoDB table. table_name: %s', table_name)
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer dynamoDB table details')
+            log.exception('Failed to retrieve size of customer table. table_name: %s', table_name)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve size of customer table')
 
 
     def get_table_item(self, owner_id:str, table_id:str) -> CustomerTableInfo:
@@ -101,25 +100,25 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             table_id (str): The ID of the table.
 
         Returns:
-            CustomerTableInfo: The info of the customer table.
+            CustomerTableInfo: The retrieved item as customer table info object.
 
         Raises:
             ServiceException: If the item does not exists or if there is an error querying the DynamoDB table.
         """
         try:
-            log.info('Retrieving customer table info. owner_id: %s, table_id: %s', owner_id, table_id)
+            log.info('Retrieving customer table item. owner_id: %s, table_id: %s', owner_id, table_id)
             response = self.table.get_item(
                 Key={'owner_id': owner_id, 'table_id': table_id}
             )
             item = response.get('Item')
             if not item:
-                log.error('Customer table info does not exist. owner_id: %s, table_id: %s', owner_id, table_id)
-                raise ServiceException(400, ServiceStatus.FAILURE, 'Customer table info does not exists')
-            log.info('Successfully retrieved customer table info. owner_id: %s, table_id: %s', owner_id, table_id)
+                log.error('Customer table item does not exist. owner_id: %s, table_id: %s', owner_id, table_id)
+                raise ServiceException(400, ServiceStatus.FAILURE, 'Customer table item does not exists')
+            log.info('Successfully retrieved customer table item. owner_id: %s, table_id: %s', owner_id, table_id)
             return from_dict(CustomerTableInfo, item)
         except ClientError as e:
-            log.exception('Failed to retrieve customer table info. owner_id: %s, table_id: %s', owner_id, table_id)
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer table info')
+            log.exception('Failed to retrieve customer table item. owner_id: %s, table_id: %s', owner_id, table_id)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve customer table item')
 
 
     def update_description(self, customer_table_info:CustomerTableInfo) -> CustomerTableInfo:
@@ -150,11 +149,11 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             log.info('Successfully updated customer table description. owner_id: %s, table_id: %s', customer_table_info.owner_id, customer_table_info.table_id)
             return from_dict(CustomerTableInfo, response.get('Attributes'))
         except ClientError as e:
-            log.exception('Failed to update customer table. owner_id: %s, table_id: %s', customer_table_info.owner_id, customer_table_info.table_id)
+            log.exception('Failed to update customer table description. owner_id: %s, table_id: %s', customer_table_info.owner_id, customer_table_info.table_id)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to update customer table description')
 
 
-    def get_dynamoDB_table_backup_details(self, table_name:str) -> list[BackupDetail]:
+    def get_table_backup_details(self, table_name:str) -> list[BackupDetail]:
         """
         Get the backup details of a specific DynamoDB table.
 
@@ -168,9 +167,9 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             ServiceException: If there is an error, retrieving the backup details of dynamoDB table.
         """
         try:
-            log.info('Retrieving backup details of dynamoDB table. table_name: %s', table_name)
+            log.info('Retrieving backup details of customer table. table_name: %s', table_name)
             response = self.dynamodb_client.list_backups(TableName=table_name)
-            log.info('Successfully retrieved backup details of dynamoDB table. table_name: %s', table_name)
+            log.info('Successfully retrieved backup details of customer table. table_name: %s', table_name)
             backup_details = [
             BackupDetail(name=backupSummary['BackupName'],
                          status=backupSummary['BackupStatus'],
@@ -182,8 +181,8 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             ]
             return backup_details
         except ClientError as e:
-            log.exception('Failed to retrieve backup details of dynamoDB table. table_name: %s', table_name)
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve backup details of dynamoDB table')
+            log.exception('Failed to retrieve backup details of customer table. table_name: %s', table_name)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve backup details of customer table')
 
 
     def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:
