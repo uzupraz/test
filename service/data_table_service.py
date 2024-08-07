@@ -5,7 +5,7 @@ from dataclasses import asdict
 
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse, CustomerTableContent, CustomerTableContentPagination
+from model import ListTableResponse, UpdateTableRequest, UpdateTableResponse, CustomerTableItem, CustomerTableItemPagination
 from repository import CustomerTableInfoRepository, CustomerTableRepository
 
 log = common_ctrl.log
@@ -72,9 +72,9 @@ class DataTableService(metaclass=Singleton):
         return update_table_response
     
 
-    def get_table_content(self, owner_id:str, table_id:str, size:int, last_evaluated_key:str|None=None) -> CustomerTableContent:
+    def get_table_items(self, owner_id:str, table_id:str, size:int, last_evaluated_key:str|None=None) -> CustomerTableItem:
         """
-        Get the contents of the table with provided table_id.
+        Get the items of the table with provided table_id.
 
         Args:
             owner_id (str): The owner of the table.
@@ -85,29 +85,29 @@ class DataTableService(metaclass=Singleton):
         Returns:
             CustomerTableContent: The customer table content in paginated form.
         """
-        log.info('Fetching table content. owner_id: %s, table_id: %s', owner_id, table_id)
+        log.info('Fetching table items. owner_id: %s, table_id: %s', owner_id, table_id)
         # Check if the item exists
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
-        # Unquote query string to object
+        # Decoding last evaluated_key from base64
         if last_evaluated_key is not None:
             last_evaluated_key = json.loads(base64.b64decode(last_evaluated_key).decode('utf-8'))
 
         # querying database with exclusive start key
-        items, last_evaluated_key = self.customer_table_repository.get_table_content(
+        items, last_evaluated_key = self.customer_table_repository.get_table_items(
             table_name=customer_table_info.original_table_name, 
             limit=size,
             exclusive_start_key=last_evaluated_key
         )
-        # Encoding last evaluated_key into url quote
+        # Encoding last evaluated_key into base64
         encoded_last_evaluated_key = None
         if last_evaluated_key is not None and isinstance(last_evaluated_key, dict):
             key = json.dumps(last_evaluated_key).encode('utf-8')
             encoded_last_evaluated_key = base64.b64encode(key).decode('utf-8')
 
 
-        return CustomerTableContent(
+        return CustomerTableItem(
             items=items,
-            pagination=CustomerTableContentPagination(
+            pagination=CustomerTableItemPagination(
                 size=size,
                 last_evaluated_key=encoded_last_evaluated_key
             )

@@ -48,15 +48,15 @@ class TestDataTableService(unittest.TestCase):
             self.mock_customer_table_configure_resource = mock_customer_table_configure_resource
 
             self.mock_customer_table_configure_resource.return_value = self.mock_dynamodb_resource
-            self.table_content_repo = CustomerTableRepository(self.app_config, self.aws_config)
+            self.customer_table_repo = CustomerTableRepository(self.app_config, self.aws_config)
 
         Singleton.clear_instance(DataTableService)
-        self.data_table_service = DataTableService(self.customer_table_info_repo, self.table_content_repo)
+        self.data_table_service = DataTableService(self.customer_table_info_repo, self.customer_table_repo)
 
 
     def tearDown(self):
         self.customer_table_info_repo = None
-        self.table_content_repo = None
+        self.customer_table_repo = None
         self.data_table_service = None
 
 
@@ -315,16 +315,16 @@ class TestDataTableService(unittest.TestCase):
         customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
         customer_table_info_item = customer_table_info_item.get("Item", {})
 
-        mock_table_content_items_path = self.TEST_RESOURCE_PATH + "get_table_content_items_happy_case.json"
-        table_content_items = TestUtils.get_file_content(mock_table_content_items_path)
+        mock_table_items_path = self.TEST_RESOURCE_PATH + "get_table_items_happy_case.json"
+        table_content_items = TestUtils.get_file_content(mock_table_items_path)
 
         self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
-        self.table_content_repo.get_table_content = MagicMock(return_value=(table_content_items, None))
+        self.customer_table_repo.get_table_items = MagicMock(return_value=(table_content_items, None))
 
-        result = self.data_table_service.get_table_content(owner_id, table_id, size, last_evaluated_key)
+        result = self.data_table_service.get_table_items(owner_id, table_id, size, last_evaluated_key)
 
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
-        self.table_content_repo.get_table_content.assert_called_once_with(
+        self.customer_table_repo.get_table_items.assert_called_once_with(
             table_name=customer_table_info_item['original_table_name'],
             limit=size,
             exclusive_start_key=None
@@ -350,16 +350,16 @@ class TestDataTableService(unittest.TestCase):
         mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
         customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
         customer_table_info_item = customer_table_info_item.get("Item", {})
-        mock_table_content_items_path = self.TEST_RESOURCE_PATH + "get_table_content_items_happy_case.json"
+        mock_table_content_items_path = self.TEST_RESOURCE_PATH + "get_table_items_happy_case.json"
         table_content_items = TestUtils.get_file_content(mock_table_content_items_path)
 
         self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
-        self.table_content_repo.get_table_content = MagicMock(return_value=(table_content_items, {"next_key": "next_value"}))
+        self.customer_table_repo.get_table_items = MagicMock(return_value=(table_content_items, {"next_key": "next_value"}))
 
-        result = self.data_table_service.get_table_content(owner_id, table_id, size, last_evaluated_key)
+        result = self.data_table_service.get_table_items(owner_id, table_id, size, last_evaluated_key)
 
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
-        self.table_content_repo.get_table_content.assert_called_once_with(
+        self.customer_table_repo.get_table_items.assert_called_once_with(
             table_name=customer_table_info_item['original_table_name'],
             limit=size,
             exclusive_start_key=json.loads(TestUtils.decode_base64(last_evaluated_key))
@@ -388,7 +388,7 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.get_table_content(owner_id, table_id, size, last_evaluated_key)
+            self.data_table_service.get_table_items(owner_id, table_id, size, last_evaluated_key)
 
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
@@ -415,12 +415,12 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
 
         mock_dynamodb_resource_table = MagicMock()
-        self.table_content_repo.dynamodb_resource.Table.return_value = mock_dynamodb_resource_table
+        self.customer_table_repo.dynamodb_resource.Table.return_value = mock_dynamodb_resource_table
         mock_dynamodb_resource_table.scan.side_effect = ClientError(
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'get_table_content')
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.get_table_content(owner_id, table_id, size, last_evaluated_key)
+            self.data_table_service.get_table_items(owner_id, table_id, size, last_evaluated_key)
 
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)

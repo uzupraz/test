@@ -21,7 +21,6 @@ class TestCustomerTableRepository(unittest.TestCase):
         self.app_config = Mock()
         self.aws_config = Mock()
         self.mock_dynamodb_resource = Mock()
-        self.mock_dynamodb_client = Mock()
 
         Singleton.clear_instance(CustomerTableRepository)
         with patch('repository.customer_table_repository.CustomerTableRepository._CustomerTableRepository__configure_dynamodb_resource') as mock_configure_resource:
@@ -37,7 +36,7 @@ class TestCustomerTableRepository(unittest.TestCase):
 
     def test_get_table_content_success_case(self):
         """
-        Test case for successfully retrieving table content.
+        Test case for successfully retrieving table content from customers table with last evaluated key and limit.
 
         Expected Result: The method returns a list of items and a last evaluated key.
         """
@@ -46,8 +45,8 @@ class TestCustomerTableRepository(unittest.TestCase):
         exclusive_start_key = None
 
         # Mock response from DynamoDB scan
-        mock_table_content_items_path = self.TEST_RESOURCE_PATH + "get_table_content_items_happy_case.json"
-        mock_items = TestUtils.get_file_content(mock_table_content_items_path)
+        mock_table_items_path = self.TEST_RESOURCE_PATH + "get_table_items_happy_case.json"
+        mock_items = TestUtils.get_file_content(mock_table_items_path)
         mock_last_evaluated_key = {"key": "value"}
 
         mock_table = MagicMock()
@@ -58,7 +57,7 @@ class TestCustomerTableRepository(unittest.TestCase):
         }
 
         # Call the method under test
-        items, last_evaluated_key = self.customer_table_repository.get_table_content(table_name, limit, exclusive_start_key)
+        items, last_evaluated_key = self.customer_table_repository.get_table_items(table_name, limit, exclusive_start_key)
 
         # Assertions
         self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
@@ -78,7 +77,7 @@ class TestCustomerTableRepository(unittest.TestCase):
         exclusive_start_key = None
 
         # Mock response from DynamoDB scan
-        mock_table_content_items_path = self.TEST_RESOURCE_PATH + "get_table_content_items_happy_case.json"
+        mock_table_content_items_path = self.TEST_RESOURCE_PATH + "get_table_items_happy_case.json"
         mock_items = TestUtils.get_file_content(mock_table_content_items_path)
 
         mock_table = MagicMock()
@@ -88,7 +87,7 @@ class TestCustomerTableRepository(unittest.TestCase):
         }
 
         # Call the method under test
-        items, last_evaluated_key = self.customer_table_repository.get_table_content(table_name, limit, exclusive_start_key)
+        items, last_evaluated_key = self.customer_table_repository.get_table_items(table_name, limit, exclusive_start_key)
 
         # Assertions
         self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
@@ -115,7 +114,7 @@ class TestCustomerTableRepository(unittest.TestCase):
 
         # Call the method under test and assert exception
         with self.assertRaises(ServiceException) as context:
-            self.customer_table_repository.get_table_content(table_name, limit, exclusive_start_key)
+            self.customer_table_repository.get_table_items(table_name, limit, exclusive_start_key)
 
         # Assertions
         self.assertEqual(context.exception.status_code, 500)

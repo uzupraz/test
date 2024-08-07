@@ -51,11 +51,11 @@ class UpdateTableResponse:
 
 
 @dataclass
-class CustomerTableContentPagination:
+class CustomerTableItemPagination:
     size: int
     last_evaluated_key: str | None
 
 @dataclass
-class CustomerTableContent:
+class CustomerTableItem:
     items: list[any]
-    pagination: CustomerTableContentPagination
+    pagination: CustomerTableItemPagination

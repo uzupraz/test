@@ -56,8 +56,8 @@ update_table_response_dto = api.inherit('Update customer table response',server_
     }))
 })
 
-table_content_response_dto = api.inherit('Table content response',server_response, {
-    'payload': api.model('TableContentResponse', {
+customer_table_item_response_dto = api.inherit('Table item response',server_response, {
+    'payload': api.model('Table items', {
         'items': fields.List(fields.Nested(any), description='List of items'),
         'pagination': fields.Nested(api.model('Pagination parameters', {
             'size': fields.Integer(description='Items per page'),
@@ -116,15 +116,15 @@ class DataTableItemsResource (Resource):
     @api.doc(size='Get the table items of the provided table id.')
     @api.param('size', 'Number of items to retrieve', type=int, default=10)
     @api.param('last_evaluated_key', 'Pagination key for the next set of items', type=str)
-    @api.marshal_with(table_content_response_dto, skip_none=True)
+    @api.marshal_with(customer_table_item_response_dto, skip_none=True)
     def get(self, table_id:str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
-        size = request.args.get('size', default=10, type=int)
+        size = request.args.get('size', type=int)
         last_evaluated_key = request.args.get('last_evaluated_key', default=None, type=str)
         user = from_dict(User, g.get('user'))
 
-        response_payload = data_table_service.get_table_content(
+        response_payload = data_table_service.get_table_items(
             owner_id=user.organization_id,
             table_id=table_id,
             size=size,
