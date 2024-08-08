@@ -106,7 +106,7 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         result = self.customer_table_info_repo.get_table_size(table_name)
 
         self.mock_dynamodb_client.describe_table.assert_called_once_with(TableName=table_name)
-        self.assertEqual(result, mock_dynamodb_table_details['Table'] ['TableSizeBytes']/1024)
+        self.assertEqual(result, mock_dynamodb_table_details['Table']['TableSizeBytes'] / 1024)
 
 
     def test_get_table_size_with_service_exception(self):

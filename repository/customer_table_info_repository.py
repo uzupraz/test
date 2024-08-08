@@ -85,7 +85,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             log.info('Retrieving size of customer table. table_name: %s', table_name)
             response = self.dynamodb_client.describe_table(TableName=table_name)
             log.info('Successfully retrieved size of customer table. table_name: %s', table_name)
-            return response['Table'] ['TableSizeBytes']/1024
+            return response['Table']['TableSizeBytes'] / 1024
         except ClientError as e:
             log.exception('Failed to retrieve size of customer table. table_name: %s', table_name)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve size of customer table')
