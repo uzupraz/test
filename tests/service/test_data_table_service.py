@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, Mock, patch, call
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
 from dacite import from_dict
+from datetime import datetime
 
 from tests.test_utils import TestUtils
 from model import UpdateTableRequest, CustomerTableInfo, BackupDetail
@@ -23,19 +24,23 @@ class TestDataTableService(unittest.TestCase):
         self.aws_config = Mock()
         self.mock_dynamodb_resource = Mock()
         self.mock_dynamodb_client = Mock()
+        self.mock_dynamodb_backup_client = Mock()
         self.mock_table = Mock()
 
         Singleton.clear_instance(CustomerTableInfoRepository)
         with patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_dynamodb_resource') as mock_configure_resource, \
              patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_dynamodb_client') as mock_configure_client, \
+             patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_backup_client') as mock_configure_backup_client, \
              patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_table') as mock_configure_table:
 
             self.mock_configure_resource = mock_configure_resource
             self.mock_configure_client = mock_configure_client
+            self.mock_configure_backup_client = mock_configure_backup_client
             self.mock_configure_table = mock_configure_table
 
             self.mock_configure_resource.return_value = self.mock_dynamodb_resource
             self.mock_configure_client.return_value = self.mock_dynamodb_client
+            self.mock_configure_backup_client.return_value= self.mock_dynamodb_backup_client
             self.mock_configure_table.return_value = self.mock_table
             self.customer_table_info_repo = CustomerTableInfoRepository(self.app_config, self.aws_config)
 
@@ -195,7 +200,7 @@ class TestDataTableService(unittest.TestCase):
 
         for index in expected_customer_table_info.indexes:
             # table size equals index size
-            index.size = mock_dynamoDB_table_details['Table'] ['TableSizeBytes'] / 1024
+            index.size = mock_dynamoDB_table_details['Table'] ['TableSizeBytes']/1024
 
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
         self.customer_table_info_repo.table.update_item.return_value = updated_customer_table_info
@@ -367,7 +372,7 @@ class TestDataTableService(unittest.TestCase):
         expected_expected_customer_table_info = from_dict(CustomerTableInfo, customer_table_info_item.get('Item'))
         for index in expected_expected_customer_table_info.indexes:
             # table size equals index size
-            index.size = mock_dynamoDB_table_details['Table'] ['TableSizeBytes'] / 1024
+            index.size = mock_dynamoDB_table_details['Table'] ['TableSizeBytes']/1024
 
         result = self.data_table_service.get_table_info(owner_id, table_id)
 
@@ -400,7 +405,7 @@ class TestDataTableService(unittest.TestCase):
         expected_expected_customer_table_info = from_dict(CustomerTableInfo, customer_table_info_item.get('Item'))
         for index in expected_expected_customer_table_info.indexes:
             # table size equals index size
-            index.size = mock_dynamoDB_table_details['Table'] ['TableSizeBytes'] / 1024
+            index.size = mock_dynamoDB_table_details['Table'] ['TableSizeBytes']/1024
 
         result = self.data_table_service.get_table_info(owner_id, table_id)
 
@@ -497,23 +502,23 @@ class TestDataTableService(unittest.TestCase):
         customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
 
         mock_backup_details_response_path = self.TEST_RESOURCE_PATH + "expected_backup_details_for_table_happy_case.json"
-        mock_bakcup_details = TestUtils.get_file_content(mock_backup_details_response_path)
-        expected_backup_details = [
-            BackupDetail(name=backupSummary['BackupName'],
-                        status=backupSummary['BackupStatus'],
-                        creation_time=backupSummary['BackupCreationDateTime'],
-                        type=backupSummary['BackupType'],
-                        size=backupSummary['BackupSizeBytes'] / 1024)
-            for backupSummary in mock_bakcup_details["BackupSummaries"]
-        ]
+        mock_backup_details = TestUtils.get_file_content(mock_backup_details_response_path)
+
+        expected_backup_details = []
+        for backup_job in mock_backup_details['BackupJobs']:
+            backup_job['CreationDate'] = datetime.strptime(backup_job['CreationDate'], '%Y-%m-%d %H:%M:%S%z')
+            expected_backup_details.append(BackupDetail(id=backup_job['BackupJobId'],
+                                                        name=customer_table_info_item.get('Item').get('original_table_name') + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
+                                                        creation_time=backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z'),
+                                                        size=backup_job['BackupSizeInBytes']/1024))
 
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
-        self.customer_table_info_repo.dynamodb_client.list_backups.return_value = mock_bakcup_details
+        self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.return_value = mock_backup_details
 
         result = self.data_table_service.get_table_backups(owner_id, table_id)
 
         self.customer_table_info_repo.table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
-        self.customer_table_info_repo.dynamodb_client.list_backups.assert_called_once_with(TableName=customer_table_info_item.get('Item').get('original_table_name'))
+        self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=customer_table_info_item.get('Item').get('table_arn'))
         self.assertEqual(result, expected_backup_details)
 
 
@@ -538,7 +543,7 @@ class TestDataTableService(unittest.TestCase):
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.message, 'Customer table item does not exists')
         self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
-        self.customer_table_info_repo.dynamodb_client.list_backups.assert_not_called()
+        self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.assert_not_called()
 
 
     def test_get_table_backups_details_throws_service_exception_when_client_error_occurs_while_retrieving_customer_table_info(self):
@@ -561,7 +566,7 @@ class TestDataTableService(unittest.TestCase):
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.message, 'Failed to retrieve customer table item')
         self.mock_table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
-        self.customer_table_info_repo.dynamodb_client.list_backups.assert_not_called()
+        self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.assert_not_called()
 
 
     def test_get_table_backups_should_return_empty_list_when_no_backup_details_available_for_the_table(self):
@@ -578,12 +583,12 @@ class TestDataTableService(unittest.TestCase):
         customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
 
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
-        self.customer_table_info_repo.dynamodb_client.list_backups.return_value = {'BackupSummaries': [], 'LastEvaluatedBackupArn': None}
+        self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.return_value = {'BackupJobs': [], 'NextToken': None}
 
         result = self.data_table_service.get_table_backups(owner_id, table_id)
 
         self.customer_table_info_repo.table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
-        self.customer_table_info_repo.dynamodb_client.list_backups.assert_called_once_with(TableName=customer_table_info_item.get('Item').get('original_table_name'))
+        self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=customer_table_info_item.get('Item').get('table_arn'))
         self.assertEqual(result, [])
 
 
@@ -601,7 +606,7 @@ class TestDataTableService(unittest.TestCase):
         customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
 
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
-        self.customer_table_info_repo.dynamodb_client.list_backups.side_effect = ClientError(
+        self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.side_effect = ClientError(
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'list_backups')
 
         with self.assertRaises(ServiceException) as context:
@@ -611,4 +616,4 @@ class TestDataTableService(unittest.TestCase):
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.message, 'Failed to retrieve backup details of customer table')
         self.customer_table_info_repo.table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
-        self.customer_table_info_repo.dynamodb_client.list_backups.assert_called_once_with(TableName=customer_table_info_item.get('Item').get('original_table_name'))
+        self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=customer_table_info_item.get('Item').get('table_arn'))

@@ -107,5 +107,5 @@ class DataTableService(metaclass=Singleton):
         """
         log.info('Retrieving customer table backups. owner_id: %s, table_id: %s', owner_id, table_id)
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
-        response = self.customer_table_info_repository.get_table_backup_details(customer_table_info.original_table_name)
+        response = self.customer_table_info_repository.get_table_backup_details(customer_table_info.original_table_name, customer_table_info.table_arn)
         return response

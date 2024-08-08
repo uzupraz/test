@@ -29,6 +29,8 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         DynamoDB through API calls. This is particularly useful for operations that are not directly supported by
         the resource interface, such as the describe_table operation used in the 'get_table_size' method.
 
+        DynamoDB Backup Client: The DynamoDB provides a low-level client representing AWS Backup.
+
         Args:
             app_config (AppConfig): The application configuration object.
             aws_config (AWSConfig): The AWS configuration object.
@@ -37,6 +39,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         self.app_config = app_config
         self.dynamodb_resource = self.__configure_dynamodb_resource()
         self.dynamodb_client = self.__configure_dynamodb_client()
+        self.dynamodb_backup_client = self.__configure_backup_client()
         self.table = self.__configure_table()
 
 
@@ -85,7 +88,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             log.info('Retrieving size of customer table. table_name: %s', table_name)
             response = self.dynamodb_client.describe_table(TableName=table_name)
             log.info('Successfully retrieved size of customer table. table_name: %s', table_name)
-            return response['Table'] ['TableSizeBytes'] / 1024
+            return response['Table'] ['TableSizeBytes']/1024
         except ClientError as e:
             log.exception('Failed to retrieve size of customer table. table_name: %s', table_name)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve size of customer table')
@@ -153,12 +156,13 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to update customer table description')
 
 
-    def get_table_backup_details(self, table_name:str) -> list[BackupDetail]:
+    def get_table_backup_details(self, table_name:str, table_arn:str) -> list[BackupDetail]:
         """
         Get the backup details of a specific DynamoDB table.
 
         Args:
             table_name (str): The name of the DynamoDB table to retrieve backup details for.
+            table_arn (str): The Amazon Resource Name (ARN) of the DynamoDB table to retrieve backup details for.
 
         Returns:
             list[BackupDetail]: The backup details of dynamoDB table.
@@ -168,17 +172,16 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         """
         try:
             log.info('Retrieving backup details of customer table. table_name: %s', table_name)
-            response = self.dynamodb_client.list_backups(TableName=table_name)
-            log.info('Successfully retrieved backup details of customer table. table_name: %s', table_name)
+            response = self.dynamodb_backup_client.list_backup_jobs(ByResourceArn=table_arn)
             backup_details = [
-            BackupDetail(name=backupSummary['BackupName'],
-                         status=backupSummary['BackupStatus'],
-                         creation_time=backupSummary['BackupCreationDateTime'],
-                         type=backupSummary['BackupType'],
-                         size=backupSummary['BackupSizeBytes'] / 1024)
-            # the response contains the list of backupSummary i.e. response ={'BackupSummaries': [{details}]}
-            for backupSummary in response["BackupSummaries"]
+                BackupDetail(id=backup_job['BackupJobId'],
+                             name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
+                             creation_time=backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z'),
+                             size=backup_job['BackupSizeInBytes']/1024)
+                # the response contains the list of BackupJob i.e. response ={'BackupJobs': [{details}]}
+                for backup_job in response['BackupJobs']
             ]
+            log.info('Successfully retrieved backup details of customer table. table_name: %s', table_name)
             return backup_details
         except ClientError as e:
             log.exception('Failed to retrieve backup details of customer table. table_name: %s', table_name)
@@ -211,6 +214,17 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         else:
             config = Config(region_name=self.aws_config.dynamodb_aws_region)
             return boto3.client('dynamodb', config=config)
+
+
+    def __configure_backup_client(self) -> boto3.client:
+        """
+        Configures and returns a DynamoDB backup client.
+
+        Returns:
+            boto3.client: The DynamoDB backup client.
+        """
+        config = Config(region_name=self.aws_config.dynamodb_aws_region)
+        return boto3.client('backup', config=config)
 
 
     def __configure_table(self):

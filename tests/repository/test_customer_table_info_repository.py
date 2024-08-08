@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
 from dacite import from_dict
+from datetime import datetime
 
 from tests.test_utils import TestUtils
 from model import  CustomerTableInfo
@@ -22,19 +23,23 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         self.aws_config = Mock()
         self.mock_dynamodb_resource = Mock()
         self.mock_dynamodb_client = Mock()
+        self.mock_dynamodb_backup_client = Mock()
         self.mock_table = Mock()
 
         Singleton.clear_instance(CustomerTableInfoRepository)
         with patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_dynamodb_resource') as mock_configure_resource, \
              patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_dynamodb_client') as mock_configure_client, \
+             patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_backup_client') as mock_configure_backup_client, \
              patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_table') as mock_configure_table:
 
             self.mock_configure_resource = mock_configure_resource
             self.mock_configure_client = mock_configure_client
+            self.mock_configure_backup_client = mock_configure_backup_client
             self.mock_configure_table = mock_configure_table
 
             self.mock_configure_resource.return_value = self.mock_dynamodb_resource
             self.mock_configure_client.return_value = self.mock_dynamodb_client
+            self.mock_configure_backup_client.return_value = self.mock_dynamodb_backup_client
             self.mock_configure_table.return_value = self.mock_table
 
             self.customer_table_info_repo = CustomerTableInfoRepository(self.app_config, self.aws_config)
@@ -106,7 +111,7 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         result = self.customer_table_info_repo.get_table_size(table_name)
 
         self.mock_dynamodb_client.describe_table.assert_called_once_with(TableName=table_name)
-        self.assertEqual(result, mock_dynamodb_table_details['Table'] ['TableSizeBytes'] / 1024)
+        self.assertEqual(result, mock_dynamodb_table_details['Table'] ['TableSizeBytes']/1024)
 
 
     def test_get_table_size_with_service_exception(self):
@@ -267,21 +272,22 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         Should return the correct backup details of the table.
         """
         table_name = 'originalTable1'
+        table_arn = 'table_arn'
         mock_response_path = self.TEST_RESOURCE_PATH + "expected_backup_details_for_table_happy_case.json"
         mock_response = TestUtils.get_file_content(mock_response_path)
-        expected_backup_details = [
-            BackupDetail(name=backupSummary['BackupName'],
-                         status=backupSummary['BackupStatus'],
-                         creation_time=backupSummary['BackupCreationDateTime'],
-                         type=backupSummary['BackupType'],
-                         size=backupSummary['BackupSizeBytes'] / 1024)
-            for backupSummary in mock_response["BackupSummaries"]
-        ]
-        self.mock_dynamodb_client.list_backups.return_value = mock_response
 
-        result = self.customer_table_info_repo.get_table_backup_details(table_name)
+        expected_backup_details = []
+        for backup_job in mock_response['BackupJobs']:
+            backup_job['CreationDate'] = datetime.strptime(backup_job['CreationDate'], '%Y-%m-%d %H:%M:%S%z')
+            expected_backup_details.append(BackupDetail(id=backup_job['BackupJobId'],
+                                                        name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
+                                                        creation_time=backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z'),
+                                                        size=backup_job['BackupSizeInBytes']/1024))
+        self.mock_dynamodb_backup_client.list_backup_jobs.return_value = mock_response
 
-        self.mock_dynamodb_client.list_backups.assert_called_once_with(TableName=table_name)
+        result = self.customer_table_info_repo.get_table_backup_details(table_name, table_arn)
+
+        self.mock_dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=table_arn)
         self.assertEqual(result, expected_backup_details)
 
 
@@ -290,11 +296,12 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         Should return an empty backup details when there are no backup details avialbale for the table.
         """
         table_name = 'originalTable1'
-        self.mock_dynamodb_client.list_backups.return_value = {'BackupSummaries': [], 'LastEvaluatedBackupArn': None}
+        table_arn = 'table_arn'
+        self.mock_dynamodb_backup_client.list_backup_jobs.return_value = {'BackupJobs': [], 'NextToken': None}
 
-        result = self.customer_table_info_repo.get_table_backup_details(table_name)
+        result = self.customer_table_info_repo.get_table_backup_details(table_name, table_arn)
 
-        self.mock_dynamodb_client.list_backups.assert_called_once_with(TableName=table_name)
+        self.mock_dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=table_arn)
         self.assertEqual(result, [])
 
 
@@ -303,13 +310,14 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         Should propagate ServiceException when DynamoDB throws a ClientError.
         """
         table_name = 'originalTable1'
-        self.mock_dynamodb_client.list_backups.side_effect = ClientError(
-            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'list_backups')
+        table_arn = 'table_arn'
+        self.mock_dynamodb_backup_client.list_backup_jobs.side_effect = ClientError(
+            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'list_backup_jobs')
 
         with self.assertRaises(ServiceException) as context:
-            self.customer_table_info_repo.get_table_backup_details(table_name)
+            self.customer_table_info_repo.get_table_backup_details(table_name, table_arn)
 
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.message, 'Failed to retrieve backup details of customer table')
-        self.mock_dynamodb_client.list_backups.assert_called_once_with(TableName=table_name)
+        self.mock_dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=table_arn)

@@ -37,8 +37,8 @@ class CustomerTableInfo:
     backup: str = field(default=Backup.ENABLED.value)
     auto_backup_status: str = field(default=AutoBackupStatus.ENABLED.value)
     table_status: str = field(default=TableStatus.ACTIVE.value)
-    next_backup_schedule: str | None = field(default='0 0 * * *')
-    last_backup_schedule: str | None = field(default='0 0 * * *')
+    backup_schedule: str | None = field(default='0 0 * * *')
+    table_arn: str | None = field(default=None)
     indexes: List[IndexInfo] = field(default_factory=list)
 
 
@@ -49,8 +49,9 @@ class UpdateTableRequest:
 
 @dataclass
 class BackupDetail:
+    id: str
     name: str | None = field(default=None)
     status: str = field(default=BackupStatus.ACTIVE.value)
     creation_time: str | None = field(default=None)
-    type: str = field(default=BackupType.USER.value)
+    type: str = field(default=BackupType.AUTO.value)
     size: int = field(default=0)

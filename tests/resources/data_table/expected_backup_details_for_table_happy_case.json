@@ -1,29 +1,15 @@
 {
-    "BackupSummaries": [
+    "BackupJobs": [
         {
-            "TableName": "originalTable1",
-            "TableId": "table123",
-            "TableArn": "arn:aws:dynamodb:us-west-2:123456789012:table/your_table_name",
-            "BackupArn": "arn:aws:dynamodb:us-west-2:123456789012:table/your_table_name/backup/01548222250600-93c4-44ad-a4d2-234f7ae6e9b3",
-            "BackupName": "backup1",
-            "BackupCreationDateTime": "2024-07-14T10:00:00Z",
-            "BackupExpiryDateTime": "2024-08-14T10:00:00Z",
-            "BackupStatus": "ACTIVE",
-            "BackupType": "USER",
-            "BackupSizeBytes": 123456789
+            "BackupJobId": "93809C14-B670-6957-2C8C-FF8349A8A596",
+            "CreationDate": "2024-07-09 03:45:00+05:45",
+            "BackupSizeInBytes": 1048576
         },
         {
-            "TableName": "originalTable1",
-            "TableId": "table123",
-            "TableArn": "arn:aws:dynamodb:us-west-2:123456789012:table/your_table_name",
-            "BackupArn": "arn:aws:dynamodb:us-west-2:123456789012:table/your_table_name/backup/01548222250601-93c4-44ad-a4d2-234f7ae6e9b4",
-            "BackupName": "backup2",
-            "BackupCreationDateTime": "2024-07-15T10:00:00Z",
-            "BackupExpiryDateTime": "2024-08-15T10:00:00Z",
-            "BackupStatus": "ACTIVE",
-            "BackupType": "USER",
-            "BackupSizeBytes": 987654321
+            "BackupJobId": "3A87F692-070A-FF5E-DC0C-8A43AA21C5BD",
+            "CreationDate": "2024-07-09 03:45:00+05:45",
+            "BackupSizeInBytes": 2097152
         }
     ],
-    "LastEvaluatedBackupArn": null
+    "NextToken": null
 }

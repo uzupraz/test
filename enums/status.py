@@ -17,9 +17,8 @@ class SystemStatus(Enum):
 
 
 class BackupType(Enum):
-    USER='USER'
-    SYSTEM='SYSTEM'
-    AWS_BACKUP='AWS_BACKUP'
+    AUTO='AUTO'
+    MANUAL='MANUAL'
 
 
 class Backup(Enum):
@@ -33,9 +32,7 @@ class AutoBackupStatus(Enum):
 
 
 class BackupStatus(Enum):
-    CREATING='CREATING'
     ACTIVE='ACTIVE'
-    DELETED='DELETED'
 
 
 class TableStatus(Enum):
