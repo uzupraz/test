@@ -65,6 +65,7 @@ table_info_response_dto = api.inherit('Customer table info response',server_resp
 
 backups_response_dto = api.inherit('List of Backup Response', server_response, {
     'payload': fields.List(fields.Nested(api.model('Backup List', {
+        'id': fields.String(descripiotn='Id of the backup'),
         'name': fields.String(description='Name of the backup'),
         'status': fields.String(description='Status of the backup'),
         'creation_time': fields.String(description='Backup creation date time'),

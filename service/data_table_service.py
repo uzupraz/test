@@ -103,7 +103,7 @@ class DataTableService(metaclass=Singleton):
             list[BackupDetail]: The backup details of dynamoDB table.
 
         Raises:
-            ServiceException: If there is an error, retrieving the backup details of table.
+            ServiceException: If there is an error, retrieving the table item or backup details.
         """
         log.info('Retrieving customer table backups. owner_id: %s, table_id: %s', owner_id, table_id)
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
