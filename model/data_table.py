@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List
+from decimal import Decimal
 
 from enums import TableStatus, IndexStatus, AutoBackupStatus, Backup, BackupStatus, BackupType
 
@@ -7,7 +8,7 @@ from enums import TableStatus, IndexStatus, AutoBackupStatus, Backup, BackupStat
 class ListTableResponse:
     name: str
     id: str
-    size: float
+    size: Decimal
 
 
 @dataclass
@@ -16,8 +17,8 @@ class IndexInfo:
     partition_key: str
     sort_key: str | None = field(default=None)
     status: str = field(default=IndexStatus.ACTIVE.value)
-    size: int = field(default=0)
-    item_count: int = field(default=0)
+    size: Decimal = field(default=0)
+    item_count: Decimal = field(default=0)
 
 
 @dataclass
@@ -31,9 +32,9 @@ class CustomerTableInfo:
     description: str | None = field(default=None)
     created_by: str | None = field(default=None)
     creation_time: str | None = field(default=None)
-    total_indexes: int = field(default=0)
-    read_capacity_units: int = field(default=0)
-    write_capacity_units: int = field(default=0)
+    total_indexes: Decimal = field(default=0)
+    read_capacity_units: Decimal = field(default=0)
+    write_capacity_units: Decimal = field(default=0)
     backup: str = field(default=Backup.ENABLED.value)
     auto_backup_status: str = field(default=AutoBackupStatus.ENABLED.value)
     table_status: str = field(default=TableStatus.ACTIVE.value)
