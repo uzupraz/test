@@ -111,7 +111,7 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         result = self.customer_table_info_repo.get_table_size(table_name)
 
         self.mock_dynamodb_client.describe_table.assert_called_once_with(TableName=table_name)
-        self.assertEqual(result, mock_dynamodb_table_details['Table'] ['TableSizeBytes']/1024)
+        self.assertEqual(result, mock_dynamodb_table_details['Table']['TableSizeBytes'] / 1024)
 
 
     def test_get_table_size_with_service_exception(self):
@@ -282,7 +282,7 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
             expected_backup_details.append(BackupDetail(id=backup_job['BackupJobId'],
                                                         name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
                                                         creation_time=backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z'),
-                                                        size=backup_job['BackupSizeInBytes']/1024))
+                                                        size=backup_job['BackupSizeInBytes'] / 1024))
         self.mock_dynamodb_backup_client.list_backup_jobs.return_value = mock_response
 
         result = self.customer_table_info_repo.get_table_backup_details(table_name, table_arn)

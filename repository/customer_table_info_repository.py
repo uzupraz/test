@@ -29,7 +29,8 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         DynamoDB through API calls. This is particularly useful for operations that are not directly supported by
         the resource interface, such as the describe_table operation used in the 'get_table_size' method.
 
-        DynamoDB Backup Client: The DynamoDB provides a low-level client representing AWS Backup.
+        DynamoDB Backup Client: The DynamoDB provides a low-level client representing AWS Backup, which simplifies the creation,
+        migration, restoration, and deletion of backups, etc.
 
         Args:
             app_config (AppConfig): The application configuration object.
@@ -88,7 +89,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             log.info('Retrieving size of customer table. table_name: %s', table_name)
             response = self.dynamodb_client.describe_table(TableName=table_name)
             log.info('Successfully retrieved size of customer table. table_name: %s', table_name)
-            return response['Table'] ['TableSizeBytes']/1024
+            return response['Table']['TableSizeBytes'] / 1024
         except ClientError as e:
             log.exception('Failed to retrieve size of customer table. table_name: %s', table_name)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve size of customer table')
@@ -177,7 +178,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
                 BackupDetail(id=backup_job['BackupJobId'],
                              name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
                              creation_time=backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z'),
-                             size=backup_job['BackupSizeInBytes']/1024)
+                             size=backup_job['BackupSizeInBytes'] / 1024)
                 # the response contains the list of BackupJob i.e. response ={'BackupJobs': [{details}]}
                 for backup_job in response['BackupJobs']
             ]

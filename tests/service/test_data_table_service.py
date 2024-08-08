@@ -200,7 +200,7 @@ class TestDataTableService(unittest.TestCase):
 
         for index in expected_customer_table_info.indexes:
             # table size equals index size
-            index.size = mock_dynamoDB_table_details['Table'] ['TableSizeBytes']/1024
+            index.size = mock_dynamoDB_table_details['Table']['TableSizeBytes'] / 1024
 
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
         self.customer_table_info_repo.table.update_item.return_value = updated_customer_table_info
@@ -372,7 +372,7 @@ class TestDataTableService(unittest.TestCase):
         expected_expected_customer_table_info = from_dict(CustomerTableInfo, customer_table_info_item.get('Item'))
         for index in expected_expected_customer_table_info.indexes:
             # table size equals index size
-            index.size = mock_dynamoDB_table_details['Table'] ['TableSizeBytes']/1024
+            index.size = mock_dynamoDB_table_details['Table']['TableSizeBytes'] / 1024
 
         result = self.data_table_service.get_table_info(owner_id, table_id)
 
@@ -405,7 +405,7 @@ class TestDataTableService(unittest.TestCase):
         expected_expected_customer_table_info = from_dict(CustomerTableInfo, customer_table_info_item.get('Item'))
         for index in expected_expected_customer_table_info.indexes:
             # table size equals index size
-            index.size = mock_dynamoDB_table_details['Table'] ['TableSizeBytes']/1024
+            index.size = mock_dynamoDB_table_details['Table']['TableSizeBytes'] / 1024
 
         result = self.data_table_service.get_table_info(owner_id, table_id)
 
@@ -510,7 +510,7 @@ class TestDataTableService(unittest.TestCase):
             expected_backup_details.append(BackupDetail(id=backup_job['BackupJobId'],
                                                         name=customer_table_info_item.get('Item').get('original_table_name') + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
                                                         creation_time=backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z'),
-                                                        size=backup_job['BackupSizeInBytes']/1024))
+                                                        size=backup_job['BackupSizeInBytes'] / 1024))
 
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
         self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.return_value = mock_backup_details
