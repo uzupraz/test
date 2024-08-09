@@ -3,7 +3,7 @@ from flask import g, request
 from dacite import from_dict
 
 from configuration import AWSConfig, AppConfig
-from repository import CustomerTableInfoRepository
+from repository import CustomerTableInfoRepository, CustomerTableRepository
 from .server_response import ServerResponse
 from service import DataTableService
 from .common_controller import server_response
@@ -20,7 +20,11 @@ log = api.logger
 aws_config = AWSConfig()
 app_config = AppConfig()
 customer_table_info_repository = CustomerTableInfoRepository(app_config=app_config, aws_config=aws_config)
-data_table_service = DataTableService(customer_table_info_repository=customer_table_info_repository)
+customer_table_repository = CustomerTableRepository(app_config=app_config, aws_config=aws_config)
+data_table_service = DataTableService(
+    customer_table_info_repository=customer_table_info_repository,
+    customer_table_repository=customer_table_repository
+)
 
 list_tables_response_dto = api.inherit('List customer tables response',server_response, {
     'payload': fields.List(fields.Nested(api.model('List of customer tables', {
@@ -74,6 +78,17 @@ backups_response_dto = api.inherit('List of Backup Response', server_response, {
     })))
 })
 
+customer_table_item_response_dto = api.inherit('Table item response',server_response, {
+    'payload': api.model('Table items', {
+        'items': fields.List(fields.Nested(any), description='List of items'),
+        'pagination': fields.Nested(api.model('Pagination parameters', {
+            'size': fields.Integer(description='Items per page'),
+            'last_evaluated_key': fields.String(required=False, description="A key which was evaluated in previous request & will be used as exclusive start key in current request")
+        }))
+    })
+})
+
+
 @api.route('/tables')
 class DataTableListResource(Resource):
 
@@ -125,8 +140,10 @@ class DataTableResource (Resource):
 @api.route('/tables/<string:table_id>/backups')
 class TableBackupsResource(Resource):
 
+
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
+
 
     @api.doc(description="Get the list of backup jobs for a specific table by its ID.")
     @api.marshal_with(backups_response_dto, skip_none=True)
@@ -136,3 +153,32 @@ class TableBackupsResource(Resource):
         backups = data_table_service.get_table_backup_jobs(owner_id=user.organization_id, table_id=table_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=backups), 200
+
+
+@api.route('/tables/<string:table_id>/items')
+class DataTableItemsResource (Resource):
+
+
+    def __init__(self, api=None, *args, **kwargs):
+        super().__init__(api, *args, **kwargs)
+
+
+    @api.doc(size='Get the table items of the provided table id.')
+    @api.param('size', 'Number of items to retrieve', type=int, default=10)
+    @api.param('last_evaluated_key', 'Pagination key for the next set of items', type=str)
+    @api.marshal_with(customer_table_item_response_dto, skip_none=True)
+    def get(self, table_id:str):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+
+        size = request.args.get('size', type=int)
+        last_evaluated_key = request.args.get('last_evaluated_key', default=None, type=str)
+        user = from_dict(User, g.get('user'))
+
+        response_payload = data_table_service.get_table_items(
+            owner_id=user.organization_id,
+            table_id=table_id,
+            size=size,
+            last_evaluated_key=last_evaluated_key
+        )
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=response_payload), 200

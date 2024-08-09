@@ -1,24 +1,27 @@
-from dacite import from_dict
-from dataclasses import asdict
+import json
+import base64
 
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from model import ListTableResponse, UpdateTableRequest, CustomerTableInfo, BackupJob
-from repository import CustomerTableInfoRepository
+from model import ListTableResponse, UpdateTableRequest, CustomerTableInfo, CustomerTableItem, CustomerTableItemPagination, BackupJob
+from repository import CustomerTableInfoRepository, CustomerTableRepository
 
 log = common_ctrl.log
+ENCODING_FORMAT = 'utf-8'
 
 class DataTableService(metaclass=Singleton):
 
 
-    def __init__(self, customer_table_info_repository:CustomerTableInfoRepository) -> None:
+    def __init__(self, customer_table_info_repository:CustomerTableInfoRepository, customer_table_repository:CustomerTableRepository) -> None:
         """
         Initializes the DataTableService with the CustomerTableInfoRepository.
 
         Args:
             customer_table_info_repository (CustomerTableInfoRepository): The repository instance to access customer table information.
+            customer_table_repository (CustomerTableRepository): The repository instance to access tables information.
         """
         self.customer_table_info_repository = customer_table_info_repository
+        self.customer_table_repository = customer_table_repository
 
 
     def list_tables(self, owner_id:str) -> list[ListTableResponse]:
@@ -109,3 +112,45 @@ class DataTableService(metaclass=Singleton):
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
         backup_jobs = self.customer_table_info_repository.get_table_backup_jobs(customer_table_info.original_table_name, customer_table_info.table_arn)
         return backup_jobs
+
+
+    def get_table_items(self, owner_id:str, table_id:str, size:int, last_evaluated_key:str|None=None) -> CustomerTableItem:
+        """
+        Get the items of the table with provided table_id.
+
+        Args:
+            owner_id (str): The owner of the table.
+            table_id (str): The ID of the table.
+            size (int): Size of rows to fetch.
+            last_evaluated_key (str|None): Last evaluated key of previous request.
+
+        Returns:
+            CustomerTableContent: The customer table content in paginated form.
+        """
+        log.info('Fetching table items. owner_id: %s, table_id: %s', owner_id, table_id)
+        # Check if the item exists
+        customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
+        # Decoding last evaluated_key from base64
+        if last_evaluated_key is not None:
+            last_evaluated_key = json.loads(base64.b64decode(last_evaluated_key).decode(ENCODING_FORMAT))
+
+        # querying database with exclusive start key
+        items, last_evaluated_key = self.customer_table_repository.get_table_items(
+            table_name=customer_table_info.original_table_name, 
+            limit=size,
+            exclusive_start_key=last_evaluated_key
+        )
+        # Encoding last evaluated_key into base64
+        encoded_last_evaluated_key = None
+        if last_evaluated_key is not None and isinstance(last_evaluated_key, dict):
+            key = json.dumps(last_evaluated_key).encode(ENCODING_FORMAT)
+            encoded_last_evaluated_key = base64.b64encode(key).decode(ENCODING_FORMAT)
+
+
+        return CustomerTableItem(
+            items=items,
+            pagination=CustomerTableItemPagination(
+                size=size,
+                last_evaluated_key=encoded_last_evaluated_key
+            )
+        )

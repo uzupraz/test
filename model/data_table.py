@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from typing import List
-from decimal import Decimal
 
 from enums import TableStatus, IndexStatus, AutoBackupStatus, Backup, BackupStatus, BackupType
 
@@ -56,3 +55,15 @@ class BackupJob:
     creation_time: str | None = field(default=None)
     type: str = field(default=BackupType.AUTO.value)
     size: int = field(default=0)
+
+
+@dataclass
+class CustomerTableItemPagination:
+    size: int
+    last_evaluated_key: str | None
+
+
+@dataclass
+class CustomerTableItem:
+    items: list[any]
+    pagination: CustomerTableItemPagination
