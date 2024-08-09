@@ -275,12 +275,23 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         table_arn = 'table_arn'
         mock_response_path = self.TEST_RESOURCE_PATH + "expected_backup_jobs_for_table_happy_case.json"
         mock_response = TestUtils.get_file_content(mock_response_path)
+        mock_backup_jobs = mock_response['BackupJobs']
+        for mock_backup_job in mock_backup_jobs:
+            mock_backup_job['CreationDate'] = datetime.strptime(mock_backup_job['CreationDate'], '%Y-%m-%d %H:%M:%S%z')
 
-        expected_backup_details = []
-        for backup_job in mock_response['BackupJobs']:
-            backup_job['CreationDate'] = datetime.strptime(backup_job['CreationDate'], '%Y-%m-%d %H:%M:%S%z')
+        # Sort the backup jobs by `CreationDate` in descending order
+        sorted_backup_jobs = sorted(
+            mock_backup_jobs,
+            key=lambda job: job['CreationDate'],
+            reverse=True
+        )
+        # Return the latest 10 backup jobs
+        latest_backup_jobs = sorted_backup_jobs[:10]
+
+        expected_backup_jobs = []
+        for backup_job in latest_backup_jobs:
             creation_time = backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z')
-            expected_backup_details.append(BackupJob(id=backup_job['BackupJobId'],
+            expected_backup_jobs.append(BackupJob(id=backup_job['BackupJobId'],
                                                         name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
                                                         creation_time=creation_time,
                                                         size=backup_job['BackupSizeInBytes'] / 1024))
@@ -289,7 +300,46 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         result = self.customer_table_info_repo.get_table_backup_jobs(table_name, table_arn)
 
         self.mock_dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=table_arn)
-        self.assertEqual(result, expected_backup_details)
+        self.assertEqual(result, expected_backup_jobs)
+
+
+    def test_get_table_backup_jobs_should_return_latest_ten_backup_jobs(self):
+        """
+        Should return the latest 10 backup jobs of the table when the list_backup_jobs api provides more than 10 backup jobs in respnose.
+        The list_backup_jobs returns backup jobs for maximum 30 days. Since our backup is schedule daily so it might return maximum
+        30 backup jobs in response. Since our backup stores only for 10 days, so latest 10 backup jobs is retrieved.
+        """
+        table_name = 'originalTable1'
+        table_arn = 'table_arn'
+        mock_response_path = self.TEST_RESOURCE_PATH + "backup_jobs_with_length_more_than_ten.json"
+        mock_response = TestUtils.get_file_content(mock_response_path)
+        mock_backup_jobs = mock_response['BackupJobs']
+        for mock_backup_job in mock_backup_jobs:
+            mock_backup_job['CreationDate'] = datetime.strptime(mock_backup_job['CreationDate'], '%Y-%m-%d %H:%M:%S%z')
+
+        # Sort the backup jobs by `CreationDate` in descending order
+        sorted_backup_jobs = sorted(
+            mock_backup_jobs,
+            key=lambda job: job['CreationDate'],
+            reverse=True
+        )
+        # Return the latest 10 backup jobs
+        latest_backup_jobs = sorted_backup_jobs[:10]
+
+        expected_backup_jobs = []
+        for backup_job in latest_backup_jobs:
+            creation_time = backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z')
+            expected_backup_jobs.append(BackupJob(id=backup_job['BackupJobId'],
+                                                        name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
+                                                        creation_time=creation_time,
+                                                        size=backup_job['BackupSizeInBytes'] / 1024))
+        self.mock_dynamodb_backup_client.list_backup_jobs.return_value = mock_response
+
+        result = self.customer_table_info_repo.get_table_backup_jobs(table_name, table_arn)
+
+        self.mock_dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=table_arn)
+        self.assertEqual(result, expected_backup_jobs)
+        self.assertEqual(10, len(result))
 
 
     def test_get_table_backup_jobs_return_empty_backup_jobs(self):

@@ -502,26 +502,88 @@ class TestDataTableService(unittest.TestCase):
         customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
         table_name = customer_table_info_item.get('Item').get('original_table_name')
 
-        mock_backup_details_response_path = self.TEST_RESOURCE_PATH + "expected_backup_jobs_for_table_happy_case.json"
-        mock_backup_details = TestUtils.get_file_content(mock_backup_details_response_path)
+        mock_response_path = self.TEST_RESOURCE_PATH + "expected_backup_jobs_for_table_happy_case.json"
+        mock_response = TestUtils.get_file_content(mock_response_path)
+        mock_backup_jobs = mock_response['BackupJobs']
+        for mock_backup_job in mock_backup_jobs:
+            mock_backup_job['CreationDate'] = datetime.strptime(mock_backup_job['CreationDate'], '%Y-%m-%d %H:%M:%S%z')
 
-        expected_backup_details = []
-        for backup_job in mock_backup_details['BackupJobs']:
-            backup_job['CreationDate'] = datetime.strptime(backup_job['CreationDate'], '%Y-%m-%d %H:%M:%S%z')
+        # Sort the backup jobs by `CreationDate` in descending order
+        sorted_backup_jobs = sorted(
+            mock_backup_jobs,
+            key=lambda job: job['CreationDate'],
+            reverse=True
+        )
+        # Return the latest 10 backup jobs
+        latest_backup_jobs = sorted_backup_jobs[:10]
+
+        expected_backup_jobs = []
+        for backup_job in latest_backup_jobs:
             creation_time = backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z')
-            expected_backup_details.append(BackupJob(id=backup_job['BackupJobId'],
+            expected_backup_jobs.append(BackupJob(id=backup_job['BackupJobId'],
                                                         name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
                                                         creation_time=creation_time,
                                                         size=backup_job['BackupSizeInBytes'] / 1024))
 
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
-        self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.return_value = mock_backup_details
+        self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.return_value = mock_response
 
         result = self.data_table_service.get_table_backup_jobs(owner_id, table_id)
 
         self.customer_table_info_repo.table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
         self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=customer_table_info_item.get('Item').get('table_arn'))
-        self.assertEqual(result, expected_backup_details)
+        self.assertEqual(result, expected_backup_jobs)
+
+
+    def test_get_table_backup_jobs_should_return_latest_ten_backup_jobs(self):
+        """
+        Test case for successfully retrieving table backup jobs.
+        Should return the latest 10 backup jobs of the table when the list_backup_jobs api provides more than 10 backup jobs in respnose.
+        The list_backup_jobs returns backup jobs for maximum 30 days. Since our backup is schedule daily so it might return maximum
+        30 backup jobs in response. Since our backup stores only for 10 days, so latest 10 backup jobs is retrieved.
+
+        Case: The table info and backup jobs are correctly retrieved.
+        Expected Result: The method returns the expected list of latest 10 backup job.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "expected_table_details_with_one_index.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        table_name = customer_table_info_item.get('Item').get('original_table_name')
+
+        mock_response_path = self.TEST_RESOURCE_PATH + "backup_jobs_with_length_more_than_ten.json"
+        mock_response = TestUtils.get_file_content(mock_response_path)
+        mock_backup_jobs = mock_response['BackupJobs']
+        for mock_backup_job in mock_backup_jobs:
+            mock_backup_job['CreationDate'] = datetime.strptime(mock_backup_job['CreationDate'], '%Y-%m-%d %H:%M:%S%z')
+
+        # Sort the backup jobs by `CreationDate` in descending order
+        sorted_backup_jobs = sorted(
+            mock_backup_jobs,
+            key=lambda job: job['CreationDate'],
+            reverse=True
+        )
+        # Return the latest 10 backup jobs
+        latest_backup_jobs = sorted_backup_jobs[:10]
+
+        expected_backup_jobs = []
+        for backup_job in latest_backup_jobs:
+            creation_time = backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z')
+            expected_backup_jobs.append(BackupJob(id=backup_job['BackupJobId'],
+                                                        name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
+                                                        creation_time=creation_time,
+                                                        size=backup_job['BackupSizeInBytes'] / 1024))
+
+        self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
+        self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.return_value = mock_response
+
+        result = self.data_table_service.get_table_backup_jobs(owner_id, table_id)
+
+        self.customer_table_info_repo.table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
+        self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=customer_table_info_item.get('Item').get('table_arn'))
+        self.assertEqual(result, expected_backup_jobs)
+        self.assertEqual(10, len(result))
 
 
     def test_get_table_backup_jobs_throws_service_exception_when_no_item_found_while_retrieving_customer_table_info(self):

@@ -178,9 +178,9 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         """
         try:
             log.info('Retrieving backup jobs of customer table. table_name: %s', table_name)
-            response = self.dynamodb_backup_client.list_backup_jobs(ByResourceArn=table_arn)
+            backup_jobs_response = self.dynamodb_backup_client.list_backup_jobs(ByResourceArn=table_arn)
             # the response contains the list of BackupJob i.e. response ={'BackupJobs': [{details}]}
-            backup_jobs = response.get('BackupJobs')
+            backup_jobs = backup_jobs_response.get('BackupJobs')
 
             # Sort the backup jobs by `CreationDate` in descending order
             sorted_backup_jobs = sorted(
@@ -190,7 +190,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             )
             # Return the latest 10 backup jobs
             latest_backup_jobs = sorted_backup_jobs[:10]
-            backup_details = [
+            backup_jobs_to_return = [
                 BackupJob(id=backup_job['BackupJobId'],
                              name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
                              creation_time=backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z'),
@@ -198,7 +198,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
                 for backup_job in latest_backup_jobs
             ]
             log.info('Successfully retrieved backup jobs of customer table. table_name: %s', table_name)
-            return backup_details
+            return backup_jobs_to_return
         except ClientError as e:
             log.exception('Failed to retrieve backup jobs of customer table. table_name: %s', table_name)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve backup jobs of customer table')
