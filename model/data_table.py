@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from typing import List
-from decimal import Decimal
 
 from enums import TableStatus, IndexStatus, AutoBackupStatus, Backup
 
@@ -45,3 +44,15 @@ class CustomerTableInfo:
 @dataclass
 class UpdateTableRequest:
     description: str
+
+
+@dataclass
+class CustomerTableItemPagination:
+    size: int
+    last_evaluated_key: str | None
+
+
+@dataclass
+class CustomerTableItem:
+    items: list[any]
+    pagination: CustomerTableItemPagination
