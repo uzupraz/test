@@ -6,10 +6,11 @@ from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
 from dacite import from_dict
 from utils import DataTypeUtils
+from datetime import datetime
 
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
-from model import CustomerTableInfo, BackupDetail
+from model import CustomerTableInfo, BackupJob
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton
@@ -161,36 +162,46 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to update customer table description')
 
 
-    def get_table_backup_details(self, table_name:str, table_arn:str) -> list[BackupDetail]:
+    def get_table_backup_jobs(self, table_name:str, table_arn:str) -> list[BackupJob]:
         """
-        Get the backup details of a specific DynamoDB table.
+        Get the backup jobs of a specific DynamoDB table.
 
         Args:
-            table_name (str): The name of the DynamoDB table to retrieve backup details for.
-            table_arn (str): The Amazon Resource Name (ARN) of the DynamoDB table to retrieve backup details for.
+            table_name (str): The name of the DynamoDB table to retrieve backup jobs for.
+            table_arn (str): The Amazon Resource Name (ARN) of the DynamoDB table to retrieve backup jobs for.
 
         Returns:
-            list[BackupDetail]: The backup details of dynamoDB table.
+            list[BackupJob]: The latest 10 backup jobs of the DynamoDB table.
 
         Raises:
-            ServiceException: If there is an error, retrieving the backup details of dynamoDB table.
+            ServiceException: If there is an error, retrieving the backup jobs of dynamoDB table.
         """
         try:
-            log.info('Retrieving backup details of customer table. table_name: %s', table_name)
+            log.info('Retrieving backup jobs of customer table. table_name: %s', table_name)
             response = self.dynamodb_backup_client.list_backup_jobs(ByResourceArn=table_arn)
+            # the response contains the list of BackupJob i.e. response ={'BackupJobs': [{details}]}
+            backup_jobs = response.get('BackupJobs')
+
+            # Sort the backup jobs by `CreationDate` in descending order
+            sorted_backup_jobs = sorted(
+                backup_jobs,
+                key=lambda job: job['CreationDate'],
+                reverse=True
+            )
+            # Return the latest 10 backup jobs
+            latest_backup_jobs = sorted_backup_jobs[:10]
             backup_details = [
-                BackupDetail(id=backup_job['BackupJobId'],
+                BackupJob(id=backup_job['BackupJobId'],
                              name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
                              creation_time=backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z'),
                              size=backup_job['BackupSizeInBytes'] / 1024)
-                # the response contains the list of BackupJob i.e. response ={'BackupJobs': [{details}]}
-                for backup_job in response['BackupJobs']
+                for backup_job in latest_backup_jobs
             ]
-            log.info('Successfully retrieved backup details of customer table. table_name: %s', table_name)
+            log.info('Successfully retrieved backup jobs of customer table. table_name: %s', table_name)
             return backup_details
         except ClientError as e:
-            log.exception('Failed to retrieve backup details of customer table. table_name: %s', table_name)
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve backup details of customer table')
+            log.exception('Failed to retrieve backup jobs of customer table. table_name: %s', table_name)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve backup jobs of customer table')
 
 
     def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:

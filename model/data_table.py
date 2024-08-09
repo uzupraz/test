@@ -49,7 +49,7 @@ class UpdateTableRequest:
 
 
 @dataclass
-class BackupDetail:
+class BackupJob:
     id: str
     name: str | None = field(default=None)
     status: str = field(default=BackupStatus.ACTIVE.value)

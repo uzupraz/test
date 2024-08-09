@@ -6,7 +6,7 @@ from dacite import from_dict
 from datetime import datetime
 
 from tests.test_utils import TestUtils
-from model import UpdateTableRequest, CustomerTableInfo, BackupDetail
+from model import UpdateTableRequest, CustomerTableInfo, BackupJob
 from repository.customer_table_info_repository import CustomerTableInfoRepository
 from service.data_table_service import DataTableService
 from exception import ServiceException
@@ -488,41 +488,43 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.dynamodb_client.describe_table.assert_called_once_with(TableName='OriginalTable1')
 
 
-    def test_get_table_backups_happy_case(self):
+    def test_get_table_backup_jobs_happy_case(self):
         """
-        Test case for successfully retrieving table backups.
+        Test case for successfully retrieving table backup jobs.
 
-        Case: The table info and backup details are correctly retrieved from DynamoDB.
-        Expected Result: The method returns the expected list of backup details.
+        Case: The table info and backup jobs are correctly retrieved.
+        Expected Result: The method returns the expected list of backup job.
         """
         owner_id = 'owner123'
         table_id = 'table123'
 
         mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "expected_table_details_with_one_index.json"
         customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        table_name = customer_table_info_item.get('Item').get('original_table_name')
 
-        mock_backup_details_response_path = self.TEST_RESOURCE_PATH + "expected_backup_details_for_table_happy_case.json"
+        mock_backup_details_response_path = self.TEST_RESOURCE_PATH + "expected_backup_jobs_for_table_happy_case.json"
         mock_backup_details = TestUtils.get_file_content(mock_backup_details_response_path)
 
         expected_backup_details = []
         for backup_job in mock_backup_details['BackupJobs']:
             backup_job['CreationDate'] = datetime.strptime(backup_job['CreationDate'], '%Y-%m-%d %H:%M:%S%z')
-            expected_backup_details.append(BackupDetail(id=backup_job['BackupJobId'],
-                                                        name=customer_table_info_item.get('Item').get('original_table_name') + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
-                                                        creation_time=backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z'),
+            creation_time = backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z')
+            expected_backup_details.append(BackupJob(id=backup_job['BackupJobId'],
+                                                        name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
+                                                        creation_time=creation_time,
                                                         size=backup_job['BackupSizeInBytes'] / 1024))
 
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
         self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.return_value = mock_backup_details
 
-        result = self.data_table_service.get_table_backups(owner_id, table_id)
+        result = self.data_table_service.get_table_backup_jobs(owner_id, table_id)
 
         self.customer_table_info_repo.table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
         self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=customer_table_info_item.get('Item').get('table_arn'))
         self.assertEqual(result, expected_backup_details)
 
 
-    def test_get_table_backups_throws_service_exception_when_no_item_found_while_retrieving_customer_table_info(self):
+    def test_get_table_backup_jobs_throws_service_exception_when_no_item_found_while_retrieving_customer_table_info(self):
         """
         Test case for handling a missing table item.
 
@@ -537,7 +539,7 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.get_table_backups(owner_id, table_id)
+            self.data_table_service.get_table_backup_jobs(owner_id, table_id)
 
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
@@ -546,7 +548,7 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.assert_not_called()
 
 
-    def test_get_table_backups_details_throws_service_exception_when_client_error_occurs_while_retrieving_customer_table_info(self):
+    def test_get_table_backup_jobs_details_throws_service_exception_when_client_error_occurs_while_retrieving_customer_table_info(self):
         """
         Test case for handling a ClientError during retrieval.
 
@@ -560,7 +562,7 @@ class TestDataTableService(unittest.TestCase):
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'get_item')
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.get_table_backups(owner_id, table_id)
+            self.data_table_service.get_table_backup_jobs(owner_id, table_id)
 
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
@@ -569,11 +571,11 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.assert_not_called()
 
 
-    def test_get_table_backups_should_return_empty_list_when_no_backup_details_available_for_the_table(self):
+    def test_get_table_backup_jobs_should_return_empty_list_when_no_backup_jobs_available_for_the_table(self):
         """
-        Test case for handling no backup details available for the table.
+        Test case for handling no backup jobs available for the table.
 
-        Case: The table has no backup details in DynamoDB.
+        Case: The table has no backup jobs.
         Expected Result: The method returns an empty list.
         """
         owner_id = 'owner123'
@@ -585,19 +587,21 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.table.get_item.return_value = customer_table_info_item
         self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.return_value = {'BackupJobs': [], 'NextToken': None}
 
-        result = self.data_table_service.get_table_backups(owner_id, table_id)
+        result = self.data_table_service.get_table_backup_jobs(owner_id, table_id)
 
         self.customer_table_info_repo.table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
         self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=customer_table_info_item.get('Item').get('table_arn'))
         self.assertEqual(result, [])
 
 
-    def test_get_table_backups_throws_service_exception_when_dynamoDB_throws_error_while_retrieving_backup_details(self):
+    def test_get_table_backup_jobs_throws_service_exception_when_backup_client_throws_error_while_retrieving_backup_jobs(self):
         """
-        Test case for handling a ClientError during backup details retrieval.
+        Test case for handling a ClientError during backup jobs retrieval.
 
-        Case: A ClientError occurs during the DynamoDB list_backups operation.
-        Expected Result: The method raises a ServiceException indicating failure to retrieve backup details.
+        Case: A ClientError occurs during the back up client list_backups operation. The error might ocuur due to several reasons
+        for example, when invalid table arn is provided.
+
+        Expected Result: The method raises a ServiceException indicating indicating failure to retreive backup jobs.
         """
         owner_id = 'owner123'
         table_id = 'table123'
@@ -610,10 +614,10 @@ class TestDataTableService(unittest.TestCase):
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'list_backups')
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.get_table_backups(owner_id, table_id)
+            self.data_table_service.get_table_backup_jobs(owner_id, table_id)
 
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
-        self.assertEqual(context.exception.message, 'Failed to retrieve backup details of customer table')
+        self.assertEqual(context.exception.message, 'Failed to retrieve backup jobs of customer table')
         self.customer_table_info_repo.table.get_item.assert_called_once_with(Key={'owner_id': owner_id, 'table_id': table_id})
         self.customer_table_info_repo.dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=customer_table_info_item.get('Item').get('table_arn'))

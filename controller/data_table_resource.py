@@ -128,11 +128,11 @@ class TableBackupsResource(Resource):
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
 
-    @api.doc(description="Get the list of backup for a specific table by its ID.")
+    @api.doc(description="Get the list of backup jobs for a specific table by its ID.")
     @api.marshal_with(backups_response_dto, skip_none=True)
     def get(self, table_id:str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        user = User(**g.get("user"))
-        backups = data_table_service.get_table_backups(owner_id=user.organization_id, table_id=table_id)
+        user = from_dict(User, g.get('user'))
+        backups = data_table_service.get_table_backup_jobs(owner_id=user.organization_id, table_id=table_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=backups), 200
