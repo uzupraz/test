@@ -1,0 +1,12 @@
+[
+    {
+        "ItemId": "item1",
+        "Attribute1": "Value1",
+        "Attribute2": "Value2"
+    },
+    {
+        "ItemId": "item2",
+        "Attribute1": "Value3",
+        "Attribute2": "Value4"
+    }
+]
