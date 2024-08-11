@@ -67,7 +67,32 @@ class CustomerTableRepository(metaclass=Singleton):
         except ClientError:
             log.exception('Failed to retrieve table items. table_name: %s', table_name)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve table items')
-      
+    
+    
+    def insert_item(self, table_name: str, item: dict[str, any]) -> dict[str,any]:
+        """
+        Inserts an item into the specified DynamoDB table.
+
+        Args:
+            table_name (str): The name of the DynamoDB table.
+            item (dict[str, any]): The item data to insert into the table.
+
+        Returns:
+            dict[str, any]: The inserted item.
+
+        Raises:
+            ServiceException: If there is an issue inserting the item into the DynamoDB table.
+        """
+        log.info('Inserting item into table. table_name: %s, item: %s', table_name, item)
+        try:
+            table = self.dynamodb_resource.Table(table_name)
+            table.put_item(Item=item)
+            log.info('Successfully inserted item into table. table_name: %s', table_name)
+            return item
+        except ClientError:
+            log.exception('Failed to insert item into table. table_name: %s', table_name)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to insert item into table')
+
 
     def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:
         """

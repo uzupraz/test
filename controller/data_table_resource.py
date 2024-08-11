@@ -88,6 +88,12 @@ customer_table_item_response_dto = api.inherit('Table item response',server_resp
     })
 })
 
+customer_table_insert_request_dto = fields.Raw(description='The actual inserted item in dictionary format')
+
+customer_table_insert_response_dto = api.inherit('Customer table insert response',server_response, {
+    'payload': fields.Raw(description='The actual inserted item in dictionary format')
+})
+
 
 @api.route('/tables')
 class DataTableListResource(Resource):
@@ -182,3 +188,21 @@ class DataTableItemsResource (Resource):
         )
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=response_payload), 200
+    
+
+    @api.doc(description='Add an item to the specified table.')
+    @api.expect(customer_table_insert_request_dto, description='The actual inserted item in dictionary format')
+    @api.marshal_with(customer_table_insert_response_dto, skip_none=True)
+    def post(self, table_id: str):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+
+        user = from_dict(User, g.get('user'))
+        item = request.json
+
+        response_payload = data_table_service.insert_item(
+            owner_id=user.organization_id,
+            table_id=table_id,
+            item=item
+        )
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=response_payload), 201
