@@ -3,12 +3,16 @@
         "owner_id": "owner123",
         "table_id": "table123",
         "table_name": "Table1",
-        "original_table_name": "OriginalTable1"
+        "original_table_name": "OriginalTable1",
+        "partition_key": "partition_key",
+        "sort_key": "sort_key"
     },
     {
         "owner_id": "owner123",
         "table_id": "table456",
         "table_name": "Table2",
-        "original_table_name": "OriginalTable2"
+        "original_table_name": "OriginalTable2",
+        "partition_key": "partition_key",
+        "sort_key": "sort_key"
     }
 ]

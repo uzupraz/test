@@ -9,7 +9,7 @@
         "description": "Test description",
         "created_by": "user",
         "creation_time": "2023-01-01T00:00:00Z",
-        "total_indexes": 1,
+        "total_indexes": 2,
         "read_capacity_units": 5,
         "write_capacity_units": 5,
         "backup": "ON",
@@ -23,7 +23,14 @@
                 "status": "ACTIVE",
                 "partition_key": "pk1",
                 "sort_key": "sk1",
-                "item_count": 100
+                "item_count": 200
+            },
+            {
+                "name": "index2",
+                "status": "CREATING",
+                "partition_key": "pk2",
+                "sort_key": "sk2",
+                "item_count": 50
             }
         ]
     },

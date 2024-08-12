@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import Mock, patch
 from botocore.exceptions import ClientError
-from boto3.dynamodb.conditions import Key
 from unittest.mock import MagicMock
 
 from repository.customer_table_repository import CustomerTableRepository

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
+from typing import List
 
-from enums import BackupStatus, TableStatus, AlarmStatus
+from enums import TableStatus, IndexStatus, AutoBackupStatus, Backup, BackupStatus, BackupType
 
 @dataclass
 class ListTableResponse:
@@ -10,22 +11,35 @@ class ListTableResponse:
 
 
 @dataclass
+class IndexInfo:
+    name: str
+    partition_key: str
+    sort_key: str | None = field(default=None)
+    status: str = field(default=IndexStatus.ACTIVE.value)
+    size: float = field(default=0)
+    item_count: int = field(default=0)
+
+
+@dataclass
 class CustomerTableInfo:
     owner_id: str
     table_id: str
     table_name: str
     original_table_name: str
+    partition_key: str
+    sort_key: str | None = field(default=None)
     description: str | None = field(default=None)
     created_by: str | None = field(default=None)
     creation_time: str | None = field(default=None)
     total_indexes: int = field(default=0)
     read_capacity_units: int = field(default=0)
     write_capacity_units: int = field(default=0)
-    backups: str = field(default=BackupStatus.ENABLED.value)
+    backup: str = field(default=Backup.ENABLED.value)
+    auto_backup_status: str = field(default=AutoBackupStatus.ENABLED.value)
     table_status: str = field(default=TableStatus.ACTIVE.value)
-    alarms: str = field(default=AlarmStatus.OK.value)
-    next_backup_schedule: str | None = field(default=None)
-    last_backup_schedule: str | None = field(default=None)
+    backup_schedule: str | None = field(default='0 0 * * *')
+    table_arn: str | None = field(default=None)
+    indexes: List[IndexInfo] = field(default_factory=list)
 
 
 @dataclass
@@ -34,26 +48,20 @@ class UpdateTableRequest:
 
 
 @dataclass
-class UpdateTableResponse:
-    table_id: str
-    table_name: str
-    description: str | None = field(default=None)
-    created_by: str | None = field(default=None)
+class BackupJob:
+    id: str
+    name: str | None = field(default=None)
+    status: str = field(default=BackupStatus.ACTIVE.value)
     creation_time: str | None = field(default=None)
-    total_indexes: int = field(default=0)
-    read_capacity_units: int = field(default=0)
-    write_capacity_units: int = field(default=0)
-    backups: str = field(default=BackupStatus.ENABLED.value)
-    table_status: str = field(default=TableStatus.ACTIVE.value)
-    alarms: str = field(default=AlarmStatus.OK.value)
-    next_backup_schedule: str | None = field(default=None)
-    last_backup_schedule: str | None = field(default=None)
+    type: str = field(default=BackupType.AUTO.value)
+    size: int = field(default=0)
 
 
 @dataclass
 class CustomerTableItemPagination:
     size: int
     last_evaluated_key: str | None
+
 
 @dataclass
 class CustomerTableItem:
