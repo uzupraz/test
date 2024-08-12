@@ -55,6 +55,7 @@ table_info_response_dto = api.inherit('Customer table info response',server_resp
         'auto_backup_status': fields.String(required=True, description='Auto backup status of the table'),
         'table_status': fields.String(required=True, description='Status of the table'),
         'backup_schedule': fields.String(required=True, description='The backup schedule cron pattern'),
+        'table_arn': fields.String(required=True, description='The ARN of the table'),
         'indexes': fields.List(fields.Nested(api.model('Index Info', {
             'name': fields.String(description='Name of the index'),
             'status': fields.String(description='Status of the index'),
@@ -64,6 +65,17 @@ table_info_response_dto = api.inherit('Customer table info response',server_resp
             'item_count': fields.Integer(description='Item count of the index')
         })))
     }))
+})
+
+backups_response_dto = api.inherit('List of Backup Response', server_response, {
+    'payload': fields.List(fields.Nested(api.model('Backup List', {
+        'id': fields.String(descripiotn='Id of the backup'),
+        'name': fields.String(description='Name of the backup'),
+        'status': fields.String(description='Status of the backup'),
+        'creation_time': fields.String(description='Backup creation date time'),
+        'type': fields.String(description='Type of the backup'),
+        'size': fields.Integer(description='Size of the backup in KB')
+    })))
 })
 
 customer_table_item_response_dto = api.inherit('Table item response',server_response, {
@@ -123,7 +135,25 @@ class DataTableResource (Resource):
         table_details = data_table_service.get_table_info(owner_id=user.organization_id, table_id=table_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=table_details), 200
-    
+
+
+@api.route('/tables/<string:table_id>/backups')
+class TableBackupsResource(Resource):
+
+
+    def __init__(self, api=None, *args, **kwargs):
+        super().__init__(api, *args, **kwargs)
+
+
+    @api.doc(description="Get the list of backup jobs for a specific table by its ID.")
+    @api.marshal_with(backups_response_dto, skip_none=True)
+    def get(self, table_id:str):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+        user = from_dict(User, g.get('user'))
+        backups = data_table_service.get_table_backup_jobs(owner_id=user.organization_id, table_id=table_id)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=backups), 200
+
 
 @api.route('/tables/<string:table_id>/items')
 class DataTableItemsResource (Resource):

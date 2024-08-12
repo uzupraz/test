@@ -16,6 +16,11 @@ class SystemStatus(Enum):
     ONLINE='ONLINE'
 
 
+class BackupType(Enum):
+    AUTO='AUTO'
+    MANUAL='MANUAL'
+
+
 class Backup(Enum):
     ENABLED='ON'
     DISABLED='OFF'
@@ -27,9 +32,7 @@ class AutoBackupStatus(Enum):
 
 
 class BackupStatus(Enum):
-    CREATING='CREATING'
     ACTIVE='ACTIVE'
-    DELETED='DELETED'
 
 
 class TableStatus(Enum):

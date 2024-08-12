@@ -16,6 +16,7 @@
         "auto_backup_status": "ENABLED",
         "table_status": "ACTIVE",
         "backup_schedule": "0 0 * * *",
+        "table_arn": "table_arn",
         "indexes": [
             {
                 "name": "index1",

@@ -3,10 +3,11 @@ from unittest.mock import Mock, patch
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
 from dacite import from_dict
+from datetime import datetime
 
 from tests.test_utils import TestUtils
 from model import  CustomerTableInfo
-from repository.customer_table_info_repository import CustomerTableInfoRepository
+from repository.customer_table_info_repository import CustomerTableInfoRepository, BackupJob
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton
@@ -22,19 +23,23 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
         self.aws_config = Mock()
         self.mock_dynamodb_resource = Mock()
         self.mock_dynamodb_client = Mock()
+        self.mock_dynamodb_backup_client = Mock()
         self.mock_table = Mock()
 
         Singleton.clear_instance(CustomerTableInfoRepository)
         with patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_dynamodb_resource') as mock_configure_resource, \
              patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_dynamodb_client') as mock_configure_client, \
+             patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_backup_client') as mock_configure_backup_client, \
              patch('repository.customer_table_info_repository.CustomerTableInfoRepository._CustomerTableInfoRepository__configure_table') as mock_configure_table:
 
             self.mock_configure_resource = mock_configure_resource
             self.mock_configure_client = mock_configure_client
+            self.mock_configure_backup_client = mock_configure_backup_client
             self.mock_configure_table = mock_configure_table
 
             self.mock_configure_resource.return_value = self.mock_dynamodb_resource
             self.mock_configure_client.return_value = self.mock_dynamodb_client
+            self.mock_configure_backup_client.return_value = self.mock_dynamodb_backup_client
             self.mock_configure_table.return_value = self.mock_table
 
             self.customer_table_info_repo = CustomerTableInfoRepository(self.app_config, self.aws_config)
@@ -260,3 +265,115 @@ class TestCustomerTableInfoRepository(unittest.TestCase):
             ExpressionAttributeValues={':desc': Customer_table_info.description},
             ReturnValues="ALL_NEW"
         )
+
+
+    def test_get_table_backup_jobs_happy_case(self):
+        """
+        Should return the correct backup jobs of the table.
+        """
+        table_name = 'originalTable1'
+        table_arn = 'table_arn'
+        mock_response_path = self.TEST_RESOURCE_PATH + "expected_backup_jobs_for_table_happy_case.json"
+        mock_response = TestUtils.get_file_content(mock_response_path)
+        mock_backup_jobs = mock_response['BackupJobs']
+        for mock_backup_job in mock_backup_jobs:
+            mock_backup_job['CreationDate'] = datetime.strptime(mock_backup_job['CreationDate'], '%Y-%m-%d %H:%M:%S%z')
+
+        # Sort the backup jobs by `CreationDate` in descending order
+        sorted_backup_jobs = sorted(
+            mock_backup_jobs,
+            key=lambda job: job['CreationDate'],
+            reverse=True
+        )
+        # Return the latest 10 backup jobs
+        latest_backup_jobs = sorted_backup_jobs[:10]
+
+        expected_backup_jobs = []
+        for backup_job in latest_backup_jobs:
+            creation_time = backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z')
+            expected_backup_jobs.append(BackupJob(id=backup_job['BackupJobId'],
+                                                        name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
+                                                        creation_time=creation_time,
+                                                        size=backup_job['BackupSizeInBytes'] / 1024))
+        self.mock_dynamodb_backup_client.list_backup_jobs.return_value = mock_response
+
+        result = self.customer_table_info_repo.get_table_backup_jobs(table_name, table_arn)
+
+        self.mock_dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=table_arn)
+        self.assertEqual(result, expected_backup_jobs)
+
+
+    def test_get_table_backup_jobs_should_return_latest_ten_backup_jobs(self):
+        """
+        Should return the latest 10 backup jobs of the table when the list_backup_jobs api provides more than 10 backup jobs in respnose.
+        The list_backup_jobs returns backup jobs for maximum 30 days. Since our backup is schedule daily so it might return maximum
+        30 backup jobs in response. Since our backup stores only for 10 days, so latest 10 backup jobs is retrieved.
+        """
+        table_name = 'originalTable1'
+        table_arn = 'table_arn'
+        mock_response_path = self.TEST_RESOURCE_PATH + "backup_jobs_with_length_more_than_ten.json"
+        mock_response = TestUtils.get_file_content(mock_response_path)
+        mock_backup_jobs = mock_response['BackupJobs']
+        for mock_backup_job in mock_backup_jobs:
+            mock_backup_job['CreationDate'] = datetime.strptime(mock_backup_job['CreationDate'], '%Y-%m-%d %H:%M:%S%z')
+
+        # Sort the backup jobs by `CreationDate` in descending order
+        sorted_backup_jobs = sorted(
+            mock_backup_jobs,
+            key=lambda job: job['CreationDate'],
+            reverse=True
+        )
+        # Return the latest 10 backup jobs
+        latest_backup_jobs = sorted_backup_jobs[:10]
+
+        expected_backup_jobs = []
+        for backup_job in latest_backup_jobs:
+            creation_time = backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z')
+            expected_backup_jobs.append(BackupJob(id=backup_job['BackupJobId'],
+                                                        name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
+                                                        creation_time=creation_time,
+                                                        size=backup_job['BackupSizeInBytes'] / 1024))
+        self.mock_dynamodb_backup_client.list_backup_jobs.return_value = mock_response
+
+        result = self.customer_table_info_repo.get_table_backup_jobs(table_name, table_arn)
+
+        self.mock_dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=table_arn)
+        self.assertEqual(result, expected_backup_jobs)
+        self.assertEqual(10, len(result))
+
+
+    def test_get_table_backup_jobs_return_empty_backup_jobs(self):
+        """
+        Should return an empty backup jobs when there are no backup jobs available for the table.
+        """
+        table_name = 'originalTable1'
+        table_arn = 'table_arn'
+        self.mock_dynamodb_backup_client.list_backup_jobs.return_value = {'BackupJobs': [], 'NextToken': None}
+
+        result = self.customer_table_info_repo.get_table_backup_jobs(table_name, table_arn)
+
+        self.mock_dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=table_arn)
+        self.assertEqual(result, [])
+
+
+    def test_get_table_backup_jobs_with_service_exception(self):
+        """
+        Test case for handling an exception while retrieving the backup jobs.
+
+        Case: A ClientError occurs during the list_backup_jobs operation. The error might ocuur due to several reasons
+        for example, when invalid table arn is provided.
+
+        Expected Result: The method raises a ServiceException indicating failure to retreive backup jobs.
+        """
+        table_name = 'originalTable1'
+        table_arn = 'table_arn'
+        self.mock_dynamodb_backup_client.list_backup_jobs.side_effect = ClientError(
+            {'Error': {'Message': 'Invalid parameter'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'list_backup_jobs')
+
+        with self.assertRaises(ServiceException) as context:
+            self.customer_table_info_repo.get_table_backup_jobs(table_name, table_arn)
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to retrieve backup jobs of customer table')
+        self.mock_dynamodb_backup_client.list_backup_jobs.assert_called_once_with(ByResourceArn=table_arn)

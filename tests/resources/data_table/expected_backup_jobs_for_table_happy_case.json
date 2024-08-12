@@ -1,0 +1,15 @@
+{
+    "BackupJobs": [
+        {
+            "BackupJobId": "93809C14-B670-6957-2C8C-FF8349A8A596",
+            "CreationDate": "2024-07-09 03:45:00+05:45",
+            "BackupSizeInBytes": 1048576
+        },
+        {
+            "BackupJobId": "3A87F692-070A-FF5E-DC0C-8A43AA21C5BD",
+            "CreationDate": "2024-07-09 03:45:00+05:45",
+            "BackupSizeInBytes": 2097152
+        }
+    ],
+    "NextToken": null
+}

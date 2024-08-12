@@ -3,7 +3,7 @@ import base64
 
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from model import ListTableResponse, UpdateTableRequest, CustomerTableInfo, CustomerTableItem, CustomerTableItemPagination
+from model import ListTableResponse, UpdateTableRequest, CustomerTableInfo, CustomerTableItem, CustomerTableItemPagination, BackupJob
 from repository import CustomerTableInfoRepository, CustomerTableRepository
 
 log = common_ctrl.log
@@ -92,6 +92,26 @@ class DataTableService(metaclass=Singleton):
             # table size equals index size
             index.size = table_size
         return customer_table_info
+
+
+    def get_table_backup_jobs(self, owner_id:str, table_id:str) -> BackupJob:
+        """
+        Retrieve the backup jobs of a specific table by its owner_id and table_id.
+
+        Args:
+            owner_id (str): The ID of the owner of the table.
+            table_id (str): The ID of the table.
+
+        Returns:
+            list[BackupJob]: The backup jobs of dynamoDB table.
+
+        Raises:
+            ServiceException: If there is an error, retrieving the table item or backup jobs.
+        """
+        log.info('Retrieving customer table backup jobs. owner_id: %s, table_id: %s', owner_id, table_id)
+        customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
+        backup_jobs = self.customer_table_info_repository.get_table_backup_jobs(customer_table_info.original_table_name, customer_table_info.table_arn)
+        return backup_jobs
 
 
     def get_table_items(self, owner_id:str, table_id:str, size:int, last_evaluated_key:str|None=None) -> CustomerTableItem:

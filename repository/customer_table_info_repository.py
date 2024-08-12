@@ -6,10 +6,11 @@ from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
 from dacite import from_dict
 from utils import DataTypeUtils
+from datetime import datetime
 
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
-from model import CustomerTableInfo
+from model import CustomerTableInfo, BackupJob
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton
@@ -30,6 +31,9 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         DynamoDB through API calls. This is particularly useful for operations that are not directly supported by
         the resource interface, such as the describe_table operation used in the 'get_table_size' method.
 
+        DynamoDB Backup Client: The DynamoDB provides a low-level client representing AWS Backup, which simplifies the creation,
+        migration, restoration, and deletion of backups, etc.
+
         Args:
             app_config (AppConfig): The application configuration object.
             aws_config (AWSConfig): The AWS configuration object.
@@ -38,6 +42,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         self.app_config = app_config
         self.dynamodb_resource = self.__configure_dynamodb_resource()
         self.dynamodb_client = self.__configure_dynamodb_client()
+        self.dynamodb_backup_client = self.__configure_backup_client()
         self.table = self.__configure_table()
 
 
@@ -157,6 +162,48 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to update customer table description')
 
 
+    def get_table_backup_jobs(self, table_name:str, table_arn:str) -> list[BackupJob]:
+        """
+        Get the backup jobs of a specific DynamoDB table.
+
+        Args:
+            table_name (str): The name of the DynamoDB table to retrieve backup jobs for.
+            table_arn (str): The Amazon Resource Name (ARN) of the DynamoDB table to retrieve backup jobs for.
+
+        Returns:
+            list[BackupJob]: The latest 10 backup jobs of the DynamoDB table.
+
+        Raises:
+            ServiceException: If there is an error, retrieving the backup jobs of dynamoDB table.
+        """
+        try:
+            log.info('Retrieving backup jobs of customer table. table_name: %s', table_name)
+            backup_jobs_response = self.dynamodb_backup_client.list_backup_jobs(ByResourceArn=table_arn)
+            # the response contains the list of BackupJob i.e. response ={'BackupJobs': [{details}]}
+            backup_jobs = backup_jobs_response.get('BackupJobs')
+
+            # Sort the backup jobs by `CreationDate` in descending order
+            sorted_backup_jobs = sorted(
+                backup_jobs,
+                key=lambda job: job['CreationDate'],
+                reverse=True
+            )
+            # Return the latest 10 backup jobs
+            latest_backup_jobs = sorted_backup_jobs[:10]
+            backup_jobs_to_return = [
+                BackupJob(id=backup_job['BackupJobId'],
+                             name=table_name + '_' + backup_job['CreationDate'].strftime('%Y%m%d%H%M%S'),
+                             creation_time=backup_job['CreationDate'].strftime('%Y-%m-%d %H:%M:%S%z'),
+                             size=backup_job['BackupSizeInBytes'] / 1024)
+                for backup_job in latest_backup_jobs
+            ]
+            log.info('Successfully retrieved backup jobs of customer table. table_name: %s', table_name)
+            return backup_jobs_to_return
+        except ClientError as e:
+            log.exception('Failed to retrieve backup jobs of customer table. table_name: %s', table_name)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve backup jobs of customer table')
+
+
     def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:
         """
         Configures and returns a DynamoDB service resource.
@@ -183,6 +230,17 @@ class CustomerTableInfoRepository(metaclass=Singleton):
         else:
             config = Config(region_name=self.aws_config.dynamodb_aws_region)
             return boto3.client('dynamodb', config=config)
+
+
+    def __configure_backup_client(self) -> boto3.client:
+        """
+        Configures and returns a DynamoDB backup client.
+
+        Returns:
+            boto3.client: The DynamoDB backup client.
+        """
+        config = Config(region_name=self.aws_config.dynamodb_aws_region)
+        return boto3.client('backup', config=config)
 
 
     def __configure_table(self):
