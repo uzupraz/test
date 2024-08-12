@@ -9,6 +9,8 @@ from service import DataTableService
 from .common_controller import server_response
 from enums import APIStatus
 from model import User, UpdateTableRequest
+from exception import ServiceException
+from enums import ServiceStatus
 
 api = Namespace(
     name="Data Table API",
@@ -199,6 +201,10 @@ class DataTableItemsResource (Resource):
         user = from_dict(User, g.get('user'))
         item = request.json
 
+        if not user.has_permission('DATA_TABLE_CREATE_ITEM'):
+            log.warn('User has no permission to post item to table. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to post item to table')
+        
         response_payload = data_table_service.insert_item(
             owner_id=user.organization_id,
             table_id=table_id,

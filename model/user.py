@@ -1,3 +1,5 @@
+import json
+
 from dataclasses import dataclass
 
 
@@ -5,6 +7,8 @@ from dataclasses import dataclass
 class User:
     sub: str
     organization_id: str
+    permissions: list
+
 
     @classmethod
     def from_authorizer_claims(cls, claims: dict) -> 'User':
@@ -15,7 +19,11 @@ class User:
         Returns:
             User: A new instance of the `User` class.
         """
-        return cls(claims['sub'], claims['custom:organizationId'])
+        permissions = claims.get('custom:permissions', [])
+        if isinstance(permissions, str):
+            permissions = json.loads(permissions)
+
+        return cls(claims['sub'], claims['custom:organizationId'], permissions)
 
 
     def has_file_ownership(self, file_owner_id: str):
@@ -29,3 +37,22 @@ class User:
             bool: True if the user has ownership, False otherwise.
         """
         return self.organization_id == file_owner_id
+    
+
+    def has_permission(self, permission) -> bool:
+        """
+        Checks if the requesting user has requested permission or not.
+
+        Args:
+            permission (str): The requesting permission.
+
+        Returns:
+            bool: True if the user has permission, False otherwise.
+        """
+        expected_permission = f'{self.organization_id}:{permission}'
+        generic_permission = f'{self.organization_id}:*'
+
+        if expected_permission in self.permissions or generic_permission in self.permissions:
+            return True
+            
+        return False
