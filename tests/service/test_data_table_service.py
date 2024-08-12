@@ -863,10 +863,6 @@ class TestDataTableService(unittest.TestCase):
         )
 
         # Assert the result
-        self.customer_table_info_repo.get_table_item.assert_called_once_with(
-            owner_id,
-            table_id
-        )
         self.assertEqual(result['partition_key'], 'partition_key')
         self.assertEqual(result['sort_key'], 'sort_key')
         self.assertEqual(result['data'], 'sample data')
@@ -967,6 +963,10 @@ class TestDataTableService(unittest.TestCase):
         with self.assertRaises(ServiceException) as context:
             self.data_table_service.create_item(owner_id, table_id, item)
 
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(
+            owner_id,
+            table_id
+        )
         self.assertEqual(context.exception.status_code, 404)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.message, 'Table not found')

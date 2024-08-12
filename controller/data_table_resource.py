@@ -90,10 +90,10 @@ customer_table_item_response_dto = api.inherit('Table item response',server_resp
     })
 })
 
-customer_table_create_item_request_dto = fields.Raw(description='The item to create in dictionary format')
+customer_table_create_item_request_dto = fields.Raw(description='The item to create')
 
-customer_table_create_item_response_dto = api.inherit('Customer table insert response',server_response, {
-    'payload': fields.Raw(description='The created item in dictionary format')
+customer_table_create_item_response_dto = api.inherit('Create item response',server_response, {
+    'payload': fields.Raw(description='The created item')
 })
 
 
@@ -193,8 +193,8 @@ class DataTableItemsResource (Resource):
         return ServerResponse.success(payload=response_payload), 200
     
 
-    @api.doc(description='Add an item to the specified table.')
-    @api.expect(customer_table_create_item_request_dto, description='The item to create in dictionary format')
+    @api.doc(description='Create')
+    @api.expect(customer_table_create_item_request_dto, description='The item to create')
     @api.marshal_with(customer_table_create_item_response_dto, skip_none=True)
     def post(self, table_id: str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
