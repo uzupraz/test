@@ -69,9 +69,9 @@ class CustomerTableRepository(metaclass=Singleton):
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to retrieve table items')
     
     
-    def insert_item(self, table_name: str, item: dict[str, any]) -> dict[str,any]:
+    def create_item(self, table_name: str, item: dict[str, any]) -> dict[str,any]:
         """
-        Inserts an item into the specified DynamoDB table.
+        Creates an item into the specified DynamoDB table.
 
         Args:
             table_name (str): The name of the DynamoDB table.

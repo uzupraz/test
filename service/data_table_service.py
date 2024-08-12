@@ -159,9 +159,9 @@ class DataTableService(metaclass=Singleton):
         )
 
 
-    def insert_item(self, owner_id:str, table_id:str, item:any) -> dict[str,any]:
+    def create_item(self, owner_id:str, table_id:str, item:any) -> dict[str,any]:
         """
-        Get the contents of the table with provided table_id.
+        Create item in provided table_id.
 
         Args:
             owner_id (str): The owner of the table.
@@ -196,7 +196,7 @@ class DataTableService(metaclass=Singleton):
         # Appending expiration date in item
         item['expiration_date'] = expiration_date
 
-        return self.customer_table_repository.insert_item(
+        return self.customer_table_repository.create_item(
             table_name=customer_table_info.original_table_name,
             item=item
         )

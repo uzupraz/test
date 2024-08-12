@@ -155,7 +155,7 @@ class TestCustomerTableRepository(unittest.TestCase):
         mock_table.scan.assert_called_once_with(Limit=limit)
 
     
-    def test_insert_item_success_case(self):
+    def test_create_item_success_case(self):
         """
         Test case for successfully inserting an item into the DynamoDB table.
         """
@@ -172,7 +172,7 @@ class TestCustomerTableRepository(unittest.TestCase):
         mock_table.put_item.return_value = {}  # Mocking successful put_item response
 
         # Call the method under test
-        result = self.customer_table_repository.insert_item(table_name, item)
+        result = self.customer_table_repository.create_item(table_name, item)
 
         # Assertions
         self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
@@ -180,9 +180,9 @@ class TestCustomerTableRepository(unittest.TestCase):
         self.assertEqual(result, item)
 
 
-    def test_insert_item_throws_service_exception(self):
+    def test_create_item_throws_service_exception(self):
         """
-        Test case for handling ClientError while inserting an item into the DynamoDB table.
+        Test case for handling ClientError while creating an item into the DynamoDB table.
         """
         table_name = 'TestTable'
         item = {
@@ -200,7 +200,7 @@ class TestCustomerTableRepository(unittest.TestCase):
 
         # Call the method under test and assert exception
         with self.assertRaises(ServiceException) as context:
-            self.customer_table_repository.insert_item(table_name, item)
+            self.customer_table_repository.create_item(table_name, item)
 
         # Assertions
         self.assertEqual(context.exception.status_code, 500)

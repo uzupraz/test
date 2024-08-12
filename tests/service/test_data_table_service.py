@@ -827,9 +827,9 @@ class TestDataTableService(unittest.TestCase):
         mock_dynamodb_resource_table.scan.assert_called_once_with(Limit=size)
 
 
-    def test_insert_item_success_case(self):
+    def test_create_item_success_case(self):
         """
-        Test case for inserting an item into a table successfully.
+        Test case for creating an item into a table successfully.
 
         Case: The item is valid and the table exists.
         Expected Result: The item is inserted successfully and returned with an expiration date.
@@ -844,15 +844,15 @@ class TestDataTableService(unittest.TestCase):
         customer_table_info_item = customer_table_info_item.get("Item", {})
         self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
         
-        # Mock the insert_item response
-        self.customer_table_repo.insert_item = MagicMock(return_value=item)
+        # Mock the create_item response
+        self.customer_table_repo.create_item = MagicMock(return_value=item)
 
-        # Call the insert_item method
-        result = self.data_table_service.insert_item(owner_id, table_id, item)
+        # Call the create_item method
+        result = self.data_table_service.create_item(owner_id, table_id, item)
 
         # Assert that the repository methods were called with the correct arguments
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
-        self.customer_table_repo.insert_item.assert_called_once_with(
+        self.customer_table_repo.create_item.assert_called_once_with(
             table_name='OriginalTable1',
             item={
                 'partition_key': 'partition_key', 
@@ -863,13 +863,17 @@ class TestDataTableService(unittest.TestCase):
         )
 
         # Assert the result
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(
+            owner_id,
+            table_id
+        )
         self.assertEqual(result['partition_key'], 'partition_key')
         self.assertEqual(result['sort_key'], 'sort_key')
         self.assertEqual(result['data'], 'sample data')
         self.assertIn('expiration_date', result)
 
 
-    def test_insert_item_raises_exception_on_invalid_item(self):
+    def test_create_item_raises_exception_on_invalid_item(self):
         """
         Test case for handling invalid item input.
 
@@ -881,14 +885,14 @@ class TestDataTableService(unittest.TestCase):
         item = ['invalid', 'item']  # Invalid item type (not a dict)
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.insert_item(owner_id, table_id, item)
+            self.data_table_service.create_item(owner_id, table_id, item)
 
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.message, 'Invalid input data. Expected a JSON object with string keys.')
 
 
-    def test_insert_item_raises_exception_on_missing_partition_key(self):
+    def test_create_item_raises_exception_on_missing_partition_key(self):
         """
         Test case for handling item with missing 'partition' key.
 
@@ -906,14 +910,18 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.insert_item(owner_id, table_id, item)
+            self.data_table_service.create_item(owner_id, table_id, item)
 
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(
+            owner_id,
+            table_id
+        )
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.message, 'Missing partition key in input item')
 
 
-    def test_insert_item_raises_exception_on_missing_sort_key(self):
+    def test_create_item_raises_exception_on_missing_sort_key(self):
         """
         Test case for handling item with missing 'sort' key.
 
@@ -931,14 +939,18 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.insert_item(owner_id, table_id, item)
+            self.data_table_service.create_item(owner_id, table_id, item)
 
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(
+            owner_id,
+            table_id
+        )
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.message, 'Missing sort key in input item')
 
 
-    def test_insert_item_raises_exception_on_table_not_found(self):
+    def test_create_item_raises_exception_on_table_not_found(self):
         """
         Test case for handling the scenario where the table is not found.
 
@@ -953,7 +965,7 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.get_table_item = MagicMock(side_effect=ServiceException(404, ServiceStatus.FAILURE, 'Table not found'))
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.insert_item(owner_id, table_id, item)
+            self.data_table_service.create_item(owner_id, table_id, item)
 
         self.assertEqual(context.exception.status_code, 404)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
