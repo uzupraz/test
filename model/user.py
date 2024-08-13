@@ -2,12 +2,14 @@ import json
 
 from dataclasses import dataclass
 
+from enums import ServicePermissions
+
 
 @dataclass
 class User:
     sub: str
     organization_id: str
-    permissions: list
+    permissions: list[str]
 
 
     @classmethod
@@ -39,7 +41,7 @@ class User:
         return self.organization_id == file_owner_id
     
 
-    def has_permission(self, permission) -> bool:
+    def has_permission(self, permission:ServicePermissions) -> bool:
         """
         Checks if the requesting user has requested permission or not.
 

@@ -10,7 +10,7 @@ from .common_controller import server_response
 from enums import APIStatus
 from model import User, UpdateTableRequest
 from exception import ServiceException
-from enums import ServiceStatus
+from enums import ServiceStatus, ServicePermissions
 
 api = Namespace(
     name="Data Table API",
@@ -165,9 +165,7 @@ class TableBackupsResource(Resource):
 
 @api.route('/tables/<string:table_id>/items')
 class DataTableItemsResource (Resource):
-    DATA_TABLE_CREATE_ITEM = 'DATA_TABLE_CREATE_ITEM'
-
-
+    
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
 
@@ -202,7 +200,7 @@ class DataTableItemsResource (Resource):
         user = from_dict(User, g.get('user'))
         item = request.json
 
-        if not user.has_permission(self.DATA_TABLE_CREATE_ITEM):
+        if not user.has_permission(ServicePermissions.DATA_TABLE_CREATE_ITEM.value):
             log.warn('User has no permission to create item in table. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
             raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create item in table')
         

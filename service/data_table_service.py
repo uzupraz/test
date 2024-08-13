@@ -159,14 +159,14 @@ class DataTableService(metaclass=Singleton):
         )
 
 
-    def create_item(self, owner_id:str, table_id:str, item:any) -> dict[str,any]:
+    def create_item(self, owner_id:str, table_id:str, item:dict[str, any]) -> dict[str,any]:
         """
         Create item in provided table_id.
 
         Args:
             owner_id (str): The owner of the table.
             table_id (str): The ID of the table.
-            item (Any): Item to store into customer table.
+            item (dict): Item to store into customer table.
         
         Returns:
             dict[str, any]: The inserted item.

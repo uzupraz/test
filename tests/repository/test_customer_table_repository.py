@@ -173,7 +173,7 @@ class TestCustomerTableRepository(unittest.TestCase):
 
         # Call the method under test
         result = self.customer_table_repository.create_item(table_name, item)
-
+        
         # Assertions
         self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
         mock_table.put_item.assert_called_once_with(Item=item)
