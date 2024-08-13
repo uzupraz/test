@@ -81,13 +81,13 @@ backups_response_dto = api.inherit('List of Backup Response', server_response, {
 })
 
 customer_table_item_response_dto = api.inherit('Table item response',server_response, {
-    'payload': api.model('Table items', {
-        'items': fields.List(fields.Nested(any), description='List of items'),
+    'payload': fields.Nested(api.model('Table items', {
+        'items': fields.List(fields.Raw(description='Item'), description='List of items'),
         'pagination': fields.Nested(api.model('Pagination parameters', {
-            'size': fields.Integer(description='Items per page'),
-            'last_evaluated_key': fields.String(required=False, description="A key which was evaluated in previous request & will be used as exclusive start key in current request")
-        }))
-    })
+            'size': fields.Integer(description='Items per page', required=True),
+            'last_evaluated_key': fields.String(description="A key which was evaluated in previous request & will be used as exclusive start key in current request", required=False)
+        }), skip_none=True)
+    }))
 })
 
 customer_table_create_item_request_dto = fields.Raw(description='The item to create')
@@ -170,7 +170,7 @@ class DataTableItemsResource (Resource):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(size='Get the table items of the provided table id.')
+    @api.doc(description='Get the table items of the provided table id.')
     @api.param('size', 'Number of items to retrieve', type=int, default=10)
     @api.param('last_evaluated_key', 'Pagination key for the next set of items', type=str)
     @api.marshal_with(customer_table_item_response_dto, skip_none=True)
