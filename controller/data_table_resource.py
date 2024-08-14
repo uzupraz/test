@@ -145,6 +145,28 @@ class DataTableResource (Resource):
         return ServerResponse.success(payload=table_details), 200
 
 
+    @api.doc(description='Create')
+    @api.expect(customer_table_create_item_request_dto, description='The item to create')
+    @api.marshal_with(customer_table_create_item_response_dto, skip_none=True)
+    def post(self, table_id: str):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+
+        user = from_dict(User, g.get('user'))
+        item = request.json
+
+        if not user.has_permission(ServicePermissions.DATA_TABLE_CREATE_ITEM.value):
+            log.warn('User has no permission to create item in table. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create item in table')
+        
+        response_payload = data_table_service.create_item(
+            owner_id=user.organization_id,
+            table_id=table_id,
+            item=item
+        )
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=response_payload), 201
+
+
 @api.route('/tables/<string:table_id>/backups')
 class TableBackupsResource(Resource):
 
@@ -189,25 +211,3 @@ class DataTableItemsResource (Resource):
         )
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=response_payload), 200
-    
-
-    @api.doc(description='Create')
-    @api.expect(customer_table_create_item_request_dto, description='The item to create')
-    @api.marshal_with(customer_table_create_item_response_dto, skip_none=True)
-    def post(self, table_id: str):
-        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-
-        user = from_dict(User, g.get('user'))
-        item = request.json
-
-        if not user.has_permission(ServicePermissions.DATA_TABLE_CREATE_ITEM.value):
-            log.warn('User has no permission to create item in table. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
-            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create item in table')
-        
-        response_payload = data_table_service.create_item(
-            owner_id=user.organization_id,
-            table_id=table_id,
-            item=item
-        )
-        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
-        return ServerResponse.success(payload=response_payload), 201
