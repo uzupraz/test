@@ -200,3 +200,33 @@ class DataTableService(metaclass=Singleton):
             table_name=customer_table_info.original_table_name,
             item=item
         )
+    
+
+    def delete_item(self, owner_id: str, table_id: str, key: str) -> None:
+        """
+        Delete an item from the specified table using the partition key value.
+
+        Args:
+            owner_id (str): The owner of the table.
+            table_id (str): The ID of the table.
+            key (str): The value of the partition key for the item to delete.
+
+        Raises:
+            ServiceException: If the deletion fails or validation fails.
+        """
+        log.info('Validating key for deletion. owner_id: %s, table_id: %s', owner_id, table_id)
+
+        # Check if the table exists and retrieve its information
+        customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
+        
+        # Construct the key dictionary for deletion
+        key_dict = {
+            customer_table_info.partition_key: key
+        }
+
+        # Proceed to delete the item using the repository layer
+        self.customer_table_repository.delete_item(
+            table_name=customer_table_info.original_table_name,
+            key=key_dict
+        )
+        log.info('Successfully deleted item from table. owner_id: %s, table_id: %s', owner_id, table_id)

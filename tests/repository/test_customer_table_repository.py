@@ -208,3 +208,49 @@ class TestCustomerTableRepository(unittest.TestCase):
         self.assertEqual(context.exception.message, 'Failed to insert item into table')
         self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
         mock_table.put_item.assert_called_once_with(Item=item)
+
+
+    def test_delete_item_success_case(self):
+        """
+        Test case for successfully deleting an item from the DynamoDB table.
+        """
+        table_name = 'TestTable'
+        key = {'id': '12345'}
+
+        # Mock DynamoDB table
+        mock_table = MagicMock()
+        self.mock_dynamodb_resource.Table.return_value = mock_table
+        mock_table.delete_item.return_value = {}  # Mocking successful delete_item response
+
+        # Call the method under test
+        self.customer_table_repository.delete_item(table_name, key)
+        
+        # Assertions
+        self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
+        mock_table.delete_item.assert_called_once_with(Key=key)
+
+
+    def test_delete_item_throws_service_exception(self):
+        """
+        Test case for handling ClientError while deleting an item from the DynamoDB table.
+        """
+        table_name = 'TestTable'
+        key = {'id': '12345'}
+
+        # Mock DynamoDB table
+        mock_table = MagicMock()
+        self.mock_dynamodb_resource.Table.return_value = mock_table
+        mock_table.delete_item.side_effect = ClientError(
+            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 500}}, 'delete_item'
+        )
+
+        # Call the method under test and assert exception
+        with self.assertRaises(ServiceException) as context:
+            self.customer_table_repository.delete_item(table_name, key)
+
+        # Assertions
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to delete item from table')
+        self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
+        mock_table.delete_item.assert_called_once_with(Key=key)
