@@ -213,7 +213,7 @@ class DataTableItemsResource (Resource):
         return ServerResponse.success(payload=response_payload), 200
 
 
-@api.route('/tables/<string:table_id>/<string:partition_key>')
+@api.route('/tables/<string:table_id>/items/<string:partition_key>')
 class DataTableItemResource (Resource):
     
     def __init__(self, api=None, *args, **kwargs):
