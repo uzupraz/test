@@ -984,7 +984,6 @@ class TestDataTableService(unittest.TestCase):
         key = 'item001'
 
         # Mock the customer table info repository response
-        # Mock the customer table info repository response
         mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
         customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
         customer_table_info_item = customer_table_info_item.get("Item", {})
@@ -1038,7 +1037,6 @@ class TestDataTableService(unittest.TestCase):
         table_id = 'table123'
         key = 'item001'
 
-        # Mock the customer table info repository response
         # Mock the customer table info repository response
         mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
         customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)

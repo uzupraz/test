@@ -155,7 +155,7 @@ class DataTableResource (Resource):
         item = request.json
 
         if not user.has_permission(ServicePermissions.DATA_TABLE_CREATE_ITEM.value):
-            log.warn('User has no permission to create item in table. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            log.warn('User has no permission to create item in table. api: %s, method: %s, status: %s, table_id: %s', request.url, request.method, APIStatus.FAILURE.value, table_id)
             raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create item in table')
         
         response_payload = data_table_service.create_item(
@@ -227,7 +227,7 @@ class DataTableItemResource(Resource):
         user = from_dict(User, g.get('user'))
 
         if not user.has_permission(ServicePermissions.DATA_TABLE_DELETE_ITEM.value):
-            log.warning('User has no permission to delete item in table. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            log.warning('User has no permission to delete item in table. api: %s, method: %s, status: %s, table_id: %s', request.url, request.method, APIStatus.FAILURE.value, table_id)
             raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to delete item in table')
 
         data_table_service.delete_item(
