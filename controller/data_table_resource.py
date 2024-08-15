@@ -213,17 +213,19 @@ class DataTableItemsResource (Resource):
         return ServerResponse.success(payload=response_payload), 200
 
 
-@api.route('/tables/<string:table_id>/items/<string:partition_key_value>')
-class DataTableItemResource(Resource):
+@api.route('/tables/<string:table_id>/<string:partition_key>')
+class DataTableItemResource (Resource):
     
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description='Delete an item from the table using the partition key.')
-    def delete(self, table_id: str, partition_key_value: str):
+    @api.doc(description='Delete an item from the table using the partition key and sort key.')
+    @api.param('sort_key', 'Sort key', type=str)
+    def delete(self, table_id: str, partition_key: str):
         log.info('Received API Request for deletion. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
+        sort_key = request.args.get('sort_key', default=None, type=str)
         user = from_dict(User, g.get('user'))
 
         if not user.has_permission(ServicePermissions.DATA_TABLE_DELETE_ITEM.value):
@@ -233,7 +235,8 @@ class DataTableItemResource(Resource):
         data_table_service.delete_item(
             owner_id=user.organization_id,
             table_id=table_id,
-            key=partition_key_value
+            partition_key_value=partition_key,
+            sort_key_value=sort_key
         )
         log.info('Successfully deleted item from table. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.response(

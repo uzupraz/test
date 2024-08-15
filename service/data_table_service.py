@@ -202,14 +202,15 @@ class DataTableService(metaclass=Singleton):
         )
     
 
-    def delete_item(self, owner_id: str, table_id: str, key: str) -> None:
+    def delete_item(self, owner_id: str, table_id: str, partition_key_value: str, sort_key_value: str|None = None) -> None:
         """
-        Delete an item from the specified table using the partition key value.
+        Delete an item from the specified table using the partition partition_key_value value.
 
         Args:
             owner_id (str): The owner of the table.
             table_id (str): The ID of the table.
-            key (str): The value of the partition key for the item to delete.
+            partition_key_value (str): The value of the partition partition_key_value for the item to delete.
+            sort_key_value (str): The value of the sort sort_key_value for the item to delete.
 
         Raises:
             ServiceException: If the deletion fails or validation fails.
@@ -219,10 +220,18 @@ class DataTableService(metaclass=Singleton):
         # Check if the table exists and retrieve its information
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
         
-        # Construct the key dictionary for deletion
+        # Checking if sort_key exist or not
+        if customer_table_info.sort_key and not sort_key_value:
+            log.error('Sort key is required but not provided in input. owner_id: %s, table_id: %s', owner_id, table_id)
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Sort key is required but not provided in input')
+
+        # Construct the partition_key_value dictionary for deletion
         key_dict = {
-            customer_table_info.partition_key: key
+            customer_table_info.partition_key: partition_key_value
         }
+
+        if sort_key_value and customer_table_info.sort_key:
+            key_dict[customer_table_info.sort_key] = sort_key_value
 
         # Proceed to delete the item using the repository layer
         self.customer_table_repository.delete_item(

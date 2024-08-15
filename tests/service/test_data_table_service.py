@@ -981,7 +981,40 @@ class TestDataTableService(unittest.TestCase):
         """
         owner_id = 'owner123'
         table_id = 'table123'
-        key = 'item001'
+        partition_key_value = 'item001'
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        customer_table_info_item['sort_key'] = None
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        # Mock the delete_item method to not raise any exception
+        self.customer_table_repo.delete_item = MagicMock(return_value=None)
+
+        # Call the delete_item method
+        self.data_table_service.delete_item(owner_id, table_id, partition_key_value)
+
+        # Assert that the repository methods were called with the correct arguments
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.customer_table_repo.delete_item.assert_called_once_with(
+            table_name='OriginalTable1',
+            key={'partition_key': partition_key_value}
+        )
+
+
+    def test_delete_item_with_partition_key_and_sort_key_case(self):
+        """
+        Test case for successfully deleting an item from the table with both partition & sort key present.
+        
+        Case: The table exists and the item is successfully deleted.
+        Expected Result: The item is deleted without any exceptions.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        partition_key_value = 'item001'
+        sort_key_value = 'sort001'
 
         # Mock the customer table info repository response
         mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
@@ -993,13 +1026,13 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_repo.delete_item = MagicMock(return_value=None)
 
         # Call the delete_item method
-        self.data_table_service.delete_item(owner_id, table_id, key)
+        self.data_table_service.delete_item(owner_id, table_id, partition_key_value, sort_key_value)
 
         # Assert that the repository methods were called with the correct arguments
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
         self.customer_table_repo.delete_item.assert_called_once_with(
             table_name='OriginalTable1',
-            key={'partition_key': key}
+            key={'partition_key': partition_key_value, 'sort_key': sort_key_value}
         )
 
 
@@ -1035,24 +1068,25 @@ class TestDataTableService(unittest.TestCase):
         """
         owner_id = 'owner123'
         table_id = 'table123'
-        key = 'item001'
+        partition_key_value = 'item001'
 
         # Mock the customer table info repository response
         mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
         customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
         customer_table_info_item = customer_table_info_item.get("Item", {})
+        customer_table_info_item['sort_key'] = None
         self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
 
         # Mock the delete_item method to raise a ServiceException
         self.customer_table_repo.delete_item =  MagicMock(side_effect=ServiceException(500, ServiceStatus.FAILURE, 'Failed to delete item from table'))
 
         with self.assertRaises(ServiceException) as context:
-            self.data_table_service.delete_item(owner_id, table_id, key)
+            self.data_table_service.delete_item(owner_id, table_id, partition_key_value)
 
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
         self.customer_table_repo.delete_item.assert_called_once_with(
             table_name='OriginalTable1',
-            key={'partition_key': key}
+            key={'partition_key': partition_key_value}
         )
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
