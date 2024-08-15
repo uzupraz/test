@@ -204,7 +204,7 @@ class DataTableService(metaclass=Singleton):
 
     def delete_item(self, owner_id: str, table_id: str, partition_key_value: str, sort_key_value: str|None = None) -> None:
         """
-        Delete an item from the specified table using the partition partition_key_value value.
+        Delete an item from the specified table using the partition_key_value & sort_key_value.
 
         Args:
             owner_id (str): The owner of the table.

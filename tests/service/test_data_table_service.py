@@ -1059,6 +1059,32 @@ class TestDataTableService(unittest.TestCase):
         self.assertEqual(context.exception.message, 'Table not found')
 
 
+    def test_delete_item_raises_exception_when_sort_key_is_present_but_not_provided(self):
+        """
+        Test case for handling the scenario where item deletion fails when sort key is not provided but exist in customer info table.
+
+        Case: The deletion of the item fails due to sort key missing failure.
+        Expected Result: The method raises a ServiceException indicating the deletion failure.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        partition_key_value = 'item001'
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.delete_item(owner_id, table_id, partition_key_value)
+
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Sort key is required but not provided in input')
+
+
     def test_delete_item_raises_exception_on_deletion_failure(self):
         """
         Test case for handling the scenario where item deletion fails.
