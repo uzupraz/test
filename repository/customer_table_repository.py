@@ -92,6 +92,27 @@ class CustomerTableRepository(metaclass=Singleton):
         except ClientError:
             log.exception('Failed to insert item into table. table_name: %s', table_name)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to insert item into table')
+        
+    
+    def delete_item(self, table_name: str, key: dict[str, any]) -> None:
+        """
+        Deletes an item from the specified DynamoDB table.
+
+        Args:
+            table_name (str): The name of the DynamoDB table.
+            key (dict[str, any]): The key of the item to delete. This should match the table's primary key schema.
+
+        Raises:
+            ServiceException: If there is an issue deleting the item from the DynamoDB table.
+        """
+        log.info('Deleting item from table. table_name: %s, key: %s', table_name, key)
+        try:
+            table = self.dynamodb_resource.Table(table_name)
+            table.delete_item(Key=key)
+            log.info('Successfully deleted item from table. table_name: %s', table_name)
+        except ClientError:
+            log.exception('Failed to delete item from table. table_name: %s', table_name)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to delete item from table')
 
 
     def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:
