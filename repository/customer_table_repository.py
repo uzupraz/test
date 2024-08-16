@@ -3,6 +3,7 @@ import boto3.resources
 import boto3.resources.factory
 from botocore.config import Config
 from botocore.exceptions import ClientError
+from boto3.dynamodb.conditions import Key, And, Attr
 
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
@@ -113,6 +114,61 @@ class CustomerTableRepository(metaclass=Singleton):
         except ClientError:
             log.exception('Failed to delete item from table. table_name: %s', table_name)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to delete item from table')
+        
+
+    def query_item(self, table_name: str, partition: tuple[str,str], sort: tuple[str,str] | None, filters: dict[str, any] = None) -> dict:
+        """
+        Queries an item from the specified DynamoDB table using partition and sort keys, with optional filters.
+
+        Args:
+            table_name (str): The name of the DynamoDB table.
+            partition_key (str): The partition key of the item to query.
+            sort_key (str): The sort key of the item to query.
+            filters (dict[str, any]): Optional. A dictionary of additional attributes to filter by.
+
+        Returns:
+            dict: The queried items.
+
+        Raises:
+            ServiceException: If there is an issue querying the item from the DynamoDB table.
+        """
+        log.info('Querying item from table. table_name: %s, partition_key: %s, sort_key: %s, filters: %s', 
+                table_name, partition, sort, filters)
+        try:
+            partition_key, partition_key_value = partition
+
+            table = self.dynamodb_resource.Table(table_name)
+            key_condition = Key(partition_key).eq(partition_key_value)
+
+            if sort is not None:
+                sort_key, sort_key_value = sort
+                key_condition &= Key(sort_key).eq(sort_key_value)
+
+            # Prepare filter expression if filters are provided
+            filter_expression = None
+            if filters:
+                for k, v in filters.items():
+                    if filter_expression is None:
+                        filter_expression = Attr(k).eq(v)
+                    else:
+                        filter_expression &= Attr(k).eq(v)
+
+            query_params = {
+                'KeyConditionExpression': key_condition,
+            }
+            if filter_expression:
+                query_params['FilterExpression'] = filter_expression
+
+            response = table.query(**query_params)
+
+            items = response.get('Items', [])
+            if not items:
+                raise ServiceException(404, ServiceStatus.FAILURE, 'Item not found')
+            log.info('Successfully queried item from table. table_name: %s', table_name)
+            return items
+        except ClientError:
+            log.exception('Failed to query item from table. table_name: %s', table_name)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to query item from table')
 
 
     def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:

@@ -11,6 +11,7 @@ from enums import APIStatus
 from model import User, UpdateTableRequest
 from exception import ServiceException
 from enums import ServiceStatus, ServicePermissions
+from utils import Base64ConversionUtils
 
 api = Namespace(
     name="Data Table API",
@@ -209,6 +210,44 @@ class DataTableItemsResource (Resource):
             size=size,
             last_evaluated_key=last_evaluated_key
         )
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=response_payload), 200
+
+
+@api.route('/tables/<string:table_id>/query')
+class DataTableItemResource (Resource):
+    
+    def __init__(self, api=None, *args, **kwargs):
+        super().__init__(api, *args, **kwargs)
+
+    
+    @api.doc(description='Query items from the specified table using partition and sort keys, with optional attribute filters.')
+    @api.param('partition_key_value', 'The value of the partition key to query', type=str, required=True)
+    @api.param('sort_key_value', 'The value of the sort key to query (optional)', type=str)
+    @api.param('attribute_filters', 'JSON object with attribute filters (optional)', type=str)
+    @api.marshal_with(customer_table_item_response_dto, skip_none=True)
+    def get(self, table_id: str):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+
+        # Extract parameters from request arguments
+        partition_key_value = request.args.get('partition_key_value', type=str)
+        sort_key_value = request.args.get('sort_key_value', default=None, type=str)
+        
+        # Parse attribute filters from base64 string to dictionary
+        attribute_filters = request.args.get('attribute_filters', default=None, type=str)
+        attribute_filters = Base64ConversionUtils.decode_to_dict(attribute_filters) if attribute_filters else None
+
+        user = from_dict(User, g.get('user'))
+
+        # Query items using the service layer
+        response_payload = data_table_service.query_item(
+            owner_id=user.organization_id,
+            table_id=table_id,
+            partition_key_value=partition_key_value,
+            sort_key_value=sort_key_value,
+            attribute_filters=attribute_filters
+        )
+
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=response_payload), 200
 
