@@ -3,7 +3,7 @@ import boto3.resources
 import boto3.resources.factory
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from boto3.dynamodb.conditions import Key, And, Attr
+from boto3.dynamodb.conditions import Key, Attr
 
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl

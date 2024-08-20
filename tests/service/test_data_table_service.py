@@ -1117,3 +1117,170 @@ class TestDataTableService(unittest.TestCase):
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.message, 'Failed to delete item from table')
+
+
+    def test_query_item_with_partition_key_only(self):
+        """
+        Test querying items using only the partition key.
+        
+        Case: Only partition key is provided.
+        Expected Result: Items matching the partition key are returned.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        partition_key_value = 'item001'
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        customer_table_info_item['sort_key'] = None
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        # Mock the query_item method response
+        mock_items = [{'partition_key': partition_key_value, 'data': 'value1'}]
+        self.customer_table_repo.query_item = MagicMock(return_value=mock_items)
+
+        # Call the query_item method
+        result = self.data_table_service.query_item(owner_id, table_id, partition_key_value)
+
+        # Assertions
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.customer_table_repo.query_item.assert_called_once_with(
+            table_name='OriginalTable1',
+            partition=(customer_table_info_item['partition_key'], partition_key_value),
+            sort=None,
+            filters=None
+        )
+        self.assertEqual(result, mock_items)
+
+
+    def test_query_item_with_partition_and_sort_key(self):
+        """
+        Test querying items using both partition and sort keys.
+        
+        Case: Both partition and sort keys are provided.
+        Expected Result: Items matching the partition and sort keys are returned.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        partition_key_value = 'item001'
+        sort_key_value = 'sort001'
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        # Mock the query_item method response
+        mock_items = [{'partition_key': partition_key_value, 'sort_key': sort_key_value, 'data': 'value1'}]
+        self.customer_table_repo.query_item = MagicMock(return_value=mock_items)
+
+        # Call the query_item method
+        result = self.data_table_service.query_item(owner_id, table_id, partition_key_value, sort_key_value)
+
+        # Assertions
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.customer_table_repo.query_item.assert_called_once_with(
+            table_name='OriginalTable1',
+            partition=(customer_table_info_item['partition_key'], partition_key_value),
+            sort=(customer_table_info_item['sort_key'], sort_key_value),
+            filters=None
+        )
+        self.assertEqual(result, mock_items)
+
+
+    def test_query_item_with_filters(self):
+        """
+        Test querying items using partition and sort keys with additional filters.
+        
+        Case: Partition and sort keys are provided along with attribute filters.
+        Expected Result: Items matching the partition, sort keys, and filters are returned.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        partition_key_value = 'item001'
+        sort_key_value = 'sort001'
+        attribute_filters = {'status': 'active'}
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        # Mock the query_item method response
+        mock_items = [{'partition_key': partition_key_value, 'sort_key': sort_key_value, 'status': 'active', 'data': 'value1'}]
+        self.customer_table_repo.query_item = MagicMock(return_value=mock_items)
+
+        # Call the query_item method
+        result = self.data_table_service.query_item(owner_id, table_id, partition_key_value, sort_key_value, attribute_filters)
+
+        # Assertions
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.customer_table_repo.query_item.assert_called_once_with(
+            table_name='OriginalTable1',
+            partition=(customer_table_info_item['partition_key'], partition_key_value),
+            sort=(customer_table_info_item['sort_key'], sort_key_value),
+            filters=attribute_filters
+        )
+        self.assertEqual(result, mock_items)
+
+
+    def test_query_item_no_results(self):
+        """
+        Test querying items where no matching items are found.
+        
+        Case: No items match the provided keys and filters.
+        Expected Result: An empty list is returned.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        partition_key_value = 'nonexistent'
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        # Mock the query_item method to return no items
+        self.customer_table_repo.query_item = MagicMock(return_value=[])
+
+        # Call the query_item method
+        result = self.data_table_service.query_item(owner_id, table_id, partition_key_value)
+
+        # Assertions
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.customer_table_repo.query_item.assert_called_once_with(
+            table_name='OriginalTable1',
+            partition=(customer_table_info_item['partition_key'], partition_key_value),
+            sort=None,
+            filters=None
+        )
+        self.assertEqual(result, [])
+
+
+    def test_query_item_raises_exception_on_table_not_found(self):
+        """
+        Test handling the scenario where the table is not found in the repository.
+        
+        Case: The table does not exist in the repository.
+        Expected Result: A ServiceException is raised indicating the table was not found.
+        """
+        owner_id = 'owner123'
+        table_id = 'nonexistent_table'
+        partition_key_value = 'item001'
+
+        # Mock the get_table_item to raise an exception
+        self.customer_table_info_repo.get_table_item = MagicMock(side_effect=ServiceException(404, ServiceStatus.FAILURE, 'Table not found'))
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.query_item(owner_id, table_id, partition_key_value)
+
+        # Assertions
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.assertEqual(context.exception.status_code, 404)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Table not found')

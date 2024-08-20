@@ -271,7 +271,7 @@ class DataTableService(metaclass=Singleton):
         customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
 
         partition_key_tuple = (customer_table_info.partition_key, partition_key_value)
-        sort_key_tuple = (customer_table_info.sort_key, sort_key_value) if customer_table_info.sort_key else None
+        sort_key_tuple = (customer_table_info.sort_key, sort_key_value) if customer_table_info.sort_key and sort_key_value else None
 
         items = self.customer_table_repository.query_item(
             table_name=customer_table_info.original_table_name,
