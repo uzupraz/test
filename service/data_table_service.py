@@ -1,6 +1,9 @@
 import json
 import base64
+import datetime
 
+from exception import ServiceException
+from enums import ServiceStatus
 from controller import common_controller as common_ctrl
 from utils import Singleton
 from model import ListTableResponse, UpdateTableRequest, CustomerTableInfo, CustomerTableItem, CustomerTableItemPagination, BackupJob
@@ -154,3 +157,85 @@ class DataTableService(metaclass=Singleton):
                 last_evaluated_key=encoded_last_evaluated_key
             )
         )
+
+
+    def create_item(self, owner_id:str, table_id:str, item:dict[str, any]) -> dict[str,any]:
+        """
+        Create item in provided table_id.
+
+        Args:
+            owner_id (str): The owner of the table.
+            table_id (str): The ID of the table.
+            item (dict): Item to store into customer table.
+        
+        Returns:
+            dict[str, any]: The inserted item.
+        """
+        log.info('Validating item. owner_id: %s, table_id: %s', owner_id, table_id)
+        if not isinstance(item, dict) or not all(isinstance(k, str) for k in item.keys()):
+            log.error('Invalid input data. Expected a JSON object with string keys. owner_id: %s, table_id: %s', owner_id, table_id)
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Invalid input data. Expected a JSON object with string keys.')
+        
+        # Check if the table exists
+        customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
+        
+        # Key validation
+        if customer_table_info.partition_key not in item:
+            log.error('Missing partition key in input item. owner_id: %s, table_id: %s', owner_id, table_id)
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Missing partition key in input item')
+        
+        if customer_table_info.sort_key and customer_table_info.sort_key not in item:
+            log.error('Missing sort key in input item. owner_id: %s, table_id: %s', owner_id, table_id)
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Missing sort key in input item')
+
+        # Get the current epoch time
+        current_epoch = int(datetime.datetime.now().timestamp())
+        ninety_days_in_seconds = 90 * 24 * 60 * 60
+        expiration_date = int(current_epoch + ninety_days_in_seconds)
+        
+        # Appending expiration date in item
+        item['expiration_date'] = expiration_date
+
+        return self.customer_table_repository.create_item(
+            table_name=customer_table_info.original_table_name,
+            item=item
+        )
+    
+
+    def delete_item(self, owner_id: str, table_id: str, partition_key_value: str, sort_key_value: str|None = None) -> None:
+        """
+        Delete an item from the specified table using the partition_key_value & sort_key_value.
+
+        Args:
+            owner_id (str): The owner of the table.
+            table_id (str): The ID of the table.
+            partition_key_value (str): The value of the partition partition_key_value for the item to delete.
+            sort_key_value (str): The value of the sort sort_key_value for the item to delete.
+
+        Raises:
+            ServiceException: If the deletion fails or validation fails.
+        """
+        log.info('Validating key for deletion. owner_id: %s, table_id: %s', owner_id, table_id)
+
+        # Check if the table exists and retrieve its information
+        customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
+        
+        # Checking if sort_key exist or not
+        if customer_table_info.sort_key and not sort_key_value:
+            log.error('Sort key is required but not provided in input. owner_id: %s, table_id: %s', owner_id, table_id)
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Sort key is required but not provided in input')
+
+        # Construct the partition_key_value dictionary for deletion
+        key_dict = {
+            customer_table_info.partition_key: partition_key_value
+        }
+
+        if sort_key_value and customer_table_info.sort_key:
+            key_dict[customer_table_info.sort_key] = sort_key_value
+
+        # Proceed to delete the item using the repository layer
+        self.customer_table_repository.delete_item(
+            table_name=customer_table_info.original_table_name,
+            key=key_dict
+        )
+        log.info('Successfully deleted item from table. owner_id: %s, table_id: %s', owner_id, table_id)

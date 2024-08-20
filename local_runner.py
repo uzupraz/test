@@ -5,6 +5,7 @@ load_dotenv(override=True)
 
 from flask import Flask
 import flask_cors
+import json
 
 from controller import api
 from configuration import AppConfig
@@ -40,7 +41,8 @@ if __name__ == '__main__':
                         "authorizer": {
                             "claims": {
                                 "sub": "this_is_owner_id",
-                                "custom:organizationId": "this_is_organization_id"
+                                "custom:organizationId": "this_is_organization_id",
+                                "custom:permissions": json.dumps(['this_is_organization_id:this_is_permission'])
                             }
                         }
                     }

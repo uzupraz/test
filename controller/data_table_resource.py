@@ -9,6 +9,8 @@ from service import DataTableService
 from .common_controller import server_response
 from enums import APIStatus
 from model import User, UpdateTableRequest
+from exception import ServiceException
+from enums import ServiceStatus, ServicePermissions
 
 api = Namespace(
     name="Data Table API",
@@ -79,13 +81,19 @@ backups_response_dto = api.inherit('List of Backup Response', server_response, {
 })
 
 customer_table_item_response_dto = api.inherit('Table item response',server_response, {
-    'payload': api.model('Table items', {
-        'items': fields.List(fields.Nested(any), description='List of items'),
+    'payload': fields.Nested(api.model('Table items', {
+        'items': fields.List(fields.Raw(description='Item'), description='List of items'),
         'pagination': fields.Nested(api.model('Pagination parameters', {
-            'size': fields.Integer(description='Items per page'),
-            'last_evaluated_key': fields.String(required=False, description="A key which was evaluated in previous request & will be used as exclusive start key in current request")
-        }))
-    })
+            'size': fields.Integer(description='Items per page', required=True),
+            'last_evaluated_key': fields.String(description="A key which was evaluated in previous request & will be used as exclusive start key in current request", required=False)
+        }), skip_none=True)
+    }))
+})
+
+customer_table_create_item_request_dto = fields.Raw(description='The item to create')
+
+customer_table_create_item_response_dto = api.inherit('Create item response',server_response, {
+    'payload': fields.Raw(description='The created item')
 })
 
 
@@ -137,6 +145,28 @@ class DataTableResource (Resource):
         return ServerResponse.success(payload=table_details), 200
 
 
+    @api.doc(description='Create')
+    @api.expect(customer_table_create_item_request_dto, description='The item to create')
+    @api.marshal_with(customer_table_create_item_response_dto, skip_none=True)
+    def post(self, table_id: str):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+
+        user = from_dict(User, g.get('user'))
+        item = request.json
+
+        if not user.has_permission(ServicePermissions.DATA_TABLE_CREATE_ITEM.value):
+            log.warn('User has no permission to create item in table. api: %s, method: %s, status: %s, table_id: %s', request.url, request.method, APIStatus.FAILURE.value, table_id)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create item in table')
+        
+        response_payload = data_table_service.create_item(
+            owner_id=user.organization_id,
+            table_id=table_id,
+            item=item
+        )
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=response_payload), 201
+
+
 @api.route('/tables/<string:table_id>/backups')
 class TableBackupsResource(Resource):
 
@@ -157,13 +187,12 @@ class TableBackupsResource(Resource):
 
 @api.route('/tables/<string:table_id>/items')
 class DataTableItemsResource (Resource):
-
-
+    
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(size='Get the table items of the provided table id.')
+    @api.doc(description='Get the table items of the provided table id.')
     @api.param('size', 'Number of items to retrieve', type=int, default=10)
     @api.param('last_evaluated_key', 'Pagination key for the next set of items', type=str)
     @api.marshal_with(customer_table_item_response_dto, skip_none=True)
@@ -182,3 +211,36 @@ class DataTableItemsResource (Resource):
         )
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=response_payload), 200
+
+
+@api.route('/tables/<string:table_id>/items/<string:partition_key>')
+class DataTableItemResource (Resource):
+    
+    def __init__(self, api=None, *args, **kwargs):
+        super().__init__(api, *args, **kwargs)
+
+
+    @api.doc(description='Delete an item from the table using the partition key and sort key.')
+    @api.param('sort_key', 'Sort key', type=str)
+    def delete(self, table_id: str, partition_key: str):
+        log.info('Received API Request for deletion. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+
+        sort_key = request.args.get('sort_key', default=None, type=str)
+        user = from_dict(User, g.get('user'))
+
+        if not user.has_permission(ServicePermissions.DATA_TABLE_DELETE_ITEM.value):
+            log.warning('User has no permission to delete item in table. api: %s, method: %s, status: %s, table_id: %s', request.url, request.method, APIStatus.FAILURE.value, table_id)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to delete item in table')
+
+        data_table_service.delete_item(
+            owner_id=user.organization_id,
+            table_id=table_id,
+            partition_key_value=partition_key,
+            sort_key_value=sort_key
+        )
+        log.info('Successfully deleted item from table. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.response(
+            code=ServiceStatus.SUCCESS,
+            message='Successfully deleted item from table',
+            payload=None
+        ), 200

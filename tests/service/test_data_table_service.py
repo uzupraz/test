@@ -825,3 +825,295 @@ class TestDataTableService(unittest.TestCase):
         self.assertEqual(context.exception.message, 'Failed to retrieve table items')
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
         mock_dynamodb_resource_table.scan.assert_called_once_with(Limit=size)
+
+
+    def test_create_item_success_case(self):
+        """
+        Test case for creating an item into a table successfully.
+
+        Case: The item is valid and the table exists.
+        Expected Result: The item is inserted successfully and returned with an expiration date.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        item = {'partition_key': 'partition_key', 'sort_key': 'sort_key', 'data': 'sample data'}
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+        
+        # Mock the create_item response
+        self.customer_table_repo.create_item = MagicMock(return_value=item)
+
+        # Call the create_item method
+        result = self.data_table_service.create_item(owner_id, table_id, item)
+
+        # Assert that the repository methods were called with the correct arguments
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.customer_table_repo.create_item.assert_called_once_with(
+            table_name='OriginalTable1',
+            item={
+                'partition_key': 'partition_key', 
+                'sort_key': 'sort_key',
+                'data': 'sample data',
+                'expiration_date': result['expiration_date']
+            }
+        )
+
+        # Assert the result
+        self.assertEqual(result['partition_key'], 'partition_key')
+        self.assertEqual(result['sort_key'], 'sort_key')
+        self.assertEqual(result['data'], 'sample data')
+        self.assertIn('expiration_date', result)
+
+
+    def test_create_item_raises_exception_on_invalid_item(self):
+        """
+        Test case for handling invalid item input.
+
+        Case: The item does not have string keys.
+        Expected Result: The method raises a ServiceException indicating invalid input data.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        item = ['invalid', 'item']  # Invalid item type (not a dict)
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.create_item(owner_id, table_id, item)
+
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Invalid input data. Expected a JSON object with string keys.')
+
+
+    def test_create_item_raises_exception_on_missing_partition_key(self):
+        """
+        Test case for handling item with missing 'partition' key.
+
+        Case: The item does not contain the 'partition' key.
+        Expected Result: The method raises a ServiceException indicating missing 'partition' key.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        item = {'data': 'sample data'}  # Missing 'partition' key
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.create_item(owner_id, table_id, item)
+
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(
+            owner_id,
+            table_id
+        )
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Missing partition key in input item')
+
+
+    def test_create_item_raises_exception_on_missing_sort_key(self):
+        """
+        Test case for handling item with missing 'sort' key.
+
+        Case: The item does not contain the 'sort' key.
+        Expected Result: The method raises a ServiceException indicating missing 'sort' key.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        item = {'partition_key': 'partition_key', 'data': 'sample data'}  # Missing 'sort' key
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.create_item(owner_id, table_id, item)
+
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(
+            owner_id,
+            table_id
+        )
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Missing sort key in input item')
+
+
+    def test_create_item_raises_exception_on_table_not_found(self):
+        """
+        Test case for handling the scenario where the table is not found.
+
+        Case: The table does not exist in the repository.
+        Expected Result: The method raises a ServiceException indicating the table was not found.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        item = {'id': 'item001', 'data': 'sample data'}
+
+        # Mock the get_table_item to raise an exception
+        self.customer_table_info_repo.get_table_item = MagicMock(side_effect=ServiceException(404, ServiceStatus.FAILURE, 'Table not found'))
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.create_item(owner_id, table_id, item)
+
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(
+            owner_id,
+            table_id
+        )
+        self.assertEqual(context.exception.status_code, 404)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Table not found')
+
+
+    def test_delete_item_success_case(self):
+        """
+        Test case for successfully deleting an item from the table.
+        
+        Case: The table exists and the item is successfully deleted.
+        Expected Result: The item is deleted without any exceptions.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        partition_key_value = 'item001'
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        customer_table_info_item['sort_key'] = None
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        # Mock the delete_item method to not raise any exception
+        self.customer_table_repo.delete_item = MagicMock(return_value=None)
+
+        # Call the delete_item method
+        self.data_table_service.delete_item(owner_id, table_id, partition_key_value)
+
+        # Assert that the repository methods were called with the correct arguments
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.customer_table_repo.delete_item.assert_called_once_with(
+            table_name='OriginalTable1',
+            key={'partition_key': partition_key_value}
+        )
+
+
+    def test_delete_item_with_partition_key_and_sort_key_case(self):
+        """
+        Test case for successfully deleting an item from the table with both partition & sort key present.
+        
+        Case: The table exists and the item is successfully deleted.
+        Expected Result: The item is deleted without any exceptions.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        partition_key_value = 'item001'
+        sort_key_value = 'sort001'
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        # Mock the delete_item method to not raise any exception
+        self.customer_table_repo.delete_item = MagicMock(return_value=None)
+
+        # Call the delete_item method
+        self.data_table_service.delete_item(owner_id, table_id, partition_key_value, sort_key_value)
+
+        # Assert that the repository methods were called with the correct arguments
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.customer_table_repo.delete_item.assert_called_once_with(
+            table_name='OriginalTable1',
+            key={'partition_key': partition_key_value, 'sort_key': sort_key_value}
+        )
+
+
+    def test_delete_item_raises_exception_on_table_not_found(self):
+        """
+        Test case for handling the scenario where the table is not found.
+
+        Case: The table does not exist in the repository.
+        Expected Result: The method raises a ServiceException indicating the table was not found.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        key = 'item001'
+
+        # Mock the get_table_item to raise an exception
+        self.customer_table_info_repo.get_table_item =  MagicMock(side_effect=ServiceException(404, ServiceStatus.FAILURE, 'Table not found'))
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.delete_item(owner_id, table_id, key)
+
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.assertEqual(context.exception.status_code, 404)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Table not found')
+
+
+    def test_delete_item_raises_exception_when_sort_key_is_present_but_not_provided(self):
+        """
+        Test case for handling the scenario where item deletion fails when sort key is not provided but exist in customer info table.
+
+        Case: The deletion of the item fails due to sort key missing failure.
+        Expected Result: The method raises a ServiceException indicating the deletion failure.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        partition_key_value = 'item001'
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.delete_item(owner_id, table_id, partition_key_value)
+
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Sort key is required but not provided in input')
+
+
+    def test_delete_item_raises_exception_on_deletion_failure(self):
+        """
+        Test case for handling the scenario where item deletion fails.
+
+        Case: The deletion of the item fails due to a client error.
+        Expected Result: The method raises a ServiceException indicating the deletion failure.
+        """
+        owner_id = 'owner123'
+        table_id = 'table123'
+        partition_key_value = 'item001'
+
+        # Mock the customer table info repository response
+        mock_customer_table_info_item_path = self.TEST_RESOURCE_PATH + "get_customer_table_item_happy_case.json"
+        customer_table_info_item = TestUtils.get_file_content(mock_customer_table_info_item_path)
+        customer_table_info_item = customer_table_info_item.get("Item", {})
+        customer_table_info_item['sort_key'] = None
+        self.customer_table_info_repo.get_table_item = MagicMock(return_value=from_dict(CustomerTableInfo, customer_table_info_item))
+
+        # Mock the delete_item method to raise a ServiceException
+        self.customer_table_repo.delete_item =  MagicMock(side_effect=ServiceException(500, ServiceStatus.FAILURE, 'Failed to delete item from table'))
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_table_service.delete_item(owner_id, table_id, partition_key_value)
+
+        self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
+        self.customer_table_repo.delete_item.assert_called_once_with(
+            table_name='OriginalTable1',
+            key={'partition_key': partition_key_value}
+        )
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to delete item from table')
