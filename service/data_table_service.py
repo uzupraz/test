@@ -241,14 +241,7 @@ class DataTableService(metaclass=Singleton):
         log.info('Successfully deleted item from table. owner_id: %s, table_id: %s', owner_id, table_id)
 
 
-    def query_item(
-        self, 
-        owner_id: str, 
-        table_id: str, 
-        partition_key_value: str, 
-        sort_key_value: str | None = None, 
-        attribute_filters: dict | None = None
-    ) -> list:
+    def query_item(self, owner_id: str, table_id: str, partition_key_value: str, sort_key_value: str | None = None, attribute_filters: dict | None = None) -> list:
         """
         Query items from the specified table using partition and sort keys, with optional attribute filters.
 

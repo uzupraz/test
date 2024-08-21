@@ -231,10 +231,10 @@ class DataTableItemResource (Resource):
 
         # Extract parameters from request arguments
         partition_key_value = request.args.get('partition_key_value', type=str)
-        sort_key_value = request.args.get('sort_key_value', default=None, type=str)
+        sort_key_value = request.args.get('sort_key_value', type=str)
         
         # Parse attribute filters from base64 string to dictionary
-        attribute_filters = request.args.get('attribute_filters', default=None, type=str)
+        attribute_filters = request.args.get('attribute_filters', type=str)
         attribute_filters = Base64ConversionUtils.decode_to_dict(attribute_filters) if attribute_filters else None
 
         user = from_dict(User, g.get('user'))

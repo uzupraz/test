@@ -343,15 +343,12 @@ class TestCustomerTableRepository(unittest.TestCase):
         mock_table.query.return_value = {'Items': []}  # Mock empty query response
 
         # Call the method under test and assert exception
-        with self.assertRaises(ServiceException) as context:
-            self.customer_table_repository.query_item(table_name, partition, sort)
+        data = self.customer_table_repository.query_item(table_name, partition, sort)
 
         # Assertions
         self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
         mock_table.query.assert_called_once_with(KeyConditionExpression=Key('id').eq('99999'))
-        self.assertEqual(context.exception.status_code, 404)
-        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
-        self.assertEqual(context.exception.message, 'Item not found')
+        self.assertEqual(data, [])
 
 
     def test_query_item_throws_service_exception(self):

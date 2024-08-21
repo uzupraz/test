@@ -132,8 +132,7 @@ class CustomerTableRepository(metaclass=Singleton):
         Raises:
             ServiceException: If there is an issue querying the item from the DynamoDB table.
         """
-        log.info('Querying item from table. table_name: %s, partition_key: %s, sort_key: %s, filters: %s', 
-                table_name, partition, sort, filters)
+        log.info('Querying item from table. table_name: %s, partition_key: %s, sort_key: %s, filters: %s', table_name, partition, sort, filters)
         try:
             partition_key, partition_key_value = partition
 
@@ -162,8 +161,6 @@ class CustomerTableRepository(metaclass=Singleton):
             response = table.query(**query_params)
 
             items = response.get('Items', [])
-            if not items:
-                raise ServiceException(404, ServiceStatus.FAILURE, 'Item not found')
             log.info('Successfully queried item from table. table_name: %s', table_name)
             return items
         except ClientError:
