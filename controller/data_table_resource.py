@@ -261,6 +261,7 @@ class DataTableItemResource (Resource):
 
     @api.doc(description='Delete an item from the table using the partition key and sort key.')
     @api.param('sort_key', 'Sort key', type=str)
+    @api.marshal_with(server_response, skip_none=True)
     def delete(self, table_id: str, partition_key: str):
         log.info('Received API Request for deletion. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
@@ -277,7 +278,7 @@ class DataTableItemResource (Resource):
             partition_key_value=partition_key,
             sort_key_value=sort_key
         )
-        log.info('Successfully deleted item from table. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.response(
             code=ServiceStatus.SUCCESS,
             message='Successfully deleted item from table',
