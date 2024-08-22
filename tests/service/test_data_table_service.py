@@ -1148,8 +1148,8 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
         self.customer_table_repo.query_item.assert_called_once_with(
             table_name='OriginalTable1',
-            partition=(customer_table_info_item['partition_key'], partition_key_value),
-            sort=None,
+            partition_key=(customer_table_info_item['partition_key'], partition_key_value),
+            sort_key=None,
             filters=None
         )
         self.assertEqual(result, mock_items)
@@ -1184,8 +1184,8 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
         self.customer_table_repo.query_item.assert_called_once_with(
             table_name='OriginalTable1',
-            partition=(customer_table_info_item['partition_key'], partition_key_value),
-            sort=(customer_table_info_item['sort_key'], sort_key_value),
+            partition_key=(customer_table_info_item['partition_key'], partition_key_value),
+            sort_key=(customer_table_info_item['sort_key'], sort_key_value),
             filters=None
         )
         self.assertEqual(result, mock_items)
@@ -1221,8 +1221,8 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
         self.customer_table_repo.query_item.assert_called_once_with(
             table_name='OriginalTable1',
-            partition=(customer_table_info_item['partition_key'], partition_key_value),
-            sort=(customer_table_info_item['sort_key'], sort_key_value),
+            partition_key=(customer_table_info_item['partition_key'], partition_key_value),
+            sort_key=(customer_table_info_item['sort_key'], sort_key_value),
             filters=attribute_filters
         )
         self.assertEqual(result, mock_items)
@@ -1255,8 +1255,8 @@ class TestDataTableService(unittest.TestCase):
         self.customer_table_info_repo.get_table_item.assert_called_once_with(owner_id, table_id)
         self.customer_table_repo.query_item.assert_called_once_with(
             table_name='OriginalTable1',
-            partition=(customer_table_info_item['partition_key'], partition_key_value),
-            sort=None,
+            partition_key=(customer_table_info_item['partition_key'], partition_key_value),
+            sort_key=None,
             filters=None
         )
         self.assertEqual(result, [])

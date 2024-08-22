@@ -116,14 +116,14 @@ class CustomerTableRepository(metaclass=Singleton):
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to delete item from table')
         
 
-    def query_item(self, table_name: str, partition: tuple[str,str], sort: tuple[str,str] | None, filters: dict[str, any] = None) -> dict:
+    def query_item(self, table_name: str, partition_key: tuple[str,str], sort_key: tuple[str,str] | None, filters: dict[str, any] = None) -> dict:
         """
-        Queries an item from the specified DynamoDB table using partition and sort keys, with optional filters.
+        Queries an item from the specified DynamoDB table using partition with optional sort keys and optional filters.
 
         Args:
             table_name (str): The name of the DynamoDB table.
             partition_key (str): The partition key of the item to query.
-            sort_key (str): The sort key of the item to query.
+            sort_key (str): Optional. The sort key of the item to query.
             filters (dict[str, any]): Optional. A dictionary of additional attributes to filter by.
 
         Returns:
@@ -132,16 +132,15 @@ class CustomerTableRepository(metaclass=Singleton):
         Raises:
             ServiceException: If there is an issue querying the item from the DynamoDB table.
         """
-        log.info('Querying item from table. table_name: %s, partition_key: %s, sort_key: %s, filters: %s', table_name, partition, sort, filters)
+        log.info('Querying item from table. table_name: %s, partition_key: %s, sort_key: %s, filters: %s', table_name, partition_key, sort_key, filters)
         try:
-            partition_key, partition_key_value = partition
+            partition_key_name, partition_key_value = partition_key
 
-            table = self.dynamodb_resource.Table(table_name)
-            key_condition = Key(partition_key).eq(partition_key_value)
+            key_condition = Key(partition_key_name).eq(partition_key_value)
 
-            if sort is not None:
-                sort_key, sort_key_value = sort
-                key_condition &= Key(sort_key).eq(sort_key_value)
+            if sort_key:
+                sort_key_name, sort_key_value = sort_key
+                key_condition &= Key(sort_key_name).eq(sort_key_value)
 
             # Prepare filter expression if filters are provided
             filter_expression = None
@@ -158,10 +157,11 @@ class CustomerTableRepository(metaclass=Singleton):
             if filter_expression:
                 query_params['FilterExpression'] = filter_expression
 
+            table = self.dynamodb_resource.Table(table_name)
             response = table.query(**query_params)
 
             items = response.get('Items', [])
-            log.info('Successfully queried item from table. table_name: %s', table_name)
+            log.info('Successfully queried item from table. table_name: %s, partition_key: %s', table_name, partition_key_name)
             return items
         except ClientError:
             log.exception('Failed to query item from table. table_name: %s', table_name)

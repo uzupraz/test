@@ -233,13 +233,16 @@ class DataTableItemResource (Resource):
         partition_key_value = request.args.get('partition_key_value', type=str)
         sort_key_value = request.args.get('sort_key_value', type=str)
         
+        if not partition_key_value:
+            log.warn('Missing partition_key_value in query. api: %s, method: %s, status: %s, table_id: %s', request.url, request.method, APIStatus.FAILURE.value, table_id)
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Missing partition_key_value in query')
+        
         # Parse attribute filters from base64 string to dictionary
         attribute_filters = request.args.get('attribute_filters', type=str)
         attribute_filters = Base64ConversionUtils.decode_to_dict(attribute_filters) if attribute_filters else None
 
         user = from_dict(User, g.get('user'))
 
-        # Query items using the service layer
         response_payload = data_table_service.query_item(
             owner_id=user.organization_id,
             table_id=table_id,

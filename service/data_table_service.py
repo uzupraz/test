@@ -268,8 +268,8 @@ class DataTableService(metaclass=Singleton):
 
         items = self.customer_table_repository.query_item(
             table_name=customer_table_info.original_table_name,
-            partition=partition_key_tuple,
-            sort=sort_key_tuple,
+            partition_key=partition_key_tuple,
+            sort_key=sort_key_tuple,
             filters=attribute_filters
         )
         log.info('Successfully queried items from table. owner_id: %s, table_id: %s', owner_id, table_id)
