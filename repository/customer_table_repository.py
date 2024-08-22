@@ -4,6 +4,7 @@ import boto3.resources.factory
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
+from typing import Tuple, Dict
 
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
@@ -116,14 +117,14 @@ class CustomerTableRepository(metaclass=Singleton):
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to delete item from table')
         
 
-    def query_item(self, table_name: str, partition_key: tuple[str,str], sort_key: tuple[str,str] | None, filters: dict[str, any] = None) -> dict:
+    def query_item(self, table_name: str, partition_key: Tuple[str,str], sort_key: Tuple[str,str] | None, filters: Dict[str, any] = None) -> Dict:
         """
         Queries an item from the specified DynamoDB table using partition with optional sort keys and optional filters.
 
         Args:
             table_name (str): The name of the DynamoDB table.
-            partition_key (str): The partition key of the item to query.
-            sort_key (str): Optional. The sort key of the item to query.
+            partition_key (Tuple[str,str]): The partition key of the item to query.
+            sort_key (Tuple[str,str]): Optional. The sort key of the item to query.
             filters (dict[str, any]): Optional. A dictionary of additional attributes to filter by.
 
         Returns:
