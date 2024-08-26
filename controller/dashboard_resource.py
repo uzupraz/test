@@ -108,8 +108,20 @@ class WorkflowStatsResource(Resource):
     @api.marshal_with(workflow_stats_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        # Parse the dates
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+        except ValueError:
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use 'YYYY-MM-DD'.")
+        
+        # Check if the date range is within 14 days
+        if end_date - start_date > timedelta(days=14):
+            raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
+        
         user_data = g.get("user")
         user = User(**user_data)
         workflow_stats = dashboard_service.get_workflow_stats(user.organization_id, start_date, end_date)
@@ -129,8 +141,20 @@ class WorkflowIntegrationsResource(Resource):
     @api.marshal_with(workflow_integrations_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        # Parse the dates
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+        except ValueError:
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use 'YYYY-MM-DD'.")
+        
+        # Check if the date range is within 14 days
+        if end_date - start_date > timedelta(days=14):
+            raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
+        
         user_data = g.get("user")
         user = User(**user_data)
         workflow_integrations = dashboard_service.get_workflow_integrations(user.organization_id, start_date, end_date)
@@ -150,8 +174,20 @@ class WorkflowFailuresResource(Resource):
     @api.marshal_with(workflow_failures_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        # Parse the dates
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+        except ValueError:
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use 'YYYY-MM-DD'.")
+        
+        # Check if the date range is within 14 days
+        if end_date - start_date > timedelta(days=14):
+            raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
+        
         user_data = g.get("user")
         user = User(**user_data)
         workflow_failures = dashboard_service.get_workflow_failures(user.organization_id, start_date, end_date)
@@ -204,8 +240,20 @@ class WorkflowExecutionEventsResource(Resource):
     @api.marshal_with(workflow_execution_metrics_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        # Parse the dates
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+        except ValueError:
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use 'YYYY-MM-DD'.")
+        
+        # Check if the date range is within 14 days
+        if end_date - start_date > timedelta(days=14):
+            raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
+        
         user_data = g.get("user")
         user = User(**user_data)
         workflow_execution_metrics = dashboard_service.get_workflow_execution_metrics_by_date(user.organization_id, start_date, end_date)
