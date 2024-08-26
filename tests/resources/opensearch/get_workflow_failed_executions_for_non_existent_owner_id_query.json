@@ -35,7 +35,7 @@
         "by_date": {
             "date_histogram": {
                 "field": "event_timestamp",
-                "interval": "hour",
+                "interval": "minute",
                 "format": "yyyy-MM-dd HH:mm:ss"
             },
             "aggs": {
