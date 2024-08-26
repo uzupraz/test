@@ -169,7 +169,7 @@ class OpensearchService(metaclass=Singleton):
             "by_date": {
                 "date_histogram": {
                     "field": "event_timestamp",
-                    "interval": "day",
+                    "interval": "hour",
                     "format": "yyyy-MM-dd HH:mm:ss",
                 },
                 "aggs": {
