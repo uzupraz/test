@@ -239,3 +239,38 @@ class DataTableService(metaclass=Singleton):
             key=key_dict
         )
         log.info('Successfully deleted item from table. owner_id: %s, table_id: %s', owner_id, table_id)
+
+
+    def query_item(self, owner_id: str, table_id: str, partition_key_value: str, sort_key_value: str | None = None, attribute_filters: dict | None = None) -> list:
+        """
+        Query items from the specified table using partition and sort keys, with optional attribute filters.
+
+        Args:
+            owner_id (str): The owner of the table.
+            table_id (str): The ID of the table.
+            partition_key_value (str): The value of the partition key to query.
+            sort_key_value (str|None): The value of the sort key to query, if applicable.
+            attribute_filters (dict|None): Additional attribute filters for querying.
+
+        Returns:
+            list: A list of queried items.
+
+        Raises:
+            ServiceException: If there is an issue querying the items from the table.
+        """
+        log.info('Querying items from table. owner_id: %s, table_id: %s', owner_id, table_id)
+
+        # Retrieve the table information from the repository
+        customer_table_info = self.customer_table_info_repository.get_table_item(owner_id, table_id)
+
+        partition_key_tuple = (customer_table_info.partition_key, partition_key_value)
+        sort_key_tuple = (customer_table_info.sort_key, sort_key_value) if customer_table_info.sort_key and sort_key_value else None
+
+        items = self.customer_table_repository.query_item(
+            table_name=customer_table_info.original_table_name,
+            partition_key=partition_key_tuple,
+            sort_key=sort_key_tuple,
+            filters=attribute_filters
+        )
+        log.info('Successfully queried items from table. owner_id: %s, table_id: %s', owner_id, table_id)
+        return items

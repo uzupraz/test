@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from flask_restx import Namespace, Resource, fields, reqparse
 from flask import g, request
@@ -10,6 +10,8 @@ from enums import APIStatus
 from repository import WorkflowRepository
 from service import DashboardService, OpensearchService
 from model import User
+from exception import ServiceException
+from enums import ServiceStatus
 
 
 api = Namespace("Dashboard API", description="API for the dashboard home", path="/interconnecthub/dashboard")
@@ -106,8 +108,22 @@ class WorkflowStatsResource(Resource):
     @api.marshal_with(workflow_stats_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        # Parse the dates using ISO format
+        try:
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
+        except ValueError:
+            log.error("Invalid date format. Use ISO format. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
+        
+        # Check if the date range is within 14 days
+        if end_date - start_date >= timedelta(days=14):
+            log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
+        
         user_data = g.get("user")
         user = User(**user_data)
         workflow_stats = dashboard_service.get_workflow_stats(user.organization_id, start_date, end_date)
@@ -127,8 +143,22 @@ class WorkflowIntegrationsResource(Resource):
     @api.marshal_with(workflow_integrations_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        # Parse the dates using ISO format
+        try:
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
+        except ValueError:
+            log.error("Invalid date format. Use ISO format. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
+        
+        # Check if the date range is within 14 days
+        if end_date - start_date >= timedelta(days=14):
+            log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
+        
         user_data = g.get("user")
         user = User(**user_data)
         workflow_integrations = dashboard_service.get_workflow_integrations(user.organization_id, start_date, end_date)
@@ -148,8 +178,22 @@ class WorkflowFailuresResource(Resource):
     @api.marshal_with(workflow_failures_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        # Parse the dates using ISO format
+        try:
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
+        except ValueError:
+            log.error("Invalid date format. Use ISO format. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
+        
+        # Check if the date range is within 14 days
+        if end_date - start_date >= timedelta(days=14):
+            log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
+        
         user_data = g.get("user")
         user = User(**user_data)
         workflow_failures = dashboard_service.get_workflow_failures(user.organization_id, start_date, end_date)
@@ -169,8 +213,22 @@ class WorkflowFailedEventsResource(Resource):
     @api.marshal_with(workflow_failed_events_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        # Parse the dates using ISO format
+        try:
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
+        except ValueError:
+            log.error("Invalid date format. Use ISO format. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
+        
+        # Check if the date range is within 14 days
+        if end_date - start_date >= timedelta(days=14):
+            log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
+
         user_data = g.get("user")
         user = User(**user_data)
         workflow_failed_events = dashboard_service.get_workflow_failed_executions(user.organization_id, start_date, end_date)
@@ -190,8 +248,22 @@ class WorkflowExecutionEventsResource(Resource):
     @api.marshal_with(workflow_execution_metrics_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        # Parse the dates using ISO format
+        try:
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
+        except ValueError:
+            log.error("Invalid date format. Use ISO format. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
+        
+        # Check if the date range is within 14 days
+        if end_date - start_date >= timedelta(days=14):
+            log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
+        
         user_data = g.get("user")
         user = User(**user_data)
         workflow_execution_metrics = dashboard_service.get_workflow_execution_metrics_by_date(user.organization_id, start_date, end_date)

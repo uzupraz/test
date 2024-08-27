@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import Mock, patch
 from botocore.exceptions import ClientError
 from unittest.mock import MagicMock
+from boto3.dynamodb.conditions import Key, Attr
 
 from repository.customer_table_repository import CustomerTableRepository
 from exception import ServiceException
@@ -254,3 +255,124 @@ class TestCustomerTableRepository(unittest.TestCase):
         self.assertEqual(context.exception.message, 'Failed to delete item from table')
         self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
         mock_table.delete_item.assert_called_once_with(Key=key)
+
+    
+    def test_query_item_with_partition_key_only(self):
+        """
+        Test querying an item using only the partition key.
+        """
+        table_name = 'TestTable'
+        partition = ('id', '12345')
+        sort = None
+
+        # Mock DynamoDB table
+        mock_table = MagicMock()
+        self.mock_dynamodb_resource.Table.return_value = mock_table
+        mock_table.query.return_value = {'Items': [{'id': '12345'}]}  # Mock successful query response
+
+        # Call the method under test
+        result = self.customer_table_repository.query_item(table_name, partition, sort)
+
+        # Assertions
+        self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
+        mock_table.query.assert_called_once_with(KeyConditionExpression=Key('id').eq('12345'))
+        self.assertEqual(result, [{'id': '12345'}])
+
+
+    def test_query_item_with_partition_and_sort_key(self):
+        """
+        Test querying an item using both partition and sort keys.
+        """
+        table_name = 'TestTable'
+        partition = ('id', '12345')
+        sort = ('created_at', '2023-01-01')
+
+        # Mock DynamoDB table
+        mock_table = MagicMock()
+        self.mock_dynamodb_resource.Table.return_value = mock_table
+        mock_table.query.return_value = {'Items': [{'id': '12345', 'created_at': '2023-01-01'}]}  # Mock successful query response
+
+        # Call the method under test
+        result = self.customer_table_repository.query_item(table_name, partition, sort)
+
+        # Assertions
+        self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
+        mock_table.query.assert_called_once_with(
+            KeyConditionExpression=Key('id').eq('12345') & Key('created_at').eq('2023-01-01')
+        )
+        self.assertEqual(result, [{'id': '12345', 'created_at': '2023-01-01'}])
+
+
+    def test_query_item_with_filters(self):
+        """
+        Test querying an item using partition, sort keys, and additional filters.
+        """
+        table_name = 'TestTable'
+        partition = ('id', '12345')
+        sort = ('created_at', '2023-01-01')
+        filters = {'status': 'active'}
+
+        # Mock DynamoDB table
+        mock_table = MagicMock()
+        self.mock_dynamodb_resource.Table.return_value = mock_table
+        mock_table.query.return_value = {'Items': [{'id': '12345', 'created_at': '2023-01-01', 'status': 'active'}]}  # Mock successful query response
+
+        # Call the method under test
+        result = self.customer_table_repository.query_item(table_name, partition, sort, filters)
+
+        # Assertions
+        self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
+        mock_table.query.assert_called_once_with(
+            KeyConditionExpression=Key('id').eq('12345') & Key('created_at').eq('2023-01-01'),
+            FilterExpression=Attr('status').eq('active')
+        )
+        self.assertEqual(result, [{'id': '12345', 'created_at': '2023-01-01', 'status': 'active'}])
+
+
+    def test_query_item_no_results(self):
+        """
+        Test querying an item that does not exist.
+        """
+        table_name = 'TestTable'
+        partition = ('id', '99999')
+        sort = None
+
+        # Mock DynamoDB table
+        mock_table = MagicMock()
+        self.mock_dynamodb_resource.Table.return_value = mock_table
+        mock_table.query.return_value = {'Items': []}  # Mock empty query response
+
+        # Call the method under test and assert exception
+        data = self.customer_table_repository.query_item(table_name, partition, sort)
+
+        # Assertions
+        self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
+        mock_table.query.assert_called_once_with(KeyConditionExpression=Key('id').eq('99999'))
+        self.assertEqual(data, [])
+
+
+    def test_query_item_throws_service_exception(self):
+        """
+        Test handling of ClientError while querying an item from the DynamoDB table.
+        """
+        table_name = 'TestTable'
+        partition = ('id', '12345')
+        sort = None
+
+        # Mock DynamoDB table
+        mock_table = MagicMock()
+        self.mock_dynamodb_resource.Table.return_value = mock_table
+        mock_table.query.side_effect = ClientError(
+            {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 500}}, 'query'
+        )
+
+        # Call the method under test and assert exception
+        with self.assertRaises(ServiceException) as context:
+            self.customer_table_repository.query_item(table_name, partition, sort)
+
+        # Assertions
+        self.mock_dynamodb_resource.Table.assert_called_once_with(table_name)
+        mock_table.query.assert_called_once_with(KeyConditionExpression=Key('id').eq('12345'))
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.message, 'Failed to query item from table')

@@ -169,8 +169,8 @@ class OpensearchService(metaclass=Singleton):
             "by_date": {
                 "date_histogram": {
                     "field": "event_timestamp",
-                    "interval": "day",
-                    "format": "yyyy-MM-dd",
+                    "interval": "minute",
+                    "format": "yyyy-MM-dd HH:mm:ss",
                 },
                 "aggs": {
                     "failed_executions": {
