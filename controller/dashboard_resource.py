@@ -111,15 +111,17 @@ class WorkflowStatsResource(Resource):
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
 
-        # Parse the dates
+        # Parse the dates using ISO format
         try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
         except ValueError:
-            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use 'YYYY-MM-DD'.")
+            log.error("Invalid date format. Use ISO format. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
         
         # Check if the date range is within 14 days
-        if end_date - start_date > timedelta(days=14):
+        if (end_date - start_date).total_seconds() >= 14 * 24 * 3600:
+            log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
             raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
         
         user_data = g.get("user")
@@ -144,15 +146,17 @@ class WorkflowIntegrationsResource(Resource):
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
 
-        # Parse the dates
+        # Parse the dates using ISO format
         try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
         except ValueError:
-            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use 'YYYY-MM-DD'.")
+            log.error("Invalid date format. Use ISO format. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
         
         # Check if the date range is within 14 days
-        if end_date - start_date > timedelta(days=14):
+        if (end_date - start_date).total_seconds() >= 14 * 24 * 3600:
+            log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
             raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
         
         user_data = g.get("user")
@@ -177,15 +181,17 @@ class WorkflowFailuresResource(Resource):
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
 
-        # Parse the dates
+        # Parse the dates using ISO format
         try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
         except ValueError:
-            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use 'YYYY-MM-DD'.")
+            log.error("Invalid date format. Use ISO format. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
         
         # Check if the date range is within 14 days
-        if end_date - start_date > timedelta(days=14):
+        if (end_date - start_date).total_seconds() >= 14 * 24 * 3600:
+            log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
             raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
         
         user_data = g.get("user")
@@ -210,15 +216,17 @@ class WorkflowFailedEventsResource(Resource):
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
 
-        # Parse the dates
+        # Parse the dates using ISO format
         try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
         except ValueError:
-            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use 'YYYY-MM-DD'.")
+            log.error("Invalid date format. Use ISO format. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
         
         # Check if the date range is within 14 days
-        if end_date - start_date > timedelta(days=14):
+        if (end_date - start_date).total_seconds() >= 14 * 24 * 3600:
+            log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
             raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
 
         user_data = g.get("user")
@@ -243,15 +251,17 @@ class WorkflowExecutionEventsResource(Resource):
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
 
-        # Parse the dates
+        # Parse the dates using ISO format
         try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
         except ValueError:
-            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use 'YYYY-MM-DD'.")
+            log.error("Invalid date format. Use ISO format. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
         
         # Check if the date range is within 14 days
-        if end_date - start_date > timedelta(days=14):
+        if (end_date - start_date).total_seconds() >= 14 * 24 * 3600:
+            log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
             raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
         
         user_data = g.get("user")
