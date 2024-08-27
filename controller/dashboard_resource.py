@@ -120,7 +120,7 @@ class WorkflowStatsResource(Resource):
             raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
         
         # Check if the date range is within 14 days
-        if (end_date - start_date).total_seconds() >= 14 * 24 * 3600:
+        if end_date - start_date >= timedelta(days=14):
             log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
             raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
         
@@ -155,7 +155,7 @@ class WorkflowIntegrationsResource(Resource):
             raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
         
         # Check if the date range is within 14 days
-        if (end_date - start_date).total_seconds() >= 14 * 24 * 3600:
+        if end_date - start_date >= timedelta(days=14):
             log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
             raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
         
@@ -190,7 +190,7 @@ class WorkflowFailuresResource(Resource):
             raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
         
         # Check if the date range is within 14 days
-        if (end_date - start_date).total_seconds() >= 14 * 24 * 3600:
+        if end_date - start_date >= timedelta(days=14):
             log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
             raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
         
@@ -225,7 +225,7 @@ class WorkflowFailedEventsResource(Resource):
             raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
         
         # Check if the date range is within 14 days
-        if (end_date - start_date).total_seconds() >= 14 * 24 * 3600:
+        if end_date - start_date >= timedelta(days=14):
             log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
             raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
 
@@ -260,7 +260,7 @@ class WorkflowExecutionEventsResource(Resource):
             raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
         
         # Check if the date range is within 14 days
-        if (end_date - start_date).total_seconds() >= 14 * 24 * 3600:
+        if end_date - start_date >= timedelta(days=14):
             log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
             raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
         
