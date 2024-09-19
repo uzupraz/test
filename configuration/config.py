@@ -13,6 +13,7 @@ class AppConfig(metaclass=Singleton):
     log_level:str = os.getenv('APP_LOG_LEVEL', 'DEBUG').upper()
     workflow_table_name:str = os.getenv('APP_WORKFLOW_TABLENAME')
     customer_table_info_table_name:str = os.getenv('APP_CUSTOMER_TABLE_INFO_TABLENAME')
+    custom_script_table_name:str = os.getenv('APP_CUSTOM_SCRIPT_TABLENAME')
     processor_templates_table_name:str = os.getenv('APP_PROCESSORTEMPLATES_TABLENAME')
 
 
@@ -35,6 +36,14 @@ class AsyncFileDeliveryS3Config(metaclass=Singleton):
     archive_bucket_name: str = os.getenv('APP_FILES_ARCHIVE_BUCKET_NAME')
     object_prefix: str = os.getenv('APP_FILES_OBJECT_PREFIX', '')
     pre_signed_url_expiration: int = int(os.getenv('APP_FILES_PRE_SIGNED_URL_EXPIRATION_IN_SECONDS', 3600))
+
+
+@dataclasses.dataclass(init=False)
+class AssetsS3Config(metaclass=Singleton):
+    """
+    Configuration needed for assets bucket are loaded here.
+    """
+    assets_bucket_name: str = os.getenv('S3_ASSETS_BUCKET_NAME')
 
 
 @dataclasses.dataclass(init=False)
