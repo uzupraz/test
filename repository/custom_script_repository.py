@@ -13,7 +13,7 @@ from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
 from utils import Singleton, DataTypeUtils
-from model import CustomScript, CustomScriptUnPublishedChange, CustomScriptRelease
+from model import CustomScript, CustomScriptUnpublishedChange, CustomScriptRelease
 
 log = common_ctrl.log
 
@@ -31,8 +31,7 @@ class CustomScriptRepository(metaclass=Singleton):
         self.app_config = app_config
         self.aws_config = aws_config
 
-        self.dynamodb_resource = self.__configure_dynamodb_resource()
-        self.table = self.dynamodb_resource.Table(self.app_config.custom_script_table_name)
+        self.table = self.__configure_and_get_dynamodb_table()
 
 
     def get_owner_custom_scripts(self, owner_id: str) -> List[CustomScript]:
@@ -61,9 +60,9 @@ class CustomScriptRepository(metaclass=Singleton):
             
             return custom_scripts
         except ClientError as e:
-            log.exception('Failed to retrieve custom script. owner_id: %s, script_id: %s,', owner_id)
+            log.exception('Failed to retrieve owner custom script. owner_id: %s, script_id: %s,', owner_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
-            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to create custom script')
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve owner custom script')
         
     
     def get_custom_script(self, owner_id: str, script_id: str) -> CustomScript:
@@ -80,7 +79,7 @@ class CustomScriptRepository(metaclass=Singleton):
         Raises:
             ServiceException: If the script does not exist or the query fails.
         """
-        log.info('Retrieving custom script. owner_id: %s, script_id: %s, script_id: %s', owner_id, script_id)
+        log.info('Retrieving custom script. owner_id: %s, script_id: %s', owner_id, script_id)
         try:
             response = self.table.get_item(
                 Key={'owner_id': owner_id, 'script_id': script_id}
@@ -90,13 +89,13 @@ class CustomScriptRepository(metaclass=Singleton):
                 log.error('Customer table item does not exist. owner_id: %s, script_id: %s', owner_id, script_id)
                 raise ServiceException(400, ServiceStatus.FAILURE, 'Custom scrpt does not exists')
             
-            log.info('Successfully retrieved custom script. owner_id: %s, script_id: %s, script_id: %s', owner_id, script_id)
+            log.info('Successfully retrieved custom script. owner_id: %s, script_id: %s', owner_id, script_id)
             item = DataTypeUtils.convert_decimals_to_floats(item)
             return from_dict(CustomScript, item)
         except ClientError as e:
-            log.exception('Failed to retrieve custom script. owner_id: %s, script_id: %s, script_id: %s', owner_id, script_id)
+            log.exception('Failed to retrieve custom script. owner_id: %s, script_id: %s', owner_id, script_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
-            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to create custom script')
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve custom script')
         
 
     def create_custom_script(self, item: CustomScript) -> None:
@@ -109,46 +108,45 @@ class CustomScriptRepository(metaclass=Singleton):
         Raises:
             ServiceException: If there is an issue saving the custom script.
         """
-        log.info('Creating custom script. item: %s', item)
+        log.info('Creating custom script. owner_id: %s, script_id: %s', item.owner_id, item.script_id)
         try:
             self.table.put_item(Item=asdict(item))
-            log.info('Successfully created custom script. script_id: %s', item.script_id)
+            log.info('Successfully created custom script. owner_id: %s, script_id: %s', item.owner_id, item.script_id)
         except ClientError as e:
-            log.exception('Failed to create custom script. script_id: %s', item.script_id)
+            log.exception('Failed to create custom script. owner_id: %s, script_id: %s', item.owner_id, item.script_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to create custom script')
         
     
-    def update_unpublished_changes(self, owner_id: str, script_id: str, unpublished_changes: List[CustomScriptUnPublishedChange]) -> None:
+    def update_unpublished_changes(self, owner_id: str, script_id: str, unpublished_changes: List[CustomScriptUnpublishedChange]) -> None:
         """
         Updates the unpublished changes for a specific custom script.
 
         Args:
             owner_id (str): The owner's ID.
             script_id (str): The script ID.
-            unpublished_changes (List[CustomScriptUnPublishedChange]): The list of unpublished changes to be updated.
+            unpublished_changes (List[CustomScriptUnpublishedChange]): The list of unpublished changes to be updated.
 
         Raises:
             ServiceException: If the update fails.
         """
         log.info('Updating unpublished changes. script_id: %s, owner_id: %s', script_id, owner_id)
         try:
-            unpublished_changes_dict = [asdict(change) for change in unpublished_changes]
+            converted_unpublished_changes = [asdict(unpublished_change) for unpublished_change in unpublished_changes]
             
-            response = self.table.update_item(
+            self.table.update_item(
                 Key={
                     'owner_id': owner_id,
                     'script_id': script_id
                 },
                 UpdateExpression="SET unpublished_changes = :unpublished_changes",
                 ExpressionAttributeValues={
-                    ':unpublished_changes': unpublished_changes_dict
+                    ':unpublished_changes': converted_unpublished_changes
                 },
                 ReturnValues="UPDATED_NEW"
             )
             
             log.info('Successfully updated unpublished changes. script_id: %s, owner_id: %s', script_id, owner_id)
-            return response
             
         except ClientError as e:
             log.exception('Failed to update unpublished changes. script_id: %s, owner_id: %s', script_id, owner_id)
@@ -170,7 +168,7 @@ class CustomScriptRepository(metaclass=Singleton):
         """
         log.info('Updating releases. script_id: %s, owner_id: %s', script_id, owner_id)
         try:
-            releases = [asdict(change) for change in releases]
+            releases = [asdict(release) for release in releases]
             
             response = self.table.update_item(
                 Key={
@@ -185,7 +183,6 @@ class CustomScriptRepository(metaclass=Singleton):
             )
             
             log.info('Successfully updated releases. script_id: %s, owner_id: %s', script_id, owner_id)
-            return response
             
         except ClientError as e:
             log.exception('Failed to update releases. script_id: %s, owner_id: %s', script_id, owner_id)
@@ -193,7 +190,7 @@ class CustomScriptRepository(metaclass=Singleton):
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to update releases')
 
 
-    def __configure_dynamodb_resource(self) -> boto3.resources.factory.ServiceResource:
+    def __configure_and_get_dynamodb_table(self):
         """
         Configures and returns a DynamoDB service resource.
 
@@ -201,7 +198,9 @@ class CustomScriptRepository(metaclass=Singleton):
             boto3.resources.factory.ServiceResource: The DynamoDB service resource.
         """
         if self.aws_config.is_local:
-            return boto3.resource('dynamodb', region_name=self.aws_config.dynamodb_aws_region, endpoint_url='http://localhost:8000')
+            resource = boto3.resource('dynamodb', region_name=self.aws_config.dynamodb_aws_region, endpoint_url='http://localhost:8000')
+            return resource.Table(self.app_config.custom_script_table_name)
         else:
             config = Config(region_name=self.aws_config.dynamodb_aws_region)
-            return boto3.resource('dynamodb', config=config)
+            resource = boto3.resource('dynamodb', config=config)
+            return resource.Table(self.app_config.custom_script_table_name)

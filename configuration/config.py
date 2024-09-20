@@ -39,7 +39,7 @@ class AsyncFileDeliveryS3Config(metaclass=Singleton):
 
 
 @dataclasses.dataclass(init=False)
-class AssetsS3Config(metaclass=Singleton):
+class S3AsssetsFileConfig(metaclass=Singleton):
     """
     Configuration needed for assets bucket are loaded here.
     """

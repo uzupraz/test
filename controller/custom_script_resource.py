@@ -2,25 +2,25 @@ from flask_restx import Namespace, Resource, fields
 from flask import g, request
 from dacite import from_dict
 
-from configuration import AWSConfig, AppConfig, AssetsS3Config
+from configuration import AWSConfig, AppConfig, S3AsssetsFileConfig
 from .server_response import ServerResponse
 from .common_controller import server_response
 from enums import APIStatus
 from repository import CustomScriptRepository
 from service import S3AssetsService, CustomScriptService
-from model import User, SaveCustomScriptRequestDTO
+from model import User, CustomScriptRequestDTO
 
 
-api = Namespace("Custom Script API", description="API for the custom script", path="/interconnecthub/custom-scripts")
+api = Namespace("Custom Script API", description="API for the working with s3 custom scripts", path="/interconnecthub/custom-scripts")
 log = api.logger
 
 
 app_config = AppConfig()
 aws_config = AWSConfig()
-assets_s3_config = AssetsS3Config()
+s3_assets_file_config = S3AsssetsFileConfig()
 
 custom_script_repository = CustomScriptRepository(app_config, aws_config)
-s3_assets_service = S3AssetsService(assets_s3_config)
+s3_assets_service = S3AssetsService(s3_assets_file_config)
 custom_script_service = CustomScriptService(s3_assets_service=s3_assets_service, custom_script_repository=custom_script_repository)
 
 
@@ -28,7 +28,8 @@ custom_script_service = CustomScriptService(s3_assets_service=s3_assets_service,
 releases = api.model('Custom script releases', {
     'version_id': fields.String(required=True),
     'edited_by': fields.String(required=True),
-    'publish_date': fields.Integer(required=True),
+    'source_version_id': fields.String(required=True),
+    'release_date': fields.Integer(required=True),
 })
 unpublished_changes = api.model('Custom script unpublished changes', {
     'version_id': fields.String(required=True),
@@ -44,7 +45,6 @@ custom_script = api.model('Custom script', {
     'name': fields.String(required=True),
     'releases': fields.List(fields.Nested(releases)),
     'unpublished_changes': fields.List(fields.Nested(unpublished_changes)),
-    'last_modified': fields.Integer(description='Last modified'),
     'creation_date': fields.Integer(description='Creation date')
 })
 
@@ -62,7 +62,7 @@ save_custom_script_request_dto = api.model('Save custom script changes payload',
 })
 
 # Responses
-save_custom_script_response_dto = api.inherit('Save custom script response',server_response, {
+custom_script_response_dto = api.inherit('Save custom script response',server_response, {
     'payload': fields.Nested(unpublished_changes)
 })
 
@@ -88,13 +88,13 @@ class CustomScriptResource(Resource):
 
     @api.doc(description='Save custom script')
     @api.expect(save_custom_script_request_dto, description='Custom script information')
-    @api.marshal_with(save_custom_script_response_dto, skip_none=True)
+    @api.marshal_with(custom_script_response_dto, skip_none=True)
     def put(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
         user = from_dict(User, g.get('user'))
 
-        payload = from_dict(SaveCustomScriptRequestDTO, request.json)
+        payload = from_dict(CustomScriptRequestDTO, request.json)
         response_payload = custom_script_service.save_custom_script(
             owner_id=user.organization_id,
             payload=payload
@@ -118,7 +118,7 @@ class CustomScriptResource(Resource):
     
 
 @api.route("/<string:script_id>")
-class CustomScriptContentResource(Resource):
+class CustomScriptDeleteResource(Resource):
 
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
@@ -147,13 +147,13 @@ class CustomScriptContentResource(Resource):
 
 
     @api.doc(description='Get custom script content')
-    @api.param('release', 'Get from release or unpublished ', type=bool, default=False)
+    @api.param('from_release', 'Get from release or unpublished ', type=bool, default=False)
     @api.param('version_id', 'Get specific version ', type=str, default=None)
     @api.marshal_with(custom_script_content_response_dto, skip_none=True)
     def get(self, script_id: str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
-        release = request.args.get('release', type=bool, default=False)
+        from_release = request.args.get('from_release', type=bool, default=False)
         version_id = request.args.get('version_id', type=str, default=None)
         
         user = from_dict(User, g.get('user'))
@@ -161,11 +161,11 @@ class CustomScriptContentResource(Resource):
         response_payload = custom_script_service.get_custom_script_content(
             owner_id=user.organization_id,
             script_id=script_id,
-            from_release=release,
+            from_release=from_release,
             version_id=version_id
         )
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
-        return ServerResponse.success(payload={ "content": response_payload}), 200
+        return ServerResponse.success(payload=response_payload), 200
   
 
 @api.route("/<string:script_id>/release")

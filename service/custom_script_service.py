@@ -2,12 +2,13 @@ import nanoid
 
 from typing import List, Union, Dict, Any, Optional
 from dataclasses import asdict
+from dacite import from_dict
 
 from exception import ServiceException
 from enums import ServiceStatus
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from model import CustomScript, CustomScriptUnPublishedChange, CustomScriptRelease, CreateCustomScriptRequestDTO, SaveCustomScriptRequestDTO
+from model import CustomScript, CustomScriptUnpublishedChange, CustomScriptRelease, CustomScriptMetadata, CustomScriptRequestDTO, UnpublishedChangeResponseDTO, CustomScriptContentResponse
 from repository import CustomScriptRepository
 from .s3_service.s3_assets_service import S3AssetsService
 
@@ -28,13 +29,13 @@ class CustomScriptService(metaclass=Singleton):
         self.s3_assets_service = s3_assets_service
 
     
-    def save_custom_script(self, owner_id: str, payload: SaveCustomScriptRequestDTO) -> Dict[str, Any]:
+    def save_custom_script(self, owner_id: str, payload: CustomScriptRequestDTO) -> Dict[str, Any]:
         """
         Save the content of a custom script to S3 and update its unpublished changes in the repository.
 
         Args:
             owner_id (str): The ID of the owner of the script.
-            payload (SaveCustomScriptRequestDTO): Save custom script payload
+            payload (CustomScriptRequestDTO): Save custom script payload
 
         Updates:
             The unpublished changes for the script with the new version ID.
@@ -60,7 +61,7 @@ class CustomScriptService(metaclass=Singleton):
         # Construct and return the response
         response = asdict(unpublished_changes[-1])
         response['script_id'] = custom_script.script_id
-        return response
+        return from_dict(UnpublishedChangeResponseDTO, response)
     
 
     def get_custom_scripts(self, owner_id: str) -> List[CustomScript]:
@@ -117,7 +118,7 @@ class CustomScriptService(metaclass=Singleton):
             raise ServiceException(400, ServiceStatus.FAILURE, 'Unpublished changes not available')
         
         key = self._generate_relative_path(owner_id, custom_script.script_id, custom_script.extension, from_release)
-        return self.s3_assets_service.get_script_from_s3(owner_id=owner_id, relative_path=key, version_id=version_id)
+        return CustomScriptContentResponse(content=self.s3_assets_service.get_script_from_s3(owner_id=owner_id, relative_path=key, version_id=version_id))
 
 
     def release_custom_script(self, owner_id: str, script_id: str):
@@ -180,53 +181,24 @@ class CustomScriptService(metaclass=Singleton):
 
 
     # Helper Methods
-    def _generate_custom_script_model(self, owner_id: str, payload: CreateCustomScriptRequestDTO) -> CustomScript:
-        """
-        Generate a new custom script model for the given owner.
-        """
-        script_id = nanoid.generate()
-        custom_script = CustomScript(
-            owner_id=owner_id,
-            script_id=script_id,
-            language=payload.language,
-            name=payload.name,
-            extension=payload.extension,
-            releases=[],
-            unpublished_changes=[]
-        )
-        return custom_script
-
-
-    def _generate_unpublished_changes_model(self, owner_id: str, version_id: str, source_version_id: Union[str, None]) -> CustomScript:
-        """
-        Generate a new unpublished changes model for the given owner.
-        """
-        unpublished_change = CustomScriptUnPublishedChange(
-            version_id=version_id,
-            edited_by=owner_id,
-            source_version_id=source_version_id,
-        )
-        return unpublished_change
-    
-
-    def _merge_unpublished_changes(self, change: CustomScriptUnPublishedChange, existing_changes: List[CustomScriptUnPublishedChange]):
+    def _merge_unpublished_changes(self, unpublished_change: CustomScriptUnpublishedChange, existing_changes: List[CustomScriptUnpublishedChange]):
         """
         Update the list of unpublished changes with new change.
         """
-        last_changes = self._get_owner_unpublished_change(change.edited_by, existing_changes)
+        latest_change = self._get_owner_unpublished_change(unpublished_change.edited_by, existing_changes)
 
-        if not last_changes:
-            existing_changes.append(change)
+        if not latest_change:
+            existing_changes.append(unpublished_change)
             return existing_changes
         
         unpublished_changes = [
-            item if item.edited_by != change.edited_by else change
+            item if item.edited_by != unpublished_change.edited_by else unpublished_change
             for item in existing_changes
         ]
         return unpublished_changes
     
 
-    def _get_owner_unpublished_change(self, owner_id: str, unpublished_changes: List[CustomScriptUnPublishedChange]) -> Union[CustomScriptUnPublishedChange, None]:
+    def _get_owner_unpublished_change(self, owner_id: str, unpublished_changes: List[CustomScriptUnpublishedChange]) -> Union[CustomScriptUnpublishedChange, None]:
         """
         Retrieve the unpublished changes made by the specified owner.
         """
@@ -248,17 +220,25 @@ class CustomScriptService(metaclass=Singleton):
         return f"{script_id}/{prefix}{script_id}.{extension}"
     
 
-    def _get_or_create_custom_script(self, owner_id: str, payload: SaveCustomScriptRequestDTO) -> CustomScript:
+    def _get_or_create_custom_script(self, owner_id: str, payload: CustomScriptRequestDTO) -> CustomScript:
         """Fetches or creates a custom script based on the payload metadata."""
         if payload.metadata:
-            custom_script = self._generate_custom_script_model(owner_id=owner_id, payload=payload.metadata)
+            custom_script = CustomScript(
+                owner_id=owner_id,
+                script_id=nanoid.generate(),
+                language=payload.metadata.language,
+                name=payload.metadata.name,
+                extension=payload.metadata.extension,
+                releases=[],
+                unpublished_changes=[]
+            )
             self.custom_script_repository.create_custom_script(item=custom_script)
         else:
             custom_script = self.custom_script_repository.get_custom_script(owner_id, payload.script_id)
         return custom_script
 
 
-    def _determine_source_version_id(self, owner_id: str, custom_script: CustomScript, payload: SaveCustomScriptRequestDTO) -> Optional[str]:
+    def _determine_source_version_id(self, owner_id: str, custom_script: CustomScript, payload: CustomScriptRequestDTO) -> Optional[str]:
         """Determines the source version ID based on unpublished changes or provided payload."""
         unpublished_change = self._get_owner_unpublished_change(owner_id, custom_script.unpublished_changes)
         
@@ -282,11 +262,11 @@ class CustomScriptService(metaclass=Singleton):
         return self.s3_assets_service.upload_script_to_s3(owner_id=owner_id, relative_path=relative_path, data=script_data)
 
 
-    def _create_and_merge_unpublished_changes(self, owner_id: str, version_id: str, source_version_id: Optional[str], existing_changes: List[CustomScriptUnPublishedChange]) -> List[CustomScriptUnPublishedChange]:
+    def _create_and_merge_unpublished_changes(self, owner_id: str, version_id: str, source_version_id: Optional[str], existing_changes: List[CustomScriptUnpublishedChange]) -> List[CustomScriptUnpublishedChange]:
         """Creates new unpublished changes and merges them with existing changes."""
-        new_change = self._generate_unpublished_changes_model(
-            owner_id=owner_id,
+        unpublished_change = CustomScriptUnpublishedChange(
             version_id=version_id,
+            edited_by=owner_id,
             source_version_id=source_version_id,
         )
-        return self._merge_unpublished_changes(new_change, existing_changes)
+        return self._merge_unpublished_changes(unpublished_change, existing_changes)
