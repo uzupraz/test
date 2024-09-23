@@ -86,7 +86,7 @@ class CustomScriptResource(Resource):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description='Save custom script')
+    @api.doc(description='Save custom script if does not exist else creates unpublished change')
     @api.expect(save_custom_script_request_dto, description='Custom script information')
     @api.marshal_with(custom_script_response_dto, skip_none=True)
     def put(self):
@@ -147,21 +147,21 @@ class CustomScriptContentResource(Resource):
 
 
     @api.doc(description='Get custom script content')
-    @api.param('from_release', 'Get from release or unpublished ', type=bool, default=False)
+    @api.param('branch', 'Get from release or unpublished ', type=str, default="unpublished")
     @api.param('version_id', 'Get specific version ', type=str, default=None)
     @api.marshal_with(custom_script_content_response_dto, skip_none=True)
     def get(self, script_id: str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
-        from_release = request.args.get('from_release', type=bool, default=False)
-        version_id = request.args.get('version_id', type=str, default=None)
+        branch = request.args.get('branch', type=str, default="unpublished")
+        version_id = request.args.get('version_id', type=str)
         
         user = from_dict(User, g.get('user'))
 
         response_payload = custom_script_service.get_custom_script_content(
             owner_id=user.organization_id,
             script_id=script_id,
-            from_release=from_release,
+            from_release=branch == "release",
             version_id=version_id
         )
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)

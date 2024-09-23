@@ -76,7 +76,6 @@ class CustomScriptService(metaclass=Singleton):
         """
         log.info('Retrieving owner custom scripts. owner_id: %s', owner_id)
         custom_scripts = self.custom_script_repository.get_owner_custom_scripts(owner_id)
-
         updated_scripts = []
         for script in custom_scripts:
             changes = self._get_owner_unpublished_change(owner_id, script.unpublished_changes)

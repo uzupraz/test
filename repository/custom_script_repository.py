@@ -60,7 +60,7 @@ class CustomScriptRepository(metaclass=Singleton):
             
             return custom_scripts
         except ClientError as e:
-            log.exception('Failed to retrieve owner custom script. owner_id: %s, script_id: %s,', owner_id)
+            log.exception('Failed to retrieve owner custom script. owner_id: %s', owner_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve owner custom script')
         
