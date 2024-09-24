@@ -31,7 +31,7 @@ class CustomScriptRepository(metaclass=Singleton):
         self.app_config = app_config
         self.aws_config = aws_config
 
-        self.table = self.__configure_and_get_dynamodb_table()
+        self.table = self.__configure_dynamodb()
 
 
     def get_owner_custom_scripts(self, owner_id: str) -> List[CustomScript]:
@@ -55,7 +55,7 @@ class CustomScriptRepository(metaclass=Singleton):
             items = response.get('Items')
             custom_scripts = []
             for script in items:
-                item = DataTypeUtils.convert_decimals_to_floats(script)
+                item = DataTypeUtils.convert_decimals_to_int(script)
                 custom_scripts.append(from_dict(CustomScript, item))
             
             return custom_scripts
@@ -86,11 +86,11 @@ class CustomScriptRepository(metaclass=Singleton):
             )
             item = response.get('Item')
             if not item:
-                log.error('Customer table item does not exist. owner_id: %s, script_id: %s', owner_id, script_id)
-                raise ServiceException(400, ServiceStatus.FAILURE, 'Custom scrpt does not exists')
+                log.error('Custom script does not exist. owner_id: %s, script_id: %s', owner_id, script_id)
+                raise ServiceException(400, ServiceStatus.FAILURE, 'Custom script does not exists')
             
             log.info('Successfully retrieved custom script. owner_id: %s, script_id: %s', owner_id, script_id)
-            item = DataTypeUtils.convert_decimals_to_floats(item)
+            item = DataTypeUtils.convert_decimals_to_int(item)
             return from_dict(CustomScript, item)
         except ClientError as e:
             log.exception('Failed to retrieve custom script. owner_id: %s, script_id: %s', owner_id, script_id)
@@ -143,7 +143,6 @@ class CustomScriptRepository(metaclass=Singleton):
                 ExpressionAttributeValues={
                     ':unpublished_changes': converted_unpublished_changes
                 },
-                ReturnValues="UPDATED_NEW"
             )
             
             log.info('Successfully updated unpublished changes. script_id: %s, owner_id: %s', script_id, owner_id)
@@ -170,7 +169,7 @@ class CustomScriptRepository(metaclass=Singleton):
         try:
             releases = [asdict(release) for release in releases]
             
-            response = self.table.update_item(
+            self.table.update_item(
                 Key={
                     'owner_id': owner_id,
                     'script_id': script_id
@@ -179,7 +178,6 @@ class CustomScriptRepository(metaclass=Singleton):
                 ExpressionAttributeValues={
                     ':releases': releases
                 },
-                ReturnValues="UPDATED_NEW"
             )
             
             log.info('Successfully updated releases. script_id: %s, owner_id: %s', script_id, owner_id)
@@ -190,17 +188,18 @@ class CustomScriptRepository(metaclass=Singleton):
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to update releases')
 
 
-    def __configure_and_get_dynamodb_table(self):
+    def __configure_dynamodb(self):
         """
-        Configures and returns a DynamoDB service resource.
+        Configures and returns a DynamoDB table resource.
 
         Returns:
-            boto3.resources.factory.ServiceResource: The DynamoDB service resource.
+            boto3.resources.factory.ServiceResource: The DynamoDB table resource.
         """
+        resource = None
         if self.aws_config.is_local:
             resource = boto3.resource('dynamodb', region_name=self.aws_config.dynamodb_aws_region, endpoint_url='http://localhost:8000')
-            return resource.Table(self.app_config.custom_script_table_name)
         else:
             config = Config(region_name=self.aws_config.dynamodb_aws_region)
             resource = boto3.resource('dynamodb', config=config)
-            return resource.Table(self.app_config.custom_script_table_name)
+        
+        return resource.Table(self.app_config.custom_script_table_name)

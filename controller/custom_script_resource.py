@@ -2,7 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from flask import g, request
 from dacite import from_dict
 
-from configuration import AWSConfig, AppConfig, S3AsssetsFileConfig
+from configuration import AWSConfig, AppConfig, S3AsssetFileConfig
 from .server_response import ServerResponse
 from .common_controller import server_response
 from enums import APIStatus
@@ -11,16 +11,16 @@ from service import S3AssetsService, CustomScriptService
 from model import User, CustomScriptRequestDTO
 
 
-api = Namespace("Custom Script API", description="API for the working with s3 custom scripts", path="/interconnecthub/custom-scripts")
+api = Namespace('Custom Script API', description='API for the working with s3 custom scripts', path='/interconnecthub/custom-scripts')
 log = api.logger
 
 
 app_config = AppConfig()
 aws_config = AWSConfig()
-s3_assets_file_config = S3AsssetsFileConfig()
+s3_asset_file_config = S3AsssetFileConfig()
 
 custom_script_repository = CustomScriptRepository(app_config, aws_config)
-s3_assets_service = S3AssetsService(s3_assets_file_config)
+s3_assets_service = S3AssetsService(s3_asset_file_config)
 custom_script_service = CustomScriptService(s3_assets_service=s3_assets_service, custom_script_repository=custom_script_repository)
 
 
@@ -70,7 +70,7 @@ custom_script_content_response_dto = api.inherit('Custom script content response
     'payload': fields.String(description='Content of the file')
 })
 
-custom_script_release_response_dto = api.inherit('Custom script reelase response',server_response, {
+custom_script_release_response_dto = api.inherit('Custom script release response',server_response, {
     'payload': fields.Nested(releases)
 })
 
@@ -79,7 +79,7 @@ get_custom_scripts_response_dto = api.inherit('Get custom scripts response',serv
 })
 
 
-@api.route("")
+@api.route('')
 class CustomScriptResource(Resource):
 
     def __init__(self, api=None, *args, **kwargs):
@@ -117,7 +117,7 @@ class CustomScriptResource(Resource):
         return ServerResponse.success(payload=response_payload), 200
     
 
-@api.route("/<string:script_id>")
+@api.route('/<string:script_id>')
 class CustomScriptDeleteResource(Resource):
 
     def __init__(self, api=None, *args, **kwargs):
@@ -139,21 +139,21 @@ class CustomScriptDeleteResource(Resource):
         return ServerResponse.success(payload=None), 200
 
 
-@api.route("/<string:script_id>/contents")
+@api.route('/<string:script_id>/contents')
 class CustomScriptContentResource(Resource):
 
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description='Get custom script content')
-    @api.param('branch', 'Get from release or unpublished ', type=str, default="unpublished")
+    @api.doc(description='Get custom script content excluding others unpublished changes.')
+    @api.param('branch', 'Get from release or unpublished ', type=str, default='unpublished')
     @api.param('version_id', 'Get specific version ', type=str, default=None)
     @api.marshal_with(custom_script_content_response_dto, skip_none=True)
     def get(self, script_id: str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
-        branch = request.args.get('branch', type=str, default="unpublished")
+        branch = request.args.get('branch', type=str, default='unpublished')
         version_id = request.args.get('version_id', type=str)
         
         user = from_dict(User, g.get('user'))
@@ -161,21 +161,21 @@ class CustomScriptContentResource(Resource):
         response_payload = custom_script_service.get_custom_script_content(
             owner_id=user.organization_id,
             script_id=script_id,
-            from_release=branch == "release",
+            from_release=branch == 'release',
             version_id=version_id
         )
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=response_payload), 200
   
 
-@api.route("/<string:script_id>/release")
+@api.route('/<string:script_id>/release')
 class CustomScriptReleaseResource(Resource):
 
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description='Release custom script content')
+    @api.doc(description='Releases unchanged custom script of the current user')
     @api.marshal_with(custom_script_content_response_dto, skip_none=True)
     def post(self, script_id: str):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)

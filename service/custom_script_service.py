@@ -52,8 +52,12 @@ class CustomScriptService(metaclass=Singleton):
         version_id = self._upload_script_to_s3(owner_id, custom_script, payload.script)
 
         # Create and merge unpublished changes
-        unpublished_changes = self._create_and_merge_unpublished_changes(
-            owner_id, version_id, source_version_id, custom_script.unpublished_changes)
+        unpublished_change = CustomScriptUnpublishedChange(
+            version_id=version_id,
+            edited_by=owner_id,
+            source_version_id=source_version_id,
+        )
+        unpublished_changes = self._merge_unpublished_changes(unpublished_change, custom_script.unpublished_changes)
 
         # Update the repository with the new unpublished changes
         self.custom_script_repository.update_unpublished_changes(owner_id, custom_script.script_id, unpublished_changes)
@@ -182,7 +186,17 @@ class CustomScriptService(metaclass=Singleton):
     # Helper Methods
     def _merge_unpublished_changes(self, unpublished_change: CustomScriptUnpublishedChange, existing_changes: List[CustomScriptUnpublishedChange]):
         """
-        Update the list of unpublished changes with new change.
+        Update the list of unpublished changes with a new change.
+        
+        This method checks if the owner already has unpublished changes. If so, it updates the existing
+        change with the new one; otherwise, it appends the new unpublished change to the list.
+
+        Args:
+            unpublished_change (CustomScriptUnpublishedChange): The new unpublished change to merge.
+            existing_changes (List[CustomScriptUnpublishedChange]): List of current unpublished changes.
+        
+        Returns:
+            List[CustomScriptUnpublishedChange]: The updated list of unpublished changes.
         """
         latest_change = self._get_owner_unpublished_change(unpublished_change.edited_by, existing_changes)
 
@@ -200,13 +214,34 @@ class CustomScriptService(metaclass=Singleton):
     def _get_owner_unpublished_change(self, owner_id: str, unpublished_changes: List[CustomScriptUnpublishedChange]) -> Union[CustomScriptUnpublishedChange, None]:
         """
         Retrieve the unpublished changes made by the specified owner.
+
+        This helper method scans through the list of unpublished changes and returns the change
+        associated with the given owner ID, if it exists.
+
+        Args:
+            owner_id (str): The ID of the owner who made the changes.
+            unpublished_changes (List[CustomScriptUnpublishedChange]): List of all unpublished changes.
+        
+        Returns:
+            Union[CustomScriptUnpublishedChange, None]: The unpublished change for the given owner,
+            or None if no changes exist.
         """
         return next((change for change in unpublished_changes if change.edited_by == owner_id), None)
     
 
     def _get_release_by_version_id(self, version_id: str, releases: List[CustomScriptRelease]) -> Union[CustomScriptRelease, None]:
         """
-        Get the release from releases that matches version_id
+        Get the release that matches the given version ID from the list of releases.
+
+        This method searches through the list of releases and returns the release that has the
+        specified version ID, if found.
+
+        Args:
+            version_id (str): The version ID to search for.
+            releases (List[CustomScriptRelease]): List of all script releases.
+
+        Returns:
+            Union[CustomScriptRelease, None]: The matching release, or None if no release matches the version ID.
         """
         return next((release for release in releases if release.version_id == version_id), None)
     
@@ -214,13 +249,37 @@ class CustomScriptService(metaclass=Singleton):
     def _generate_relative_path(self, owner_id: str, script_id: str, extension: str, for_release: bool = False) -> str:
         """
         Generate a relative path for storing the script in S3.
+
+        This method constructs a relative path based on the owner ID, script ID, and file extension.
+        If the script is being uploaded for release, it omits the owner ID prefix.
+
+        Args:
+            owner_id (str): The ID of the owner of the script.
+            script_id (str): The unique ID of the script.
+            extension (str): The file extension of the script (e.g., 'js', 'py').
+            for_release (bool): Indicates if the path is for a released script. Default is False.
+
+        Returns:
+            str: The relative path to be used in S3 for storing the script.
         """
         prefix = f"{owner_id}_" if not for_release else ""
         return f"{script_id}/{prefix}{script_id}.{extension}"
     
 
     def _get_or_create_custom_script(self, owner_id: str, payload: CustomScriptRequestDTO) -> CustomScript:
-        """Fetches or creates a custom script based on the payload metadata."""
+        """
+        Fetches or creates a custom script based on the payload metadata.
+
+        If metadata is provided in the payload, a new custom script is created with a generated script ID.
+        If the script ID exists in the payload, the method retrieves the corresponding custom script from the repository.
+
+        Args:
+            owner_id (str): The ID of the owner of the custom script.
+            payload (CustomScriptRequestDTO): The payload containing metadata or script ID.
+
+        Returns:
+            CustomScript: The custom script, either newly created or retrieved from the repository.
+        """
         if payload.metadata:
             custom_script = CustomScript(
                 owner_id=owner_id,
@@ -238,7 +297,21 @@ class CustomScriptService(metaclass=Singleton):
 
 
     def _determine_source_version_id(self, owner_id: str, custom_script: CustomScript, payload: CustomScriptRequestDTO) -> Optional[str]:
-        """Determines the source version ID based on unpublished changes or provided payload."""
+        """
+        Determines the source version ID for saving the custom script.
+
+        This method checks if there are any unpublished changes by the owner. If so, it returns the
+        source version ID from the unpublished changes. Otherwise, it looks for the source version
+        ID in the payload and retrieves the corresponding release.
+
+        Args:
+            owner_id (str): The ID of the owner of the script.
+            custom_script (CustomScript): The custom script object.
+            payload (CustomScriptRequestDTO): The payload containing the source version ID.
+
+        Returns:
+            Optional[str]: The source version ID, or None if no valid source is found.
+        """
         unpublished_change = self._get_owner_unpublished_change(owner_id, custom_script.unpublished_changes)
         
         if unpublished_change:
@@ -256,16 +329,21 @@ class CustomScriptService(metaclass=Singleton):
 
 
     def _upload_script_to_s3(self, owner_id: str, custom_script: CustomScript, script_data: str, for_release: bool = None) -> str:
-        """Uploads the script to S3 and returns the new version ID."""
+        """
+        Uploads the script to S3 and returns the new version ID.
+
+        This method generates the relative path for storing the script, uploads the script data to S3,
+        and returns the version ID generated by S3.
+
+        Args:
+            owner_id (str): The ID of the owner of the script.
+            custom_script (CustomScript): The custom script being uploaded.
+            script_data (str): The content of the script to be uploaded.
+            for_release (bool): Indicates if this is a script for release. Default is None.
+
+        Returns:
+            str: The version ID of the script uploaded to S3.
+        """
         relative_path = self._generate_relative_path(owner_id, custom_script.script_id, custom_script.extension, for_release)
         return self.s3_assets_service.upload_script_to_s3(owner_id=owner_id, relative_path=relative_path, data=script_data)
 
-
-    def _create_and_merge_unpublished_changes(self, owner_id: str, version_id: str, source_version_id: Optional[str], existing_changes: List[CustomScriptUnpublishedChange]) -> List[CustomScriptUnpublishedChange]:
-        """Creates new unpublished changes and merges them with existing changes."""
-        unpublished_change = CustomScriptUnpublishedChange(
-            version_id=version_id,
-            edited_by=owner_id,
-            source_version_id=source_version_id,
-        )
-        return self._merge_unpublished_changes(unpublished_change, existing_changes)
