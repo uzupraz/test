@@ -5,7 +5,7 @@ from typing import Union
 
 from controller import common_controller as common_ctrl
 from utils import Singleton
-from configuration import S3AsssetFileConfig
+from configuration import S3AssetsFileConfig
 from exception import ServiceException
 from enums import ServiceStatus
 
@@ -14,9 +14,9 @@ log = common_ctrl.log
 class S3AssetsService(metaclass=Singleton):
 
 
-    def __init__(self, s3_asset_file_config: S3AsssetFileConfig) -> None:
+    def __init__(self, s3_assets_file_config: S3AssetsFileConfig) -> None:
         self.s3_client = boto3.client('s3')
-        self.s3_asset_file_config = s3_asset_file_config
+        self.s3_assets_file_config = s3_assets_file_config
 
 
     def _generate_s3_key(self, owner_id:str, relative_path:str) -> str:
@@ -41,7 +41,7 @@ class S3AssetsService(metaclass=Singleton):
         try:
             key = self._generate_s3_key(owner_id, relative_path)
             response = self.s3_client.put_object(
-                Bucket=self.s3_asset_file_config.assets_bucket_name,
+                Bucket=self.s3_assets_file_config.assets_bucket_name,
                 Key=key,
                 Body=data
             )
@@ -61,7 +61,7 @@ class S3AssetsService(metaclass=Singleton):
         try:
             key = self._generate_s3_key(owner_id, relative_path)
             params = {
-                'Bucket': self.s3_asset_file_config.assets_bucket_name, 
+                'Bucket': self.s3_assets_file_config.assets_bucket_name, 
                 'Key': key
             }
             if version_id:

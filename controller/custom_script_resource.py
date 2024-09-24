@@ -2,7 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from flask import g, request
 from dacite import from_dict
 
-from configuration import AWSConfig, AppConfig, S3AsssetFileConfig
+from configuration import AWSConfig, AppConfig, S3AssetsFileConfig
 from .server_response import ServerResponse
 from .common_controller import server_response
 from enums import APIStatus
@@ -17,10 +17,10 @@ log = api.logger
 
 app_config = AppConfig()
 aws_config = AWSConfig()
-s3_asset_file_config = S3AsssetFileConfig()
+s3_assets_file_config = S3AssetsFileConfig()
 
 custom_script_repository = CustomScriptRepository(app_config, aws_config)
-s3_assets_service = S3AssetsService(s3_asset_file_config)
+s3_assets_service = S3AssetsService(s3_assets_file_config)
 custom_script_service = CustomScriptService(s3_assets_service=s3_assets_service, custom_script_repository=custom_script_repository)
 
 
@@ -54,7 +54,7 @@ save_custom_script_request_dto = api.model('Save custom script changes payload',
     'script_id': fields.String(required=False),
     'source_version_id': fields.String(required=False),
     'is_sourced_from_release': fields.Boolean(required=False),
-    'metadata': fields.Nested(api.model('Create custom script request payload', {
+    'metadata': fields.Nested(api.model('Metadata of the custom script', {
         'language': fields.String(required=True),
         'extension': fields.String(required=True),
         'name': fields.String(required=True)
@@ -161,7 +161,7 @@ class CustomScriptContentResource(Resource):
         response_payload = custom_script_service.get_custom_script_content(
             owner_id=user.organization_id,
             script_id=script_id,
-            from_release=branch == 'release',
+            branch=branch,
             version_id=version_id
         )
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)

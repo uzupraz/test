@@ -29,14 +29,14 @@ class ServerResponse:
             result = []
             for item in payload:
                 result.append(ServerResponse.get_payload_as_dict(item))
-            result = DataTypeUtils.convert_decimals_to_floats(result)
+            result = DataTypeUtils.convert_decimals_to_float_or_int(result)
             return result
         elif isinstance(payload, dict):
-            payload = DataTypeUtils.convert_decimals_to_floats(payload)
+            payload = DataTypeUtils.convert_decimals_to_float_or_int(payload)
             return payload
         elif is_dataclass(payload):
             result = asdict(payload)
-            result = DataTypeUtils.convert_decimals_to_floats(result)
+            result = DataTypeUtils.convert_decimals_to_float_or_int(result)
             return result
 
         raise ValueError('Unsupported response body type')

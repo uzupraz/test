@@ -89,14 +89,14 @@ class CustomScriptService(metaclass=Singleton):
         return updated_scripts
 
 
-    def get_custom_script_content(self, owner_id: str, script_id: str, from_release: bool, version_id: Union[str, None]) -> str:
+    def get_custom_script_content(self, owner_id: str, script_id: str, branch: str, version_id: Union[str, None]) -> str:
         """
         Retrieve the content of a specific custom script from S3.
 
         Args:
             owner_id (str): The ID of the owner of the script.
             script_id (str): The ID of the script being retrieved.
-            from_release (bool): Get from releases or unpublished
+            branch (str): The branch name either release or unpublished
             version_id (Union[str, None]): Get specific version
 
         Returns:
@@ -104,6 +104,7 @@ class CustomScriptService(metaclass=Singleton):
         """
         log.info('Retrieving custom script content. owner_id: %s, script_id: %s', owner_id, script_id)
 
+        from_release = branch == 'release'
         custom_script = self.custom_script_repository.get_custom_script(owner_id, script_id)
 
         if from_release and not custom_script.releases:

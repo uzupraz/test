@@ -49,8 +49,8 @@ class CustomScriptRequestDTO:
 
     def __post_init__(self):
         if not self.script_id and not self.metadata:
-            log.error("Missing script metadata.")
-            raise ValueError("Missing script metadata.")
+            log.error("Atlease script_id or metadata is required.")
+            raise ValueError("Atlease script_id or metadata is required.")
         
 @dataclass
 class UnpublishedChangeResponseDTO:

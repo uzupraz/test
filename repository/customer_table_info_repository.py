@@ -67,7 +67,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
             log.info('Successfully retrieved customer tables. owner_id: %s', owner_id)
             customer_info_tables = []
             for item in response.get('Items', []):
-                item = DataTypeUtils.convert_decimals_to_floats(item)
+                item = DataTypeUtils.convert_decimals_to_float_or_int(item)
                 customer_info_tables.append(from_dict(CustomerTableInfo, item))
             return customer_info_tables
         except ClientError as e:
@@ -122,7 +122,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
                 log.error('Customer table item does not exist. owner_id: %s, table_id: %s', owner_id, table_id)
                 raise ServiceException(400, ServiceStatus.FAILURE, 'Customer table item does not exists')
             log.info('Successfully retrieved customer table item. owner_id: %s, table_id: %s', owner_id, table_id)
-            item = DataTypeUtils.convert_decimals_to_floats(item)
+            item = DataTypeUtils.convert_decimals_to_float_or_int(item)
             return from_dict(CustomerTableInfo, item)
         except ClientError as e:
             log.exception('Failed to retrieve customer table item. owner_id: %s, table_id: %s', owner_id, table_id)
@@ -155,7 +155,7 @@ class CustomerTableInfoRepository(metaclass=Singleton):
                 ReturnValues="ALL_NEW"
             )
             log.info('Successfully updated customer table description. owner_id: %s, table_id: %s', customer_table_info.owner_id, customer_table_info.table_id)
-            updated_customer_table_info = DataTypeUtils.convert_decimals_to_floats(response.get('Attributes'))
+            updated_customer_table_info = DataTypeUtils.convert_decimals_to_float_or_int(response.get('Attributes'))
             return from_dict(CustomerTableInfo, updated_customer_table_info)
         except ClientError as e:
             log.exception('Failed to update customer table description. owner_id: %s, table_id: %s', customer_table_info.owner_id, customer_table_info.table_id)
