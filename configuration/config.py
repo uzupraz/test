@@ -48,3 +48,4 @@ class OpensearchConfig(metaclass=Singleton):
     port:int = int(os.getenv('OPENSEARCH_PORT', 443))
     pool_maxsize:int = int(os.getenv('OPENSEARCH_POOL_MAXSIZE', 20))
     index:str = os.getenv('OPENSEARCH_INDEX')
+    timeout:int = int(os.getenv('OPENSEARCH_TIMEOUT_IN_SECONDS', 30))
