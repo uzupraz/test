@@ -1,0 +1,60 @@
+{
+    "took": 1118,
+    "timed_out": false,
+    "_shards": {
+      "total": 130,
+      "successful": 130,
+      "skipped": 123,
+      "failed": 0
+    },
+    "hits": {
+      "total": {
+        "value": 10,
+        "relation": "eq"
+      },
+      "max_score": null,
+      "hits": []
+    },
+    "aggregations": {
+      "workflows": {
+        "doc_count_error_upper_bound": 0,
+        "sum_other_doc_count": 0,
+        "buckets": [
+          {
+            "key": "workflow_1",
+            "doc_count": 9,
+            "workflow_name": {
+              "doc_count_error_upper_bound": 0,
+              "sum_other_doc_count": 0,
+              "buckets": [
+                {
+                  "key": "Test Workflow 1",
+                  "doc_count": 9
+                }
+              ]
+            },
+            "unique_failed_executions": {
+              "value": 9
+            }
+          },
+          {
+            "key": "workflow_2",
+            "doc_count": 1,
+            "workflow_name": {
+              "doc_count_error_upper_bound": 0,
+              "sum_other_doc_count": 0,
+              "buckets": [
+                {
+                  "key": "Test Workflow 2",
+                  "doc_count": 1
+                }
+              ]
+            },
+            "unique_failed_executions": {
+              "value": 1
+            }
+          }
+        ]
+      }
+    }
+  }

@@ -212,7 +212,7 @@ class OpensearchService(metaclass=Singleton):
         'execution_id' field.
 
         Parameters:
-            owner_id (str): The owner ID to filter workflows by.
+            owner_id (str): The owner ID to filter workflows failures by.
             start_date (str): The start date for the query.
             end_date (str): The end date for the query.
 

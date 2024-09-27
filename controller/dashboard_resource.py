@@ -66,10 +66,10 @@ workflow_failures_response_dto = api.inherit('Get Workflow Failures Response',se
             "id": fields.String(description='Workflow ID'),
             "name": fields.String(description='Workflow Name'),
         })),
-        "errors": fields.List(fields.Nested(api.model("Failure", {
+        "errors": fields.List(fields.Nested(api.model("Workflow errors during execution", {
             "error_code": fields.String(description='Error code'),
-            "occurence": fields.Float(description='Failure ratio'),
-            "severity": fields.Float(description='Severity of the failure.'),
+            "occurrence": fields.Integer(description='Total occurrence of error'),
+            "severity": fields.Float(description='Severity of the error.'),
         })))
     })))
 })

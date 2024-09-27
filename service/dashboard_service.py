@@ -111,7 +111,7 @@ class DashboardService(metaclass=Singleton):
         Get workflow failures from OpenSearch.
 
         Args:
-            owner_id (str): The owner ID to filter workflows by.
+            owner_id (str): The owner ID to filter workflows failures by.
             start_date (str): Start date for the query.
             end_date (str): End date for the query.
 

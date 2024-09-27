@@ -53,7 +53,7 @@ class IndexStatus(Enum):
 
 
 class WorkflowErrorCode(Enum):
-    UNKNOWN='UNKNOWN'
+    UNKNOWN='UNKNOWN_ERROR'
 
 
 class WorkflowErrorSeverity(Enum):
