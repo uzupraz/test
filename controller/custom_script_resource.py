@@ -9,6 +9,8 @@ from enums import APIStatus
 from repository import CustomScriptRepository
 from service import S3AssetsService, CustomScriptService
 from model import User, CustomScriptRequestDTO
+from enums import ServicePermissions, ServiceStatus
+from exception import ServiceException
 
 
 api = Namespace('Custom Script API', description='API for the working with s3 custom scripts', path='/interconnecthub/custom-scripts')
@@ -93,6 +95,10 @@ class CustomScriptResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
         user = from_dict(User, g.get('user'))
+
+        if not user.has_permission(ServicePermissions.CUSTOM_SCRIPT_SAVE_ITEM.value):
+            log.warning('User has no permission to save custom script. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to save custom script')
 
         payload = from_dict(CustomScriptRequestDTO, request.json)
         response_payload = custom_script_service.save_custom_script(
@@ -181,6 +187,10 @@ class CustomScriptReleaseResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
         user = from_dict(User, g.get('user'))
+
+        if not user.has_permission(ServicePermissions.CUSTOM_SCRIPT_RELEASE_ITEM.value):
+            log.warning('User has no permission to release custom script. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to release custom script')
 
         response_payload = custom_script_service.release_custom_script(
             owner_id=user.organization_id,

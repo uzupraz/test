@@ -28,7 +28,7 @@ class CustomScriptService(metaclass=Singleton):
         self.custom_script_repository = custom_script_repository
         self.s3_assets_service = s3_assets_service
 
-    
+
     def save_custom_script(self, owner_id: str, payload: CustomScriptRequestDTO) -> Dict[str, Any]:
         """
         Save the content of a custom script to S3 and update its unpublished changes in the repository.

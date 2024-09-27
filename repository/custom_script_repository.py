@@ -55,7 +55,7 @@ class CustomScriptRepository(metaclass=Singleton):
             items = response.get('Items')
             custom_scripts = []
             for script in items:
-                item = DataTypeUtils.convert_decimals_to_int(script)
+                item = DataTypeUtils.convert_decimals_to_float_or_int(script)
                 custom_scripts.append(from_dict(CustomScript, item))
             
             return custom_scripts
@@ -90,7 +90,7 @@ class CustomScriptRepository(metaclass=Singleton):
                 raise ServiceException(400, ServiceStatus.FAILURE, 'Custom script does not exists')
             
             log.info('Successfully retrieved custom script. owner_id: %s, script_id: %s', owner_id, script_id)
-            item = DataTypeUtils.convert_decimals_to_int(item)
+            item = DataTypeUtils.convert_decimals_to_float_or_int(item)
             return from_dict(CustomScript, item)
         except ClientError as e:
             log.exception('Failed to retrieve custom script. owner_id: %s, script_id: %s', owner_id, script_id)

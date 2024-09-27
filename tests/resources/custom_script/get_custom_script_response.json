@@ -1,0 +1,17 @@
+{
+  "owner_id": "TEST_OWNER_ID",
+  "script_id": "TEST_SCRIPT_ID",
+  "language": "python-3.11.0",
+  "extension": "py",
+  "name": "SCRIPT_NAME",
+  "releases": [
+    {
+      "version_id": "TEST_VERSION_ID",
+      "edited_by": "TEST_OWNER_ID",
+      "source_version_id": "TEST_VERSION_ID",
+      "release_date": 1726812912
+    }
+  ],
+  "unpublished_changes": [],
+  "creation_date": 1726812465
+}
