@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from enums.status import ServiceStatus
+
+from utils import Singleton
 from exception.service_exception import ServiceException
 from service.opensearch_service import OpensearchService
 from tests.test_utils import TestUtils
@@ -13,6 +14,7 @@ class TestOpensearchService(unittest.TestCase):
 
 
     def setUp(self):
+        Singleton.clear_instance(OpensearchService)
         self.config = MagicMock()
         self.config.host = "test_host"
         self.config.port = 443
@@ -21,6 +23,11 @@ class TestOpensearchService(unittest.TestCase):
         self.config.region = "us-east-1"
         self.config.service = "es"
         self.service = OpensearchService(self.config)
+
+
+    def tearDown(self) -> None:
+        del self.service
+        Singleton.clear_instance(OpensearchService)
 
 
     @patch("service.opensearch_service.OpenSearch.search")
@@ -146,7 +153,7 @@ class TestOpensearchService(unittest.TestCase):
 
         mock_search.return_value = mock_response
         response = self.service.get_execution_metrics_by_date(owner_id=owner_id, start_date=start_date, end_date=end_date)
-        
+
         self.assertEqual(response, mock_response)
         mock_search.assert_called_with(body=mock_query, index=self.service.index)
 
@@ -245,7 +252,7 @@ class TestOpensearchService(unittest.TestCase):
 
         mock_search.return_value = mock_response
         response = self.service.get_workflow_integrations(owner_id=owner_id, start_date=start_date, end_date=end_date)
-        
+
         self.assertEqual(response, mock_response)
         mock_search.assert_called_with(body=mock_query, index=self.service.index)
 
@@ -347,7 +354,7 @@ class TestOpensearchService(unittest.TestCase):
 
         mock_search.return_value = mock_response
         response = self.service.get_workflow_failed_executions(owner_id=owner_id, start_date=start_date, end_date=end_date)
-        
+
         self.assertEqual(response, mock_response)
         mock_search.assert_called_with(body=mock_query, index=self.service.index)
 
@@ -429,3 +436,58 @@ class TestOpensearchService(unittest.TestCase):
         mock_search.side_effect = OpenSearchException("OpenSearch error")
         with self.assertRaises(ServiceException):
             self.service.get_workflow_failed_executions(owner_id="owner_id", start_date="2024-01-16T08:19:24.908Z", end_date="2024-06-20T08:19:24.908Z")
+
+
+    @patch("service.opensearch_service.OpenSearch.search")
+    def test_get_workflow_failures_should_return_unique_failed_executions_of_each_workflow(self, mock_search):
+        """
+        Tests if the function returns unique failed executions of each workflow of specific owner within specified date range. Also verifies if query structure is correct.
+        """
+        owner_id = "owner_id"
+        start_date = "2024-09-20T00:00:00.908Z"
+        end_date = "2024-09-26T11:59:24.908Z"
+
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_workflow_failures_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_failures_query_response.json"
+
+        mock_query = TestUtils.get_file_content(mock_query_path)
+        mock_response = TestUtils.get_file_content(mock_response_path)
+
+        mock_search.return_value = mock_response
+        response = self.service.get_workflow_failures(owner_id=owner_id, start_date=start_date, end_date=end_date)
+
+        self.assertEqual(response, mock_response)
+        mock_search.assert_called_once_with(body=mock_query, index=self.service.index)
+
+
+    @patch("service.opensearch_service.OpenSearch.search")
+    def test_get_workflow_failures_should_return_empty_data_for_no_failed_executions(self, mock_search):
+        """
+        Tests if the function correctly handles no failed executions available for the specified date range.
+        """
+        owner_id = "owner_id"
+        start_date = "2024-09-20T00:00:00.908Z"
+        end_date = "2024-09-26T11:59:24.908Z"
+
+        mock_query_path = self.TEST_RESOURCE_PATH + "get_workflow_failures_query.json"
+        mock_response_path = self.TEST_RESOURCE_PATH + "get_workflow_failures_query_empty_data_response.json"
+
+        mock_query = TestUtils.get_file_content(mock_query_path)
+        mock_response = TestUtils.get_file_content(mock_response_path)
+
+        mock_search.return_value = mock_response
+        response = self.service.get_workflow_failures(owner_id=owner_id, start_date=start_date, end_date=end_date)
+
+        self.assertEqual(response, mock_response)
+        mock_search.assert_called_once_with(body=mock_query, index=self.service.index)
+        self.assertEqual(response["aggregations"]["workflows"]["buckets"], [])
+
+
+    @patch("service.opensearch_service.OpenSearch.search")
+    def test_get_workflow_failures_should_raise_service_exception_when_opensearch_exception_is_thrown(self, mock_search):
+        """
+        Tests if the function raises a ServiceException when an OpenSearchException occurs.
+        """
+        mock_search.side_effect = OpenSearchException("OpenSearch error")
+        with self.assertRaises(ServiceException):
+            self.service.get_workflow_failures(owner_id="owner_id", start_date="2024-01-16T08:19:24.908Z", end_date="2024-06-20T08:19:24.908Z")

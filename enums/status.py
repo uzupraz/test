@@ -50,3 +50,13 @@ class IndexStatus(Enum):
     UPDATING='UPDATING'
     DELETING='DELETING'
     ACTIVE='ACTIVE'
+
+
+class WorkflowErrorCode(Enum):
+    UNKNOWN='UNKNOWN_ERROR'
+
+
+class WorkflowErrorSeverity(Enum):
+    HIGH='HIGH'
+    MEDIUM='MEDIUM'
+    LOW='LOW'

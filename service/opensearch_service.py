@@ -23,7 +23,8 @@ class OpensearchService(metaclass=Singleton):
             use_ssl=True,
             verify_certs=True,
             connection_class=RequestsHttpConnection,
-            pool_maxsize=config.pool_maxsize
+            pool_maxsize=config.pool_maxsize,
+            timeout=config.timeout
         )
         self.index = config.index
 
@@ -69,7 +70,7 @@ class OpensearchService(metaclass=Singleton):
             end_date (str): The end date in ISO format.
 
         Returns:
-            response[dict]: The response from the OpenSearch query. 
+            response[dict]: The response from the OpenSearch query.
         """
         query = self._build_base_query(owner_id, start_date=start_date, end_date=end_date)
         aggs = {
@@ -115,7 +116,7 @@ class OpensearchService(metaclass=Singleton):
             owner_id (str): The owner ID.
             start_date (str): The start date in ISO format.
             end_date (str): The end date in ISO format.
-        
+
         Returns:
             response[dict]: The response from the OpenSearch query.
         """
@@ -150,7 +151,7 @@ class OpensearchService(metaclass=Singleton):
         }
         query["aggs"] = aggs
         return self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
-        
+
 
     def get_workflow_failed_executions(self, owner_id: str, start_date: str, end_date: str) -> dict:
         """
@@ -160,7 +161,7 @@ class OpensearchService(metaclass=Singleton):
             owner_id (str): The owner ID.
             start_date (str): The start date in ISO format.
             end_date (str): The end date in ISO format.
-        
+
         Returns:
             response[dict]: The response from the OpenSearch query.
         """
@@ -198,7 +199,54 @@ class OpensearchService(metaclass=Singleton):
         query["aggs"] = aggs
 
         return self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
-    
+
+
+    def get_workflow_failures(self, owner_id: str, start_date: str, end_date: str) -> dict:
+        """
+        Retrieves workflow failure data for a given owner within a specified date range.
+
+        This function constructs and executes a query to fetch workflows that encountered errors
+        between the provided start and end dates. It filters the data based on the 'ERROR' status
+        and aggregates results by workflow ID. For each workflow, it also aggregates the workflow
+        name (returning only one) and calculates the number of unique failed executions using the
+        'execution_id' field.
+
+        Parameters:
+            owner_id (str): The owner ID to filter workflows failures by.
+            start_date (str): The start date for the query.
+            end_date (str): The end date for the query.
+
+        Returns:
+            dict: The query result containing aggregated workflow failures.
+        """
+        query = self._build_base_query(owner_id, start_date=start_date, end_date=end_date)
+        query["query"]["bool"]["filter"].append({"match_phrase": {"status": "ERROR"}})
+
+        aggs = {
+            "workflows": {
+                "terms": {
+                    "field": "workflow_id"
+                },
+                "aggs": {
+                    "workflow_name": {
+                        "terms": {
+                            "field": "workflow_name",
+                            "size": 1
+                        }
+                    },
+                    "unique_failed_executions": {
+                        "cardinality": {
+                            "field": "execution_id"
+                        }
+                    }
+                }
+            }
+        }
+
+        query["aggs"] = aggs
+
+        return self._execute_query(query=query, owner_id=owner_id, start_date=start_date, end_date=end_date)
+
 
     def _build_base_query(self, owner_id:str, start_date:str=None, end_date:str=None, is_external:bool=False, from_:int=0, size:int=0) -> dict:
         base_query = {

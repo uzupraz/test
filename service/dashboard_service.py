@@ -1,12 +1,13 @@
 from botocore.exceptions import ClientError
+from typing import List, Dict, Any
 
 from controller import common_controller as common_ctrl
 from repository import WorkflowRepository
 from service.opensearch_service import OpensearchService
-from model import WorkflowStats, WorkflowExecutionMetric, WorkflowFailedEvent, WorkflowFailure, WorkflowFailureItem, WorkflowIntegration, WorkflowItem
+from model import WorkflowStats, WorkflowExecutionMetric, WorkflowFailedEvent, WorkflowFailure, WorkflowError, WorkflowIntegration, WorkflowItem
 from utils import Singleton
 from exception import ServiceException
-from enums import ServiceStatus, SystemStatus
+from enums import ServiceStatus, SystemStatus, WorkflowErrorCode, WorkflowErrorSeverity
 
 
 log = common_ctrl.log
@@ -105,41 +106,26 @@ class DashboardService(metaclass=Singleton):
         return workflow_failed_executions
 
 
-    def get_workflow_failures(self, owner_id: str, start_date:str, end_date:str) -> list[WorkflowFailure]:
+    def get_workflow_failures(self, owner_id: str, start_date:str, end_date:str) -> List[WorkflowFailure]:
         """
         Get workflow failures from OpenSearch.
 
         Args:
-            owner_id (str): Owner ID for the failures.
-            start_date (str): Start date for the failures.
-            end_date (str): End date for the failures.
+            owner_id (str): The owner ID to filter workflows failures by.
+            start_date (str): Start date for the query.
+            end_date (str): End date for the query.
 
         Returns:
-            workflow_failures(list[WorkflowFailure]): Workflow failures.
+            workflow_failures(list[WorkflowFailure]): List of Workflow failures containing error codes and their occurences and severity.
 
         Raises:
             ServiceException: If there is an error while getting the workflow failures.
         """
-        try:
-            log.info('Getting workflow failures. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
-            #! REPLACE THIS WITH REAL DB QUERY
-            workflow_failures = [
-                WorkflowFailure(
-                    color="red",
-                    workflow_name="Workflow 1",
-                    failures=[
-                        WorkflowFailureItem(
-                            error_code="ERR-001",
-                            failure_ratio=0.2,
-                            severity=0.5,
-                        )
-                    ],
-                )
-            ]
-            return workflow_failures
-        except ClientError as e:
-            log.exception('Failed to get workflow failures.')
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t get workflow failures')
+
+        log.info('Getting workflow failures. owner_id: %s, start_date: %s, end_date: %s', owner_id, start_date, end_date)
+        response = self.opensearch_service.get_workflow_failures(owner_id, start_date, end_date)
+        workflow_failures = self._transform_workflow_failures(response)
+        return workflow_failures
 
 
     def _map_workflow_stats(self, response:dict, active_workflows_count:int) -> WorkflowStats:
@@ -227,3 +213,39 @@ class DashboardService(metaclass=Singleton):
                 workflow_failed_events.append(workflow_failed_event)
 
         return workflow_failed_events
+
+
+    def _transform_workflow_failures(self, response: Dict[str, Any]) -> List[WorkflowFailure]:
+        """
+        Transforms the OpenSearch aggregation response into a list of WorkflowFailure objects.
+
+        Parameters:
+            response (Dict[str, Any]): The aggregation response from OpenSearch, containing buckets of workflows and their failure data.
+
+        Returns:
+            List[WorkflowFailure]: A list of WorkflowFailure objects containing workflow and error details.
+        """
+        workflow_failures = []
+        for bucket in response['aggregations']['workflows']['buckets']:
+            workflow_id = bucket['key']
+            workflow_name = bucket['workflow_name']['buckets'][0]['key']
+            error_occurrence = bucket['unique_failed_executions']['value']
+
+            # Create Workflow Item instance
+            workflow = WorkflowItem(
+                id=workflow_id,
+                name=workflow_name
+            )
+
+            # Create WorkflowError instance
+            error = WorkflowError(occurrence=error_occurrence)
+
+            # Create WorkflowFailure instance
+            workflow_failure = WorkflowFailure(
+                workflow=workflow,
+                errors=[error]
+            )
+
+            workflow_failures.append(workflow_failure)
+
+        return workflow_failures
