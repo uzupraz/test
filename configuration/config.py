@@ -14,6 +14,8 @@ class AppConfig(metaclass=Singleton):
     workflow_table_name:str = os.getenv('APP_WORKFLOW_TABLENAME')
     customer_table_info_table_name:str = os.getenv('APP_CUSTOMER_TABLE_INFO_TABLENAME')
     processor_templates_table_name:str = os.getenv('APP_PROCESSORTEMPLATES_TABLENAME')
+    updater_release_table_name: str = os.getenv('UPDATER_RELEASE_TABLENAME')
+    updater_csa_info_table_name: str = os.getenv('UPDATER_CSA_INFO_TABLENAME')
 
 
 @dataclasses.dataclass(init=False)
@@ -36,6 +38,13 @@ class AsyncFileDeliveryS3Config(metaclass=Singleton):
     object_prefix: str = os.getenv('APP_FILES_OBJECT_PREFIX', '')
     pre_signed_url_expiration: int = int(os.getenv('APP_FILES_PRE_SIGNED_URL_EXPIRATION_IN_SECONDS', 3600))
 
+@dataclasses.dataclass(init=False)
+class S3AssetsFileConfig(metaclass=Singleton):
+    """
+    Configuration needed for assets bucket are loaded here.
+    """
+    assets_bucket_name: str = os.getenv('S3_ASSETS_BUCKET_NAME')
+    pre_signed_url_expiration: int = int(os.getenv('S3_ASSETS_PRE_SIGNED_URL_EXPIRATION_IN_SECONDS',3600))
 
 @dataclasses.dataclass(init=False)
 class OpensearchConfig(metaclass=Singleton):

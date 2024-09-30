@@ -4,3 +4,4 @@ from .user import User
 from .dashboard import WorkflowStats, WorkflowIntegration, WorkflowFailure, WorkflowFailedEvent, WorkflowExecutionMetric, WorkflowItem, WorkflowFailureItem
 from .data_table import ListTableResponse, CustomerTableInfo, UpdateTableRequest, IndexInfo, CustomerTableItem, CustomerTableItemPagination, BackupJob
 from .data_studio import OutputSchemaField, OutputSchema, InputSchema, Mapping, MappingFrom, MappingTo
+from .updater import Module, TargetList, UpdateResponse

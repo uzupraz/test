@@ -93,6 +93,14 @@ processor_template_dto = api.model('Processor Template', {
     'version': fields.Integer()
 })
 
+#Updater Related DTO Items
+target_list_dto= api.model('TargetList',{
+    'module_name': fields.String(required=True),
+    'version': fields.String(required=True),
+    'url': fields.String(required=True),
+    'checksum': fields.String(required=True)
+})
+
 
 @api.route('/')
 class HealthResource(Resource):
