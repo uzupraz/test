@@ -1,11 +1,11 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-
-from model import WorkflowExecutionMetric, WorkflowFailedEvent, WorkflowIntegration, WorkflowItem, WorkflowStats
+from utils import Singleton
+from model import WorkflowExecutionMetric, WorkflowFailedEvent, WorkflowIntegration, WorkflowItem, WorkflowStats, WorkflowFailure, WorkflowError
 from repository import WorkflowRepository
 from service import DashboardService, OpensearchService
-from enums import SystemStatus
+from enums import SystemStatus, WorkflowErrorCode, WorkflowErrorSeverity
 from tests.test_utils import TestUtils
 
 
@@ -16,9 +16,15 @@ class TestDashboardService(unittest.TestCase):
 
 
     def setUp(self) -> None:
+        Singleton.clear_instance(WorkflowRepository)
+        Singleton.clear_instance(OpensearchService)
+        Singleton.clear_instance(DashboardService)
+
         app_config = MagicMock()
         aws_config = MagicMock()
-        
+        aws_config.is_local = True
+        aws_config.dynamodb_aws_region = "local"
+
         self.opensearch_config = MagicMock()
         self.opensearch_config.host = "test_host"
         self.opensearch_config.port = 443
@@ -30,6 +36,16 @@ class TestDashboardService(unittest.TestCase):
         self.workflow_repository = WorkflowRepository(app_config, aws_config)
         self.opensearch_service = OpensearchService(self.opensearch_config)
         self.dashboard_service = DashboardService(self.workflow_repository, self.opensearch_service)
+
+
+    def tearDown(self) -> None:
+        del self.workflow_repository
+        del self.opensearch_service
+        del self.dashboard_service
+
+        Singleton.clear_instance(WorkflowRepository)
+        Singleton.clear_instance(OpensearchService)
+        Singleton.clear_instance(DashboardService)
 
 
     @patch("service.dashboard_service.WorkflowRepository.count_active_workflows")
@@ -255,3 +271,71 @@ class TestDashboardService(unittest.TestCase):
 
         self.assertIn('workflow_name', str(context.exception))
         mock_get_workflow_failed_executions.assert_called_with(owner_id, start_date, end_date)
+
+
+    @patch("service.dashboard_service.OpensearchService.get_workflow_failures")
+    def test_get_workflow_failures_happy_case(self, mock_get_workflow_failures):
+        """
+        Tests whether this function correctly returns the workflow failures and transforms the opensearch response to the desired output.
+        """
+        owner_id = "owner_id"
+        start_date = "2024-09-20T00:00:00.908Z"
+        end_date = "2024-09-26T11:59:24.908Z"
+
+        mock_response_path = '/tests/resources/opensearch/get_workflow_failures_query_response.json'
+        mock_response = TestUtils.get_file_content(mock_response_path)
+
+        mock_get_workflow_failures.return_value = mock_response
+
+        actual_result = self.dashboard_service.get_workflow_failures(owner_id, start_date, end_date)
+        expected_result = [
+            WorkflowFailure(
+                workflow=WorkflowItem(
+                    id='workflow_1',
+                    name='Test Workflow 1'
+                ),
+                errors=[
+                    WorkflowError(
+                        occurrence=9,
+                        error_code=WorkflowErrorCode.UNKNOWN.value,
+                        severity=WorkflowErrorSeverity.HIGH.value
+                    )
+                ]
+            ),
+            WorkflowFailure(
+                workflow=WorkflowItem(
+                    id='workflow_2',
+                    name='Test Workflow 2'
+                ),
+                errors=[
+                    WorkflowError(
+                        occurrence=1,
+                        error_code=WorkflowErrorCode.UNKNOWN.value,
+                        severity=WorkflowErrorSeverity.HIGH.value
+                    )
+                ]
+            )
+        ]
+
+        self.assertEqual(actual_result, expected_result)
+        mock_get_workflow_failures.assert_called_once_with(owner_id, start_date, end_date)
+
+
+    @patch("service.dashboard_service.OpensearchService.get_workflow_failures")
+    def test_get_workflow_failures_should_return_empty_list(self, mock_get_workflow_failures):
+        """
+        Tests whether this function correctly returns an empty list when the opensearch query returns no results.
+        """
+        owner_id = "owner_id"
+        start_date = "2024-09-20T00:00:00.908Z"
+        end_date = "2024-09-26T11:59:24.908Z"
+
+        mock_response_path = '/tests/resources/opensearch/get_workflow_failures_query_empty_data_response.json'
+        mock_response = TestUtils.get_file_content(mock_response_path)
+
+        mock_get_workflow_failures.return_value = mock_response
+
+        actual_result = self.dashboard_service.get_workflow_failures(owner_id, start_date, end_date)
+
+        self.assertListEqual(actual_result, [])
+        mock_get_workflow_failures.assert_called_once_with(owner_id, start_date, end_date)

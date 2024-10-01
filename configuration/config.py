@@ -13,6 +13,7 @@ class AppConfig(metaclass=Singleton):
     log_level:str = os.getenv('APP_LOG_LEVEL', 'DEBUG').upper()
     workflow_table_name:str = os.getenv('APP_WORKFLOW_TABLENAME')
     customer_table_info_table_name:str = os.getenv('APP_CUSTOMER_TABLE_INFO_TABLENAME')
+    custom_script_table_name:str = os.getenv('APP_CUSTOM_SCRIPT_TABLENAME')
     processor_templates_table_name:str = os.getenv('APP_PROCESSORTEMPLATES_TABLENAME')
     updater_release_table_name: str = os.getenv('UPDATER_RELEASE_TABLENAME')
     updater_csa_info_table_name: str = os.getenv('UPDATER_CSA_INFO_TABLENAME')
@@ -46,6 +47,7 @@ class S3AssetsFileConfig(metaclass=Singleton):
     assets_bucket_name: str = os.getenv('S3_ASSETS_BUCKET_NAME')
     pre_signed_url_expiration: int = int(os.getenv('S3_ASSETS_PRE_SIGNED_URL_EXPIRATION_IN_SECONDS',3600))
 
+
 @dataclasses.dataclass(init=False)
 class OpensearchConfig(metaclass=Singleton):
     """
@@ -57,3 +59,4 @@ class OpensearchConfig(metaclass=Singleton):
     port:int = int(os.getenv('OPENSEARCH_PORT', 443))
     pool_maxsize:int = int(os.getenv('OPENSEARCH_POOL_MAXSIZE', 20))
     index:str = os.getenv('OPENSEARCH_INDEX')
+    timeout:int = int(os.getenv('OPENSEARCH_TIMEOUT_IN_SECONDS', 30))

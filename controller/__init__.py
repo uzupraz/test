@@ -18,6 +18,7 @@ from .data_studio_resource import api as data_studio_ns
 from .files_resource import api as files_ns
 from .data_table_resource import api as data_table_ns
 from .updater_resource import api as updater_ns
+from .custom_script_resource import api as custom_script_ns
 from .server_response import ServerResponse
 from enums import ServiceStatus, APIStatus
 from exception import ServiceException
@@ -25,7 +26,7 @@ from exception import ServiceException
 
 
 api = Api(version='1.0', title='InterconnectHub Management API', description='InterconnectHub Management for Workflow related services.', doc='/api-docs')
-namespaces = [health_ns, workflow_ns, processors_ns, files_ns, dashboard_ns, data_studio_ns, data_table_ns, updater_ns]
+namespaces = [health_ns, workflow_ns, processors_ns, files_ns, dashboard_ns, data_studio_ns, data_table_ns, custom_script_ns, updater_ns]
 
 for ns in namespaces:
     api.add_namespace(ns)

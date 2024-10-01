@@ -3,3 +3,4 @@ from .customer_table_info_repository import CustomerTableInfoRepository
 from .processor_template_repo import ProcessorTemplateRepo
 from .customer_table_repository import CustomerTableRepository
 from .updater_repository import UpdaterRepository
+from .custom_script_repository import CustomScriptRepository

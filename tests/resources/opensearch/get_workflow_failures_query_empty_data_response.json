@@ -1,0 +1,25 @@
+{
+    "took": 4997,
+    "timed_out": false,
+    "_shards": {
+      "total": 130,
+      "successful": 130,
+      "skipped": 128,
+      "failed": 0
+    },
+    "hits": {
+      "total": {
+        "value": 0,
+        "relation": "eq"
+      },
+      "max_score": null,
+      "hits": []
+    },
+    "aggregations": {
+      "workflows": {
+        "doc_count_error_upper_bound": 0,
+        "sum_other_doc_count": 0,
+        "buckets": []
+      }
+    }
+  }

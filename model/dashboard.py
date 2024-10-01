@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from enums import SystemStatus
+from enums import SystemStatus, WorkflowErrorCode, WorkflowErrorSeverity
 
 @dataclass
 class WorkflowItem:
@@ -23,16 +23,16 @@ class WorkflowIntegration:
     workflow: WorkflowItem
 
 @dataclass
-class WorkflowFailureItem:
-    error_code: str
-    failure_ratio: float
-    severity: float
+class WorkflowError:
+    occurrence: int
+    error_code: str = WorkflowErrorCode.UNKNOWN.value
+    severity: str = WorkflowErrorSeverity.HIGH.value
+
 
 @dataclass
 class WorkflowFailure:
-    color: str
-    workflow_name: str
-    failures: list[WorkflowFailureItem]
+    workflow: WorkflowItem
+    errors: list[WorkflowError]
 
 @dataclass
 class WorkflowFailedEvent:
