@@ -42,12 +42,16 @@ class S3AssetsService(metaclass=Singleton):
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Could not get pre-signed url')
 
     
-    def get_updates_url_from_s3(self ,s3_key:str) -> str:
+    def generate_download_pre_signed_url(self ,s3_key:str) -> str:
         """
-        Returns the updates url for modules in S3.
+        Gets a pre-signed url to download a file from S3 Asset Bucket.
+        Args:
+            s3_key (str): The S3 object key
+        Returns:
+            str: Pre-signed URL
         """
         return self._generate_pre_signed_url(self.s3_assets_file_config.assets_bucket_name, s3_key, 'get_object')
-
+    
     def _generate_s3_key(self, owner_id:str, relative_path:str) -> str:
         """
         Generates an s3 key for the provided details.

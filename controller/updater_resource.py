@@ -1,12 +1,15 @@
 from flask_restx import fields, Resource, Namespace
-from flask import request
+from flask import g, request
+from dacite import from_dict
 
 from .server_response import ServerResponse
 from .common_controller import target_list_dto,server_response
 from configuration import AWSConfig, AppConfig, S3AssetsFileConfig
 from service import UpdaterService
 from repository import UpdaterRepository
-from enums import APIStatus
+from enums import APIStatus, ServicePermissions, ServiceStatus
+from exception import ServiceException
+from model import User
 
 api = Namespace('Update API ', description='Manages operation related to updater.', path='/interconnecthub/updates')
 log=api.logger
@@ -29,17 +32,27 @@ class UpdaterResource(Resource):
     @api.doc('Check for available updates')
     @api.marshal_with(update_response_dto, skip_none=True)
     def post(self):
-        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START)
-        try:
-            data = request.json
-            owner_id =  data['owner_id']
-            machine_id = data['machine_id']
-            module_list = data['modules']
-            
-            update_response = self.updater_service.get_target_list(machine_id, owner_id, module_list)  
-            log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS)
-            return ServerResponse.success(update_response), 200
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
-        except KeyError as e:
-            log.error("Missing key in request body: %s, api: %s, method: %s", str(e), request.url, request.method)
-            return ServerResponse.error('Missing required parameters.'), 400  
+        user = from_dict(User, g.get('user'))
+
+        
+        request_body = api.payload
+        machine_id = request_body['machine_id']
+        machine_module_list = request_body['modules']
+
+        if not user.has_permission(ServicePermissions.UPDATER_GET_TARGET_LIST.value):
+            log.warning('User has no permission to get target list. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to get target list')
+            
+        response_payload = self.updater_service.get_target_list(
+            owner_id=user.organization_id, 
+            machine_id=machine_id, 
+            machine_module_list=machine_module_list
+        )  
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(response_payload), 200
+
+    
+
+   
