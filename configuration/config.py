@@ -15,8 +15,8 @@ class AppConfig(metaclass=Singleton):
     customer_table_info_table_name:str = os.getenv('APP_CUSTOMER_TABLE_INFO_TABLENAME')
     custom_script_table_name:str = os.getenv('APP_CUSTOM_SCRIPT_TABLENAME')
     processor_templates_table_name:str = os.getenv('APP_PROCESSORTEMPLATES_TABLENAME')
-    updater_release_table_name: str = os.getenv('UPDATER_RELEASE_TABLENAME')
-    updater_csa_info_table_name: str = os.getenv('UPDATER_CSA_INFO_TABLENAME')
+    updater_csa_module_versions_table_name: str = os.getenv('UPDATER_CSA_MODULE_VERSIONS_TABLENAME')
+    updater_csa_machines_table_name: str = os.getenv('UPDATER_CSA_MACHINES_TABLENAME')
 
 
 @dataclasses.dataclass(init=False)

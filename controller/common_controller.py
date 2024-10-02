@@ -94,12 +94,12 @@ processor_template_dto = api.model('Processor Template', {
 })
 
 #Updater Related DTO Items
-target_list_dto= api.model('TargetList',{
-    'module_name': fields.String(required=True),
-    'version': fields.String(required=True),
-    'url': fields.String(required=True),
-    'checksum': fields.String(required=True)
-})
+target_list_dto = api.model('TargetList', {
+    'module_name': fields.String(required=True, description='The name of the module for which the target version is specified.'),
+    'version': fields.String(required=True, description='The specific version of the target module.'),
+    'url': fields.String(required=True, description='The presigned url where the module can be downloaded from.'),
+    'checksum': fields.String(required=True, description='The checksum of the bundled module for verification purposes.')
+}, description='A data transfer object representing a target module version with its associated metadata.')
 
 
 @api.route('/')
