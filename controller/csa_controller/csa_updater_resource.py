@@ -48,7 +48,7 @@ class CsaUpdaterResource(Resource):
         response_payload = self.csa_updater_service.get_target_list(
             owner_id=user.organization_id, 
             machine_id=request_data.machine_id, 
-            machine_modules=request_data.modules
+            modules=request_data.modules
         )  
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(response_payload), 200

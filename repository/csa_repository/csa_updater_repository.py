@@ -58,9 +58,9 @@ class CsaUpdaterRepository(metaclass=Singleton):
                 csa_machine_info.append(from_dict(MachineInfo, item))
 
         except ClientError as e:
-            log.exception("Failed to retrive owner's machine information. table_name: %s, owner_id: %s, message: %s", table_name, owner_id, e.response['Error']['Message'])
+            log.exception("Failed to retrieve owner's machine information. table_name: %s, owner_id: %s, message: %s", table_name, owner_id, e.response['Error']['Message'])
             code = e.response['ResponseMetadata']['HTTPStatusCode']
-            raise ServiceException(code, ServiceStatus.FAILURE, "Could not retrive owner's machine info")
+            raise ServiceException(code, ServiceStatus.FAILURE, "Could not retrieve owner's machine info")
         return csa_machine_info
         
 
@@ -89,9 +89,9 @@ class CsaUpdaterRepository(metaclass=Singleton):
             for item in items:
                 latest_modules.append(from_dict(ModuleInfo, item))
         except ClientError as e:
-            log.exception("Failed to retrive latest modules. table_name: %s, message: %s", table_name, e.response['Error']['Message'])
+            log.exception("Failed to retrieve latest modules. table_name: %s, message: %s", table_name, e.response['Error']['Message'])
             code = e.response['ResponseMetadata']['HTTPStatusCode']
-            raise ServiceException(code, ServiceStatus.FAILURE, "Could not retrive owner's machine info")
+            raise ServiceException(code, ServiceStatus.FAILURE, "Could not retrieve owner's machine info")
         return latest_modules
         
 
