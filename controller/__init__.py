@@ -17,7 +17,7 @@ from .processor_template_resource import api as processors_ns
 from .data_studio_resource import api as data_studio_ns
 from .files_resource import api as files_ns
 from .data_table_resource import api as data_table_ns
-from .csa_controller.csa_updater_resource import api as csa_updater_ns
+from .csa.csa_updater_resource import api as csa_updater_ns
 from .custom_script_resource import api as custom_script_ns
 from .server_response import ServerResponse
 from enums import ServiceStatus, APIStatus

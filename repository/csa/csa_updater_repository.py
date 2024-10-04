@@ -14,6 +14,7 @@ from utils import Singleton
 
 log = common_ctrl.log
 
+
 class CsaUpdaterRepository(metaclass=Singleton):
 
 

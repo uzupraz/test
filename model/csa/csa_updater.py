@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from typing import List
 
+
 @dataclass
 class Module:
     module_name: str
     version: str
+
 
 @dataclass
 class TargetList:
@@ -13,11 +15,13 @@ class TargetList:
     presigned_url: str
     checksum: str
 
+
 @dataclass
 class UpdateRequest:
     owner_id: str
     machine_id: str
     modules: List[Module]
+
 
 @dataclass
 class UpdateResponse:
@@ -30,6 +34,7 @@ class MachineInfo:
     machine_id: str
     platform: str
     modules: List[Module]
+
 
 @dataclass
 class ModuleInfo:

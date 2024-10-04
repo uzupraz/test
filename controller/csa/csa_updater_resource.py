@@ -54,5 +54,3 @@ class CsaUpdaterResource(Resource):
         return ServerResponse.success(response_payload), 200
 
     
-
-   

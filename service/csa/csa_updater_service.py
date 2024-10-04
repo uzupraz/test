@@ -11,6 +11,7 @@ from ..s3_service.s3_assets_service import S3AssetsService
 
 log = common_ctrl.log
 
+
 class CsaUpdaterService(metaclass=Singleton):
 
 
@@ -165,7 +166,6 @@ class CsaUpdaterService(metaclass=Singleton):
 
         # If there is a higher patch version, return that, otherwise return the next minor version.
         return next_patch_version or next_minor_version or current_version
-
 
 
     def _generate_asset_key(self, module_name: str, next_version: version.Version, platform: str) -> str:

@@ -6,7 +6,7 @@ from .dashboard_service import DashboardService
 from .opensearch_service import OpensearchService
 from .data_table_service import DataTableService
 from .data_studio_service import DataStudioService
-from .csa_service.csa_updater_service import CsaUpdaterService
+from .csa.csa_updater_service import CsaUpdaterService
 from .custom_script_service import  CustomScriptService
 
 from .s3_service.s3_assets_service import S3AssetsService

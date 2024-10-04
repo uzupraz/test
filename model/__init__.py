@@ -4,5 +4,5 @@ from .user import User
 from .dashboard import WorkflowStats, WorkflowIntegration, WorkflowFailure, WorkflowFailedEvent, WorkflowExecutionMetric, WorkflowItem, WorkflowError
 from .data_table import ListTableResponse, CustomerTableInfo, UpdateTableRequest, IndexInfo, CustomerTableItem, CustomerTableItemPagination, BackupJob
 from .data_studio import OutputSchemaField, OutputSchema, InputSchema, Mapping, MappingFrom, MappingTo
-from .csa_model.csa_updater import Module, TargetList, UpdateRequest, UpdateResponse, MachineInfo, ModuleInfo
+from .csa.csa_updater import Module, TargetList, UpdateRequest, UpdateResponse, MachineInfo, ModuleInfo
 from .custom_script import CustomScriptUnpublishedChange, CustomScript, CustomScriptRelease, CustomScriptMetadata, CustomScriptRequestDTO, UnpublishedChangeResponseDTO, CustomScriptContentResponse

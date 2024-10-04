@@ -12,7 +12,7 @@ from utils import Singleton
 class TestCsaUpdaterRepository(unittest.TestCase):
 
 
-    test_resource_path = '/tests/resources/csa_updater/'
+    test_resource_path = '/tests/resources/csa/'
 
 
     def setUp(self) -> None:
@@ -20,7 +20,7 @@ class TestCsaUpdaterRepository(unittest.TestCase):
         self.app_config = Mock()
         self.aws_config = Mock()
         Singleton.clear_instance(CsaUpdaterRepository)
-        with patch('repository.csa_repository.csa_updater_repository.CsaUpdaterRepository._CsaUpdaterRepository__configure_table') as mock_configure_table:
+        with patch('repository.csa.csa_updater_repository.CsaUpdaterRepository._CsaUpdaterRepository__configure_table') as mock_configure_table:
             self.mock_configure_table = mock_configure_table
             mock_configure_table.return_value = self.mock_table
             self.repo = CsaUpdaterRepository(self.app_config, self.aws_config)

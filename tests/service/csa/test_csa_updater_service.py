@@ -11,10 +11,11 @@ from enums import ServiceStatus
 from utils import Singleton
 from tests.test_utils import TestUtils
 
+
 class TestCsaUpdaterService(unittest.TestCase):
 
 
-    TEST_RESOURCE_PATH = '/tests/resources/csa_updater/'
+    TEST_RESOURCE_PATH = '/tests/resources/csa/'
 
 
     def setUp(self) -> None:
