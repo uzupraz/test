@@ -1,1 +1,1 @@
-from .csa_updater import Module, TargetList, UpdateRequest, UpdateResponse, MachineInfo, ModuleInfo
+from .csa_updater import Module, Targets, UpdateRequest, UpdateResponse, MachineInfo, ModuleInfo

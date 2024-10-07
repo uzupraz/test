@@ -9,7 +9,7 @@ class Module:
 
 
 @dataclass
-class TargetList:
+class Targets:
     module_name: str
     version: str
     presigned_url: str
@@ -25,7 +25,7 @@ class UpdateRequest:
 
 @dataclass
 class UpdateResponse:
-    target_list: List[TargetList]
+    targets: List[Targets]
 
 
 @dataclass

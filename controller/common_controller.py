@@ -93,8 +93,8 @@ processor_template_dto = api.model('Processor Template', {
     'version': fields.Integer()
 })
 
-#Updater Related DTO Items
-target_list_dto = api.model('TargetList', {
+# CSA (Client Side Application) updater Related DTO Items
+targets_dto = api.model('Targets', {
     'module_name': fields.String(required=True, description='The name of the module for which the target version is specified.'),
     'version': fields.String(required=True, description='The specific version of the target module.'),
     'url': fields.String(required=True, description='The presigned url where the module can be downloaded from.'),

@@ -2,8 +2,8 @@ from packaging import version
 from typing import List, Dict
 from configuration import S3AssetsFileConfig
 from controller import common_controller as common_ctrl
-from repository import CsaUpdaterRepository
-from model import Module, TargetList, UpdateResponse, MachineInfo, ModuleInfo
+from repository import CsaMachinesRepository, CsaModuleVersionsRepository
+from model import Module, Targets, UpdateResponse, MachineInfo, ModuleInfo
 from utils import Singleton
 from exception import ServiceException
 from enums import ServiceStatus
@@ -15,19 +15,21 @@ log = common_ctrl.log
 class CsaUpdaterService(metaclass=Singleton):
 
 
-    def __init__(self, repository: CsaUpdaterRepository, s3_assets_file_config: S3AssetsFileConfig) -> None:
+    def __init__(self, csa_machines_repository: CsaMachinesRepository, csa_module_versions_repository: CsaModuleVersionsRepository, s3_assets_file_config: S3AssetsFileConfig) -> None:
         """
         Initializes the CsaUpdaterService with the provided repository and S3 asset configuration.
 
         Args:
-            repository (CsaUpdaterRepository): The repository to interact with the CSA data.
+            csa_module_versions_repository (CsaModuleVersionsRepository): The repository to interact with the CSA's modules.
+            csa_machines_repository (CsaMachinesRepository): The repository to interact with the CSA machine info.
             s3_assets_file_config (S3AssetsFileConfig): Configuration for S3 asset file handling.
         """
-        self.repository = repository
+        self.csa_machines_repository = csa_machines_repository
+        self.csa_module_versions_repository = csa_module_versions_repository
         self.s3_asset_service = S3AssetsService(s3_assets_file_config)
 
 
-    def get_target_list(self, owner_id: str, machine_id: str, machine_modules: List[Module]) -> UpdateResponse:
+    def get_targets(self, owner_id: str, machine_id: str, machine_modules: List[Module]) -> UpdateResponse:
         """
         Generates a target list of modules the machine needs based on the current machine's versions and repository data.
 
@@ -39,7 +41,7 @@ class CsaUpdaterService(metaclass=Singleton):
         Returns:
             UpdateResponse: The response containing the target list of modules.
         """
-        log.info('Getting target list for owner_id: %s and machine_id: %s', owner_id, machine_id)
+        log.info('Getting target list for owner_id: %s, machine_id: %s', owner_id, machine_id)
         
         csa_table_info: MachineInfo = self._get_csa_machine_info(owner_id, machine_id) 
         modules = csa_table_info.modules 
@@ -47,12 +49,13 @@ class CsaUpdaterService(metaclass=Singleton):
 
         machine_versions = self._get_machine_versions(machine_modules)
         
-        target_list = self._process_modules(modules, machine_versions, platform)
+        targets = self._process_modules(modules, machine_versions, platform)
         
-        self._update_modules(machine_id, owner_id, target_list)
+        self._update_modules(machine_id, owner_id, targets)
         
-        log.info("Final target list: %s", target_list)
-        return UpdateResponse(target_list=target_list)
+        log.info("Final target list: %s", targets)
+        
+        return UpdateResponse(targets=targets)
 
 
     def _get_csa_machine_info(self, owner_id: str, machine_id: str) -> Dict:
@@ -69,9 +72,10 @@ class CsaUpdaterService(metaclass=Singleton):
         Raises:
             ServiceException: If no information is found for the machine_id.
         """
-        csa_table_info = self.repository.get_csa_machines_info(owner_id=owner_id, machine_id=machine_id)
+        csa_table_info = self.csa_machines_repository.get_csa_machines_info(owner_id=owner_id, machine_id=machine_id)
         if not csa_table_info:
             raise ServiceException(404, ServiceStatus.FAILURE, f"No target list found for machine_id: {machine_id}")
+        
         return csa_table_info[0]
 
 
@@ -92,7 +96,7 @@ class CsaUpdaterService(metaclass=Singleton):
         }
 
 
-    def _process_modules(self, modules: List[Module], machine_versions: Dict[str, version.Version], platform: str) -> List[TargetList]:
+    def _process_modules(self, modules: List[Module], machine_versions: Dict[str, version.Version], platform: str) -> List[Targets]:
         """
         Processes the modules to determine which need updates and generates the target list.
 
@@ -102,21 +106,21 @@ class CsaUpdaterService(metaclass=Singleton):
             platform (str): The platform (e.g., 'windows' or 'linux') for generating S3 keys.
 
         Returns:
-            List[TargetList]: The target list containing modules that require updates.
+            List[Targets]: The target list containing modules that require updates.
         """
-        target_list = []
+        targets = []
         for module_version in modules:
             module_name = module_version.module_name
             current_version = version.parse(module_version.version)
             machine_version = machine_versions.get(module_name, current_version)
 
-            module_version_info = self.repository.get_csa_module_versions(module_name)
+            module_version_infos = self.csa_module_versions_repository.get_csa_module_versions(module_name)
             
-            if not module_version_info:
+            if not module_version_infos:
                 log.warning(f"No release info found for module: {module_name}")
                 continue
 
-            available_versions = [version.parse(item.version) for item in module_version_info]
+            available_versions = [version.parse(item.version) for item in module_version_infos]
 
             log.info(f"Module: {module_name}, Current version: {current_version}, "
                     f"Machine version: {machine_version}, Available versions: {available_versions}")
@@ -125,13 +129,13 @@ class CsaUpdaterService(metaclass=Singleton):
 
             if next_version.minor != machine_version.minor and next_version.minor > machine_version.minor:
                 next_version_string = version.parse(f"{next_version.major}.{next_version.minor}.0")
-                target_list.append(self._create_target_list_item(module_name, next_version_string, module_version_info, platform))
+                targets.append(self._create_targets_item(module_name, next_version_string, module_version_infos, platform))
                 log.info(f"Update found for {module_name}: {machine_version} -> {next_version_string}")
             else:
-                target_list.append(self._create_target_list_item(module_name, next_version, module_version_info, platform))
+                targets.append(self._create_targets_item(module_name, next_version, module_version_infos, platform))
                 log.info(f"Update found for {module_name}: {machine_version} -> {next_version}")
 
-        return target_list
+        return targets
 
 
     def _get_next_version(self, current_version: version.Version, available_versions: List[version.Version]) -> version.Version:
@@ -181,30 +185,30 @@ class CsaUpdaterService(metaclass=Singleton):
             str: The generated S3 key.
         """
         file_extension = '.zip' if platform == 'windows' else '.tar'
+        
         return f"system/csa_modules/{module_name}/{platform}/{module_name}.{next_version}{file_extension}"
 
 
-    def _create_target_list_item(self, module_name: str, next_version: version.Version, 
-                            module_version_info: List[ModuleInfo], platform: str) -> TargetList:
+    def _create_targets_item(self, module_name: str, next_version: version.Version, module_version_infos: List[ModuleInfo], platform: str) -> Targets:
         """
         Creates a target list item for the module to be downloaded, including its presigned URL and checksum.
 
         Args:
             module_name (str): The name of the module.
             next_version (version.Version): The next version of the module to be downloaded.
-            module_version_info (List[ModuleInfo]): The module information including available versions.
+            module_version_infos (List[ModuleInfo]): The module information including available versions.
             platform (str): The platform (e.g., 'windows' or 'linux') for generating the S3 key.
 
         Returns:
-            TargetList: The target list item for the specified module, version, and platform.
+            Targets: The target list item for the specified module, version, and platform.
         """
         try:
-            module_info_item = next(item for item in module_version_info if item.version == str(next_version))
+            module_info_item = next(item for item in module_version_infos if item.version == str(next_version))
         except StopIteration:
             log.error(f"No matching version found for {module_name} with version {next_version}")
         s3_key = self._generate_asset_key(module_name, next_version, platform)
         
-        return TargetList(
+        return Targets(
             module_name=module_name,
             version=str(next_version),
             presigned_url=self.s3_asset_service.generate_download_pre_signed_url(s3_key),
@@ -212,16 +216,16 @@ class CsaUpdaterService(metaclass=Singleton):
         )
     
     
-    def _update_modules(self, machine_id: str, owner_id: str, target_list: List[TargetList]) -> None:
+    def _update_modules(self, machine_id: str, owner_id: str, targets: List[Targets]) -> None:
         """
-        Updates the module version list in the repository with the new target list.
+        Updates the module version list in the csa machines repository with the new target list.
 
         Args:
             machine_id (str): The ID of the machine.
             owner_id (str): The owner ID associated with the machine.
-            target_list (List[TargetList]): The list of modules with updates.
+            targets (List[Targets]): The list of modules with updates.
         """
         update_dependency_list = [
-            {"module_name": item.module_name, "version": item.version} for item in target_list
+            {"module_name": item.module_name, "version": item.version} for item in targets
         ]
-        self.repository.update_modules(owner_id, machine_id, update_dependency_list)
+        self.csa_machines_repository.update_modules(owner_id, machine_id, update_dependency_list)
