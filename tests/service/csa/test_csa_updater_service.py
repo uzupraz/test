@@ -256,7 +256,7 @@ class TestCsaUpdaterService(unittest.TestCase):
             module_name, next_version, platform
         )
         
-        expected_key = f"assets/system/csa_modules/{module_name}/{platform}/{module_name}.1.0.1.zip"
+        expected_key = f"system/csa_modules/{module_name}/{platform}/{module_name}.1.0.1.zip"
         self.assertEqual(key, expected_key)
 
 
@@ -269,7 +269,7 @@ class TestCsaUpdaterService(unittest.TestCase):
             module_name, next_version, platform
         )
         
-        expected_key = f"assets/system/csa_modules/{module_name}/{platform}/{module_name}.1.0.1.tar"
+        expected_key = f"system/csa_modules/{module_name}/{platform}/{module_name}.1.0.1.tar"
         self.assertEqual(key, expected_key)
 
 

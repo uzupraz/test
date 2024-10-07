@@ -41,7 +41,7 @@ class CsaUpdaterService(metaclass=Singleton):
         """
         log.info('Getting target list for owner_id: %s and machine_id: %s', owner_id, machine_id)
         
-        csa_table_info: MachineInfo = self._get_csa_machine_info(owner_id, machine_id)  # Ensure type hinting
+        csa_table_info: MachineInfo = self._get_csa_machine_info(owner_id, machine_id) 
         modules = csa_table_info.modules 
         platform = csa_table_info.platform 
 
@@ -181,7 +181,7 @@ class CsaUpdaterService(metaclass=Singleton):
             str: The generated S3 key.
         """
         file_extension = '.zip' if platform == 'windows' else '.tar'
-        return f"assets/system/csa_modules/{module_name}/{platform}/{module_name}.{next_version}{file_extension}"
+        return f"system/csa_modules/{module_name}/{platform}/{module_name}.{next_version}{file_extension}"
 
 
     def _create_target_list_item(self, module_name: str, next_version: version.Version, 
