@@ -1,4 +1,9 @@
-from dataclasses import dataclass
+import time
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict
+
+from enums import DataStudioMappingStatus
 
 
 @dataclass
@@ -46,3 +51,23 @@ class Mapping:
     to: MappingTo
     output_schema: OutputSchema
     input_schema: InputSchema
+
+
+### Mapping
+@dataclass
+class DataStudioMapping:
+    owner_id: str
+    mapping_id: str
+    revision: int
+    status: DataStudioMappingStatus
+    active: bool
+    created_by: str
+    created_at: int = field(default=int(time.time()))
+
+    name: Optional[str]
+    description: Optional[str]
+    sources: Optional[Dict]
+    output: Optional[Dict]
+    mapping: Optional[Dict]
+    published_by: Optional[str]
+    published_at: Optional[int]

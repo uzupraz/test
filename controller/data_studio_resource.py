@@ -2,7 +2,7 @@ from flask import g, request
 from flask_restx import Namespace, Resource, fields
 
 from configuration import AWSConfig, AppConfig
-from repository import WorkflowRepository
+from repository import WorkflowRepository, DataStudioMappingRepository
 from .server_response import ServerResponse
 from .common_controller import server_response
 from service import DataStudioService
@@ -17,7 +17,8 @@ log = api.logger
 app_config = AppConfig()
 aws_config = AWSConfig()
 workflow_repository = WorkflowRepository(app_config, aws_config)
-data_studio_service = DataStudioService(workflow_repository=workflow_repository)
+data_studio_mapping_repository = DataStudioMappingRepository(app_config, aws_config)
+data_studio_service = DataStudioService(workflow_repository=workflow_repository, data_studio_mapping_repository=data_studio_mapping_repository)
 
 
 data_studio_workflows_response_dto = api.inherit("Get workflows list", server_response, {

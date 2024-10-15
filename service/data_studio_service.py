@@ -1,24 +1,33 @@
+from typing import List
+from dacite import from_dict
+
 from model import Workflow
-from repository import WorkflowRepository
-from utils import Singleton
+from repository import WorkflowRepository, DataStudioMappingRepository
+from utils import Singleton, DataTypeUtils
+from model import DataStudioMapping
 
 
 class DataStudioService(metaclass=Singleton):
 
 
-    def __init__(self, workflow_repository: WorkflowRepository) -> None:
+    def __init__(self, workflow_repository: WorkflowRepository, data_studio_mapping_repository: DataStudioMappingRepository) -> None:
         self.workflow_repository = workflow_repository
+        self.data_studio_mapping_repository = data_studio_mapping_repository
 
 
-    def get_mappings(self, owner_id:str) -> list:
+    def get_mappings(self, owner_id:str) -> List[DataStudioMapping]:
         """
         Returns a list of mappings for the given owner.
         Args:
             owner_id (str): The owner ID for which the mappings are to be returned.
         Returns:
-            list[Mapping]: List of mappings for the given owner.
+            list[DataStudioMapping]: List of mappings for the given owner.
         """
-        return []
+        mappings = self.data_studio_mapping_repository.get_mappings(owner_id)
+        return [
+            from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(item)) 
+            for item in mappings
+        ]
 
 
     def get_workflows(self, owner_id:str) -> list[Workflow]:
