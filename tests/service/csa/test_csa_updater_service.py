@@ -55,7 +55,7 @@ class TestCsaUpdaterService(unittest.TestCase):
             modules=[Module(**module) for module in self.machine_info_item['modules']],
             platform=self.machine_info_item['platform']
         )
-        self.csa_machines_repository_mock.get_csa_machines_info.return_value = [machine_info]
+        self.csa_machines_repository_mock.get_csa_machine_info.return_value = machine_info
 
         current_version = self.machine_info_item['modules'][0]['version']  
         higher_version = "1.2.0"  
@@ -86,7 +86,7 @@ class TestCsaUpdaterService(unittest.TestCase):
         
         # Verify repository calls
         self.csa_machines_repository_mock.update_modules.assert_called_once()
-        self.csa_machines_repository_mock.get_csa_machines_info.assert_called_once_with(owner_id=self.owner_id, machine_id=self.machine_id)
+        self.csa_machines_repository_mock.get_csa_machine_info.assert_called_once_with(self.owner_id, self.machine_id)
         self.csa_module_versions_repository_mock.get_csa_module_versions.assert_called_once_with(self.module_name)
 
 
@@ -101,7 +101,7 @@ class TestCsaUpdaterService(unittest.TestCase):
             modules=[Module(module_name=module_name, version=current_version)],
             platform=self.platform
         )
-        self.csa_machines_repository_mock.get_csa_machines_info.return_value = [machine_info]
+        self.csa_machines_repository_mock.get_csa_machine_info.return_value = machine_info
 
         module_info = ModuleInfo(
             module_name=module_name,
@@ -121,18 +121,6 @@ class TestCsaUpdaterService(unittest.TestCase):
         self.assertIsInstance(response, UpdateResponse)
         self.assertEqual(len(response.targets), 1)
         self.assertEqual(response.targets[0].version, current_version)
-
-
-    def test_get_targets_no_machine_info(self):
-        self.csa_machines_repository_mock.get_csa_machines_info.return_value = []
-
-        with self.assertRaises(ServiceException) as context:
-            self.csa_updater_service.get_targets(self.owner_id, self.machine_id, [])
-        
-        exception = context.exception
-        self.assertEqual(exception.status_code, 404)
-        self.assertEqual(exception.status, ServiceStatus.FAILURE)
-        self.assertEqual(exception.message, f"No target list found for machine_id: {self.machine_id}")
 
 
     def test_get_next_version(self):
@@ -164,7 +152,7 @@ class TestCsaUpdaterService(unittest.TestCase):
             modules=[Module(module_name=m["name"], version=m["current"]) for m in [module1, module2, module3]],
             platform=self.platform
         )
-        self.csa_machines_repository_mock.get_csa_machines_info.return_value = [machine_info]
+        self.csa_machines_repository_mock.get_csa_machine_info.return_value = machine_info
 
         def mock_get_module_versions(module_name):
             for m in [module1, module2, module3]:
@@ -206,22 +194,6 @@ class TestCsaUpdaterService(unittest.TestCase):
         self.csa_machines_repository_mock.update_modules.assert_called_once_with(
             self.owner_id, self.machine_id, expected_update_list
         )
-
-
-    def test_get_targets_no_machine_info(self):
-        self.csa_machines_repository_mock.get_csa_machines_info.return_value = []
-
-        expected_message = f"No target list found for machine_id: {self.machine_id}"
-        
-        with self.assertRaises(ServiceException) as context:
-            self.csa_updater_service.get_targets(
-                self.owner_id, self.machine_id, []
-            )
-        
-        exception = context.exception
-        self.assertEqual(exception.status_code, 404)
-        self.assertEqual(exception.status, ServiceStatus.FAILURE)
-        self.assertEqual(exception.message, expected_message)
 
 
     def test_get_next_version_patch_update(self):

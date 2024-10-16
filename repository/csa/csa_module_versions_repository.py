@@ -48,15 +48,14 @@ class CsaModuleVersionsRepository(metaclass=Singleton):
         log.info('Retrieving modules. module_name: %s', module_name)
         try:
             response = self.table.query(
-                KeyConditionExpression=Key('module_name').eq(module_name),
-                ScanIndexForward=False,
+                KeyConditionExpression=Key('module_name').eq(module_name)
             )
             items = response.get('Items',[])
             latest_modules = []
             for item in items:
                 latest_modules.append(from_dict(ModuleInfo, item))
         except ClientError as e:
-            log.exception("Failed to retrieve modules. module_name: %s, message: %s", module_name, e.response['Error']['Message'])
+            log.exception("Failed to retrieve modules. module_name: %s", module_name)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, "Could not retrieve modules")
         

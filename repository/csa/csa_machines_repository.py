@@ -10,7 +10,7 @@ from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
-from utils import Singleton
+from utils import Singleton, DataTypeUtils
 
 log = common_ctrl.log
 
@@ -32,7 +32,7 @@ class CsaMachinesRepository(metaclass=Singleton):
         self.table = self.__configure_dynamodb()
 
 
-    def get_csa_machines_info(self, owner_id:str, machine_id: str) -> List[MachineInfo]:
+    def get_csa_machine_info(self, owner_id:str, machine_id: str) -> MachineInfo:
         """
         Retrieves machine information based on owner ID and machine ID.
 
@@ -41,28 +41,29 @@ class CsaMachinesRepository(metaclass=Singleton):
             machine_id (str): The ID of the machine.
 
         Returns:
-            List[MachineInfo]: A list of MachineInfo objects corresponding to the specified owner and machine ID.
+            MachineInfo: A MachineInfo objects corresponding to the specified owner and machine ID.
 
         Raises:
             ServiceException: If the retrieval of machine information fails.
         """
         log.info('Retrieving machine information. owner_id: %s, machine_id: %s', owner_id, machine_id)
         try:
-            response = self.table.query(
-                KeyConditionExpression=Key('owner_id').eq(owner_id) & Key('machine_id').eq(machine_id),
-                Limit=1
+            response = self.table.get_item(
+                Key={'owner_id': owner_id, 'machine_id': machine_id}
             )
-            items = response.get('Items')
-            csa_machine_infos = []
-            for item in items:
-                csa_machine_infos.append(from_dict(MachineInfo, item))
+            item = response.get('Item')
+            if not item:
+                log.error('Machine info does not exist. owner_id: %s, machine_id: %s', owner_id, machine_id)
+                raise ServiceException(400, ServiceStatus.FAILURE, 'Machine info does not exists')
+            
+            log.info('Successfully retrieved machine info. owner_id: %s, machine_id: %s', owner_id, machine_id)
+            return from_dict(MachineInfo, item)
 
         except ClientError as e:
-            log.exception("Failed to retrieve owner's machine information. owner_id: %s, machine_id: %s, message: %s", owner_id, machine_id, e.response['Error']['Message'])
+            log.exception("Failed to retrieve owner's machine information. owner_id: %s, machine_id: %s", owner_id, machine_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, "Could not retrieve owner's machine info")
         
-        return csa_machine_infos
         
 
     def update_modules(self, owner_id: str, machine_id: str, modules: List[Module]) -> None:

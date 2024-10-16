@@ -26,36 +26,37 @@ class TestCsaMachinesRepository(unittest.TestCase):
             self.repo = CsaMachinesRepository(self.app_config, self.aws_config)
 
 
-    def test_get_csa_machines_info_success(self):
+    def test_get_csa_machine_info_success(self):
         # Mock DynamoDB response
-        items = [TestUtils.get_file_content(self.test_resource_path + 'csa_machines_updater_items.json')]
-        self.mock_table.query.return_value = {"Items": items}
+        item = TestUtils.get_file_content(self.test_resource_path + 'csa_machines_updater_items.json')
+        self.mock_table.get_item.return_value = {"Item": item} 
 
         # Call method
-        machine_info = self.repo.get_csa_machines_info("owner123", "machine123")
+        machine_info = self.repo.get_csa_machine_info("owner123", "machine123")
 
         # Assertions
-        self.assertEqual(len(machine_info), 1)
-        self.assertTrue(isinstance(machine_info[0], MachineInfo))
-        self.assertEqual(machine_info[0].owner_id, "owner123")
-        self.assertEqual(machine_info[0].machine_id, "machine123")
-        self.assertEqual(machine_info[0].platform, "platform")
-        self.assertEqual(machine_info[0].modules[0].module_name, "module_name")
-        self.assertEqual(machine_info[0].modules[0].version, "1.1.0")
+        self.assertIsInstance(machine_info, MachineInfo)  
+        self.assertEqual(machine_info.owner_id, "owner123")
+        self.assertEqual(machine_info.machine_id, "machine123")
+        self.assertEqual(machine_info.platform, "platform")
+        self.assertEqual(machine_info.modules[0].module_name, "module_name")
+        self.assertEqual(machine_info.modules[0].version, "1.1.0")
 
-        self.mock_table.query.assert_called_once()
+        # Verify the mock was called with the expected arguments
+        self.mock_table.get_item.assert_called_once_with(Key={"owner_id": "owner123", "machine_id": "machine123"})
 
 
-    def test_get_csa_machines_info_dynamodb_exception(self):
+
+    def test_get_csa_machine_info_dynamodb_exception(self):
         # Mock DynamoDB ClientError
-        self.mock_table.query.side_effect = ClientError(
+        self.mock_table.get_item.side_effect = ClientError(
             {"Error": {"Message": "Test Error"}, "ResponseMetadata": {"HTTPStatusCode": 400}},
             "query"
         )
 
         # Test exception handling
         with self.assertRaises(ServiceException) as context:
-            self.repo.get_csa_machines_info("owner123", "machine123")
+            self.repo.get_csa_machine_info("owner123", "machine123")
 
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.message, "Could not retrieve owner's machine info")

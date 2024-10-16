@@ -7,7 +7,8 @@ from model import Module, Targets, UpdateResponse, MachineInfo, ModuleInfo
 from utils import Singleton
 from exception import ServiceException
 from enums import ServiceStatus
-from ..s3_service.s3_assets_service import S3AssetsService
+from service.s3_service.s3_assets_service import S3AssetsService
+
 
 log = common_ctrl.log
 
@@ -43,40 +44,18 @@ class CsaUpdaterService(metaclass=Singleton):
         """
         log.info('Getting target list for owner_id: %s, machine_id: %s', owner_id, machine_id)
         
-        csa_table_info: MachineInfo = self._get_csa_machine_info(owner_id, machine_id) 
-        modules = csa_table_info.modules 
-        platform = csa_table_info.platform 
+        csa_machine_info: MachineInfo = self.csa_machines_repository.get_csa_machine_info(owner_id, machine_id)
+        
 
         machine_versions = self._get_machine_versions(machine_modules)
         
-        targets = self._process_modules(modules, machine_versions, platform)
+        targets = self._process_modules(csa_machine_info.modules, machine_versions, csa_machine_info.platform)
         
         self._update_modules(machine_id, owner_id, targets)
         
-        log.info("Final target list: %s", targets)
+        log.info("Successfully got target list. owner_id: %s, machine_id: %s, targets: %s", owner_id, machine_id, targets)
         
         return UpdateResponse(targets=targets)
-
-
-    def _get_csa_machine_info(self, owner_id: str, machine_id: str) -> Dict:
-        """
-        Retrieves information from the CSA machine based on owner_id and machine_id.
-
-        Args:
-            owner_id (str): The owner ID.
-            machine_id (str): The machine ID.
-
-        Returns:
-            Dict: The CSA machine information.
-
-        Raises:
-            ServiceException: If no information is found for the machine_id.
-        """
-        csa_table_info = self.csa_machines_repository.get_csa_machines_info(owner_id=owner_id, machine_id=machine_id)
-        if not csa_table_info:
-            raise ServiceException(404, ServiceStatus.FAILURE, f"No target list found for machine_id: {machine_id}")
-        
-        return csa_table_info[0]
 
 
     def _get_machine_versions(self, machine_modules: List[Dict]) -> Dict[str, version.Version]:
@@ -109,33 +88,23 @@ class CsaUpdaterService(metaclass=Singleton):
             List[Targets]: The target list containing modules that require updates.
         """
         targets = []
-        for module_version in modules:
-            module_name = module_version.module_name
-            current_version = version.parse(module_version.version)
+        for module in modules:
+            module_name = module.module_name
+            current_version = version.parse(module.version)
             machine_version = machine_versions.get(module_name, current_version)
 
-            module_version_infos = self.csa_module_versions_repository.get_csa_module_versions(module_name)
+            module_infos = self.csa_module_versions_repository.get_csa_module_versions(module_name)
             
-            if not module_version_infos:
-                log.warning(f"No release info found for module: {module_name}")
-                continue
-
-            available_versions = [version.parse(item.version) for item in module_version_infos]
-
-            log.info(f"Module: {module_name}, Current version: {current_version}, "
-                    f"Machine version: {machine_version}, Available versions: {available_versions}")
+            available_versions = [version.parse(item.version) for item in module_infos]
 
             next_version = self._get_next_version(current_version, available_versions)
 
             if next_version.minor != machine_version.minor and next_version.minor > machine_version.minor:
-                next_version_string = version.parse(f"{next_version.major}.{next_version.minor}.0")
-                targets.append(self._create_targets_item(module_name, next_version_string, module_version_infos, platform))
-                log.info(f"Update found for {module_name}: {machine_version} -> {next_version_string}")
-            else:
-                targets.append(self._create_targets_item(module_name, next_version, module_version_infos, platform))
-                log.info(f"Update found for {module_name}: {machine_version} -> {next_version}")
+                next_version = version.parse(f"{next_version.major}.{next_version.minor}.0")
+            
+            targets.append(self._create_targets_item(module_name, next_version, module_infos, platform))
 
-        return targets
+        return targets  
 
 
     def _get_next_version(self, current_version: version.Version, available_versions: List[version.Version]) -> version.Version:
@@ -149,26 +118,26 @@ class CsaUpdaterService(metaclass=Singleton):
         Returns:
             version.Version: The next version to update to, or the current version if no updates are available.
         """
-        next_minor_version = None
-        next_patch_version = None
+        next_minor_version, next_patch_version = None, None
 
         for available_version in available_versions:
             if available_version <= current_version:
                 continue  # Skip versions that are older or equal to the current version
             
+            is_same_major_minor: bool = (available_version.major == current_version.major and 
+                                   available_version.minor == current_version.minor)
+            is_same_major_next_minor: bool = (available_version.major == current_version.major and 
+                                          available_version.minor > current_version.minor)
+            
             # Check for the next patch version (same major.minor but higher patch)
-            if (available_version.major == current_version.major and 
-                available_version.minor == current_version.minor and 
-                (next_patch_version is None or available_version > next_patch_version)):
+            if is_same_major_minor and (next_patch_version is None or available_version > next_patch_version):
                 next_patch_version = available_version
             
             # Check for the next minor version (higher minor)
-            if (available_version.major == current_version.major and 
-                available_version.minor > current_version.minor and 
-                (next_minor_version is None or available_version < next_minor_version)):
+            if is_same_major_next_minor and (next_minor_version is None or available_version < next_minor_version):
                 next_minor_version = available_version
 
-        # If there is a higher patch version, return that, otherwise return the next minor version.
+        # If there is a higher patch version, return that, otherwise return the next minor version and current if no new versions.
         return next_patch_version or next_minor_version or current_version
 
 
@@ -189,25 +158,26 @@ class CsaUpdaterService(metaclass=Singleton):
         return f"system/csa_modules/{module_name}/{platform}/{module_name}.{next_version}{file_extension}"
 
 
-    def _create_targets_item(self, module_name: str, next_version: version.Version, module_version_infos: List[ModuleInfo], platform: str) -> Targets:
+    def _create_targets_item(self, module_name: str, next_version: version.Version, module_infos: List[ModuleInfo], platform: str) -> Targets:
         """
         Creates a target list item for the module to be downloaded, including its presigned URL and checksum.
 
         Args:
             module_name (str): The name of the module.
             next_version (version.Version): The next version of the module to be downloaded.
-            module_version_infos (List[ModuleInfo]): The module information including available versions.
+            module_infos (List[ModuleInfo]): The module information including available versions.
             platform (str): The platform (e.g., 'windows' or 'linux') for generating the S3 key.
 
         Returns:
             Targets: The target list item for the specified module, version, and platform.
         """
-        try:
-            module_info_item = next(item for item in module_version_infos if item.version == str(next_version))
-        except StopIteration:
-            log.error(f"No matching version found for {module_name} with version {next_version}")
         s3_key = self._generate_asset_key(module_name, next_version, platform)
-        
+        module_info_item = next((item for item in module_infos if item.version == str(next_version)), None)
+
+        if not module_info_item:
+            log.error("No matching version found for module_name: %s", module_name)
+            raise ServiceException(400, ServiceStatus.FAILURE, "No matching version found")
+
         return Targets(
             module_name=module_name,
             version=str(next_version),
