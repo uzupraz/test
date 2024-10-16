@@ -4,16 +4,16 @@ from unittest.mock import MagicMock
 from enums import ServiceStatus
 from exception import ServiceException
 from model import Workflow
-from service import DataStudioService
+from service import DataStudioWorkflowService
 from tests import TestUtils
 
 
-class TestDataStudioService(unittest.TestCase):
+class TestDataStudioWorkflowService(unittest.TestCase):
 
 
     def setUp(self) -> None:
         self.workflow_repository = MagicMock()
-        self.data_studio_service = DataStudioService(self.workflow_repository)
+        self.data_studio_workflow_service = DataStudioWorkflowService(self.workflow_repository)
 
 
     def tearDown(self) -> None:
@@ -30,9 +30,9 @@ class TestDataStudioService(unittest.TestCase):
         mock_response_path = '/tests/resources/workflows/get_data_studio_workflows_response.json'
         mock_response_items = TestUtils.get_file_content(mock_response_path)
 
-        self.data_studio_service.workflow_repository.get_data_studio_workflows = MagicMock(return_value=mock_response_items)
+        self.data_studio_workflow_service.workflow_repository.get_data_studio_workflows = MagicMock(return_value=mock_response_items)
 
-        actual_result = self.data_studio_service.get_workflows(owner_id)
+        actual_result = self.data_studio_workflow_service.get_workflows(owner_id)
         expected_result = [
             Workflow(
                 owner_id="test_owner_id",
@@ -50,7 +50,7 @@ class TestDataStudioService(unittest.TestCase):
         ]
 
         self.assertListEqual(expected_result, actual_result)
-        self.data_studio_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
+        self.data_studio_workflow_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
 
 
     def test_get_workflows_should_handle_empty_response(self):
@@ -58,13 +58,13 @@ class TestDataStudioService(unittest.TestCase):
         Tests if the function correctly returns an empty list when the owner doesn't have any data studio workflows.
         """
         owner_id = "test_owner_id"
-        self.data_studio_service.workflow_repository.get_data_studio_workflows = MagicMock(return_value=[])
+        self.data_studio_workflow_service.workflow_repository.get_data_studio_workflows = MagicMock(return_value=[])
 
-        actual_result = self.data_studio_service.get_workflows(owner_id)
+        actual_result = self.data_studio_workflow_service.get_workflows(owner_id)
         expected_result = []
 
         self.assertEqual(expected_result, actual_result)
-        self.data_studio_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
+        self.data_studio_workflow_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
     
 
     def test_get_workflows_should_raise_key_error_when_some_fields_are_missing_in_the_response(self):
@@ -75,12 +75,12 @@ class TestDataStudioService(unittest.TestCase):
         owner_id = "test_owner_id"
         mock_response_path = '/tests/resources/workflows/get_data_studio_workflows_response_with_some_missing_fields.json'
         mock_response_items = TestUtils.get_file_content(mock_response_path)
-        self.data_studio_service.workflow_repository.get_data_studio_workflows = MagicMock(return_value=mock_response_items)
+        self.data_studio_workflow_service.workflow_repository.get_data_studio_workflows = MagicMock(return_value=mock_response_items)
 
         with self.assertRaises(KeyError):
-            self.data_studio_service.get_workflows(owner_id)
+            self.data_studio_workflow_service.get_workflows(owner_id)
         
-        self.data_studio_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
+        self.data_studio_workflow_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
 
 
     def test_get_workflows_should_throw_service_exception_when_get_data_studio_workflows_method_of_workflow_repository_throws_service_exception(self):
@@ -88,10 +88,10 @@ class TestDataStudioService(unittest.TestCase):
         Test if the function throws a ServiceException when the get_data_studio_workflows method of the workflow_repository throws a ServiceException.
         """
         owner_id = "test_owner_id"
-        self.data_studio_service.workflow_repository.get_data_studio_workflows = MagicMock()
-        self.data_studio_service.workflow_repository.get_data_studio_workflows.side_effect = ServiceException(400, ServiceStatus.FAILURE, 'Test Error')
+        self.data_studio_workflow_service.workflow_repository.get_data_studio_workflows = MagicMock()
+        self.data_studio_workflow_service.workflow_repository.get_data_studio_workflows.side_effect = ServiceException(400, ServiceStatus.FAILURE, 'Test Error')
 
         with self.assertRaises(ServiceException):
-            self.data_studio_service.get_workflows(owner_id)
+            self.data_studio_workflow_service.get_workflows(owner_id)
         
-        self.data_studio_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
+        self.data_studio_workflow_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)

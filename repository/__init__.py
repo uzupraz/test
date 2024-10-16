@@ -3,4 +3,4 @@ from .customer_table_info_repository import CustomerTableInfoRepository
 from .processor_template_repo import ProcessorTemplateRepo
 from .customer_table_repository import CustomerTableRepository
 from .custom_script_repository import CustomScriptRepository
-from data_studio import DataStudioMappingRepository
+from .data_studio_mapping_repository import DataStudioMappingRepository

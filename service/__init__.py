@@ -5,7 +5,8 @@ from .s3_file_service import S3FileService
 from .dashboard_service import DashboardService
 from .opensearch_service import OpensearchService
 from .data_table_service import DataTableService
-from .data_studio_service import DataStudioService
 from .custom_script_service import  CustomScriptService
+from .data_studio.mapping_service import DataStudioMappingService
+from .data_studio.workflow_service import DataStudioWorkflowService
 
 from .s3_service.s3_assets_service import S3AssetsService

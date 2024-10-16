@@ -62,7 +62,6 @@ class DataStudioMapping:
     status: DataStudioMappingStatus
     active: bool
     created_by: str
-    created_at: int = field(default=int(time.time()))
 
     name: Optional[str]
     description: Optional[str]
@@ -71,3 +70,6 @@ class DataStudioMapping:
     mapping: Optional[Dict]
     published_by: Optional[str]
     published_at: Optional[int]
+
+    created_at: int = field(default=int(time.time()))
+    

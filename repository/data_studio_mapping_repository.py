@@ -1,22 +1,26 @@
 import boto3
 import boto3.resources
 import boto3.resources.factory
-
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr, Key
+from typing import List, Dict
 
 from utils import Singleton
-from configuration import AppConfig, AWSConfig
 from controller import common_controller as common_ctrl
-from typing import List, Dict
+from configuration import AppConfig, AWSConfig
 from exception import ServiceException
 from enums import ServiceStatus
 
 log = common_ctrl.log
 
 
-class DataStudioMappingRepository(metadata=Singleton):
+class DataStudioMappingRepository(metaclass=Singleton):
+
+
+    OWNER_ID_INDEX = "owner_id-index"
+
+
     def __init__(self, app_config:AppConfig, aws_config: AWSConfig) -> None:
         """
         Initialize the DataStudioMappingRepository with the AWS and App configurations.
@@ -31,11 +35,13 @@ class DataStudioMappingRepository(metadata=Singleton):
         self.table = self.__configure_dynamodb()
 
 
-    def get_mappings(self, owner_id: str) -> List[Dict]:
+    def get_active_mappings(self, owner_id: str) -> List[Dict]:
         log.info('Retrieving data studio mappings. owner_id: %s', owner_id)
         try:
             response = self.table.query(
-                KeyConditionExpression=Key('owner_id').eq(owner_id)
+                IndexName=self.OWNER_ID_INDEX,
+                KeyConditionExpression=Key('owner_id').eq(owner_id),
+                FilterExpression=Attr('active').eq(True)
             )
             return response.get('Items', [])
         except ClientError as e:
