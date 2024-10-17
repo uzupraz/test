@@ -21,8 +21,4 @@ class DataStudioMappingService(metaclass=Singleton):
         Returns:
             list[DataStudioMapping]: List of active mappings for the given owner.
         """
-        mappings = self.data_studio_mapping_repository.get_active_mappings(owner_id)
-        return [
-            from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(item)) 
-            for item in mappings
-        ]
+        return self.data_studio_mapping_repository.get_active_mappings(owner_id)

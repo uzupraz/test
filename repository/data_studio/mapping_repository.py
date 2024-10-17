@@ -4,9 +4,11 @@ import boto3.resources.factory
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Attr, Key
-from typing import List, Dict
+from typing import List
+from dacite import from_dict
 
-from utils import Singleton
+from utils import Singleton, DataTypeUtils
+from model import DataStudioMapping
 from controller import common_controller as common_ctrl
 from configuration import AppConfig, AWSConfig
 from exception import ServiceException
@@ -16,9 +18,6 @@ log = common_ctrl.log
 
 
 class DataStudioMappingRepository(metaclass=Singleton):
-
-
-    OWNER_ID_INDEX = "owner_id-index"
 
 
     def __init__(self, app_config:AppConfig, aws_config: AWSConfig) -> None:
@@ -35,15 +34,18 @@ class DataStudioMappingRepository(metaclass=Singleton):
         self.table = self.__configure_dynamodb()
 
 
-    def get_active_mappings(self, owner_id: str) -> List[Dict]:
+    def get_active_mappings(self, owner_id: str) -> List[DataStudioMapping]:
         log.info('Retrieving data studio mappings. owner_id: %s', owner_id)
         try:
             response = self.table.query(
-                IndexName=self.OWNER_ID_INDEX,
+                IndexName=self.app_config.data_studio_mappings_gis_name,
                 KeyConditionExpression=Key('owner_id').eq(owner_id),
                 FilterExpression=Attr('active').eq(True)
             )
-            return response.get('Items', [])
+            return [
+                from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(item)) 
+                for item in response.get('Items', [])
+            ]
         except ClientError as e:
             log.exception('Failed to retrieve data studio mappings. owner_id: %s', owner_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
@@ -64,4 +66,4 @@ class DataStudioMappingRepository(metaclass=Singleton):
             config = Config(region_name=self.aws_config.dynamodb_aws_region)
             resource = boto3.resource('dynamodb', config=config)
         
-        return resource.Table(self.app_config.data_studio_mapping_table_name)
+        return resource.Table(self.app_config.data_studio_mappings_table_name)
