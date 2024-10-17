@@ -45,6 +45,7 @@ data_studio_mapping_response_dto = api.inherit("Get mapping list", server_respon
         "owner_id": fields.String(description="The unique identifier of the mapping's owner"),
         "mapping_id": fields.String(description="The unique identifier of the mapping configuration"),
         "revision": fields.Integer(description="The revision number of the mapping"),
+        "version": fields.String(description="The version of the mapping"),
         "status": fields.String(description="The current status of the mapping"),
         "active": fields.Boolean(description="Indicates if the mapping is currently active"),
         "created_by": fields.String(description="The user ID of the individual who created the mapping"),

@@ -70,6 +70,7 @@ class DataStudioMapping:
     mapping: Optional[Dict]
     published_by: Optional[str]
     published_at: Optional[int]
+    version: Optional[str]
 
     created_at: int = field(default=int(time.time()))
     
