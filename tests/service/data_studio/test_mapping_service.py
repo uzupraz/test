@@ -1,12 +1,10 @@
 import unittest
 from unittest.mock import MagicMock
-from dacite import from_dict
 
 from enums import DataStudioMappingStatus
 from exception import ServiceException
 from model import DataStudioMapping
 from service import DataStudioMappingService
-from utils import DataTypeUtils
 from enums import ServiceStatus
 
 
@@ -32,9 +30,9 @@ class TestDataStudioMappingService(unittest.TestCase):
         mock_mappings = [
             DataStudioMapping(
                 owner_id= owner_id,
-                mapping_id= "map1",
-                revision= 1,
-                status= DataStudioMappingStatus.PUBLISHED,
+                id= "map1",
+                revision= "1",
+                status= DataStudioMappingStatus.PUBLISHED.value,
                 active= True,
                 created_by= "creator1",
                 name= "Mapping 1",
@@ -43,7 +41,8 @@ class TestDataStudioMappingService(unittest.TestCase):
                 output= {"output1": "result1"},
                 mapping= {"map_field": "mapped_data"},
                 published_by= "publisher1",
-                published_at= 1633036800
+                published_at= 1633036800,
+                version="1.0"
             )
         ]
         self.data_studio_mapping_service.data_studio_mapping_repository.get_active_mappings = MagicMock(return_value=mock_mappings)
