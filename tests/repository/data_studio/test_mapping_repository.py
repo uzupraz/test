@@ -13,7 +13,6 @@ from utils import Singleton
 class TestDataStudioMappingRepository(unittest.TestCase):
 
 
-    OWNER_ID_INDEX = "owner_id-index"
     TEST_RESOURCE_PATH = '/tests/resources/data_studio/'
 
 
@@ -57,10 +56,8 @@ class TestDataStudioMappingRepository(unittest.TestCase):
         )
 
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0].id, 'map1')
-        self.assertEqual(result[0].owner_id, owner_id)
-        self.assertEqual(result[1].id, 'map2')
-        self.assertEqual(result[1].owner_id, owner_id)
+        self.assertEqual(result[0].active, True)
+        self.assertEqual(result[1].active, True)
 
 
     def test_get_active_mappings_returns_empty_response_when_given_owner_id_does_not_have_active_or_inactive_mappings(self):

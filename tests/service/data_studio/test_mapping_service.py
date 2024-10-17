@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import MagicMock
+from dacite import from_dict
 
-from enums import DataStudioMappingStatus
+from tests.test_utils import TestUtils
 from exception import ServiceException
 from model import DataStudioMapping
 from service import DataStudioMappingService
@@ -9,6 +10,9 @@ from enums import ServiceStatus
 
 
 class TestDataStudioMappingService(unittest.TestCase):
+
+
+    TEST_RESOURCE_PATH = '/tests/resources/data_studio/'
 
 
     def setUp(self) -> None:
@@ -26,29 +30,16 @@ class TestDataStudioMappingService(unittest.TestCase):
         Test case for successfully retrieving active mappings.
         """
         owner_id = 'test_owner_id'
+        mock_table_items_path = self.TEST_RESOURCE_PATH + "get_data_studio_mappings_response.json"
+        mock_items = TestUtils.get_file_content(mock_table_items_path)
 
         mock_mappings = [
-            DataStudioMapping(
-                owner_id= owner_id,
-                id= "map1",
-                revision= "1",
-                status= DataStudioMappingStatus.PUBLISHED.value,
-                active= True,
-                created_by= "creator1",
-                name= "Mapping 1",
-                description= "Test mapping 1",
-                sources= {"source1": "data1"},
-                output= {"output1": "result1"},
-                mapping= {"map_field": "mapped_data"},
-                published_by= "publisher1",
-                published_at= 1633036800,
-                version="1.0"
-            )
+            from_dict(DataStudioMapping, mock_items[0]),
+            from_dict(DataStudioMapping, mock_items[1])
         ]
         self.data_studio_mapping_service.data_studio_mapping_repository.get_active_mappings = MagicMock(return_value=mock_mappings)
 
         result = self.data_studio_mapping_service.get_active_mappings(owner_id)
-
         self.assertEqual(result, mock_mappings)
 
 
