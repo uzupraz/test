@@ -5,7 +5,7 @@ from configuration import AWSConfig, AppConfig
 from repository import WorkflowRepository, DataStudioMappingRepository
 from .server_response import ServerResponse
 from .common_controller import server_response
-from service import DataStudioWorkflowService, DataStudioMappingService
+from service import WorkflowService, DataStudioMappingService
 from model import User
 from enums import APIStatus
 
@@ -20,7 +20,7 @@ workflow_repository = WorkflowRepository(app_config, aws_config)
 data_studio_mapping_repository = DataStudioMappingRepository(app_config, aws_config)
 
 data_studio_mapping_service = DataStudioMappingService(data_studio_mapping_repository=data_studio_mapping_repository)
-data_studio_workflow_service = DataStudioWorkflowService(workflow_repository=workflow_repository)
+workflow_service = WorkflowService(workflow_repository=workflow_repository)
 
 
 data_studio_workflows_response_dto = api.inherit("Get workflows list", server_response, {
@@ -60,7 +60,6 @@ data_studio_mapping_response_dto = api.inherit("Get mapping list", server_respon
 })
 
 
-
 @api.route("/workflows")
 class DataStudioWorkflowsResource(Resource):
 
@@ -75,7 +74,7 @@ class DataStudioWorkflowsResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
         user_data = g.get("user")
         user = User(**user_data)
-        workflows = data_studio_workflow_service.get_workflows(user.organization_id)
+        workflows = workflow_service.get_data_studio_workflows(user.organization_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflows), 200
 
