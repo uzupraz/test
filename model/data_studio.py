@@ -71,4 +71,3 @@ class DataStudioMapping:
     version: Optional[str] = None
     tags: Optional[str] = None
     created_at: int = field(default_factory=lambda: int(time.time()))
- 

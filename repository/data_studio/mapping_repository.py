@@ -1,3 +1,4 @@
+from dataclasses import asdict
 import boto3
 import boto3.resources
 import boto3.resources.factory
@@ -52,13 +53,35 @@ class DataStudioMappingRepository(metaclass=Singleton):
                 FilterExpression=Attr('active').eq(True)
             )
             return [
-                from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(item)) 
+                from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(item))
                 for item in response.get('Items', [])
             ]
         except ClientError as e:
             log.exception('Failed to retrieve data studio mappings. owner_id: %s', owner_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve data studio mappings')
+
+
+    def create_mapping(self, mapping: DataStudioMapping) -> None:
+        """
+        Creates a new partial data studio mapping entry in the database.
+
+        Args:
+            mapping (DataStudioMapping): The data studio mapping object to be saved.
+
+        Returns:
+            DataStudioMapping: The created data studio mapping object.
+
+        Raises:
+            ServiceException: If there is an issue saving the mapping to the database.
+        """
+        log.info('Creating data studio mapping. mapping_id: %s, user_id: %s, owner_id: %s', mapping.id, mapping.created_by, mapping.owner_id)
+        try:
+            self.table.put_item(Item=asdict(mapping))
+            log.info('Successfully created data studio mapping. mapping_id: %s, user_id: %s, owner_id: %s', mapping.id, mapping.created_by, mapping.owner_id)
+        except ClientError as e:
+            log.exception('Failed to create mapping. mapping_id: %s, user_id: %s, owner_id: %s', mapping.id, mapping.created_by, mapping.owner_id)
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t create the mapping')
 
 
     def __configure_dynamodb(self):
@@ -74,5 +97,5 @@ class DataStudioMappingRepository(metaclass=Singleton):
         else:
             config = Config(region_name=self.aws_config.dynamodb_aws_region)
             resource = boto3.resource('dynamodb', config=config)
-        
+
         return resource.Table(self.app_config.data_studio_mappings_table_name)

@@ -68,7 +68,7 @@ class DataStudioWorkflowsResource(Resource):
 
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
-    
+
 
     @api.doc(description="Get a list of workflows for the given owner where the mapping_id is present.")
     @api.marshal_with(data_studio_workflows_response_dto, skip_none=True)
@@ -87,7 +87,7 @@ class DataStudioMappingsResource(Resource):
 
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
-    
+
 
     @api.doc(description="Get list of active mappings")
     @api.marshal_with(data_studio_mapping_response_dto, skip_none=True)
@@ -98,4 +98,14 @@ class DataStudioMappingsResource(Resource):
         mappings = data_studio_mapping_service.get_active_mappings(user.organization_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=mappings), 200
-    
+
+
+    @api.doc(description="Create a new initial mapping that stores only the partial mapping entry and returns the mapping including partial values.")
+    @api.marshal_with(data_studio_mapping_response_dto, skip_none=True)
+    def post(self):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+        user_data = g.get("user")
+        user = User(**user_data)
+        mapping_id = data_studio_mapping_service.create_mapping(user.sub, user.organization_id)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=mapping_id), 201
