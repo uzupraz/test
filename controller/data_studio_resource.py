@@ -2,10 +2,10 @@ from flask import g, request
 from flask_restx import Namespace, Resource, fields
 
 from configuration import AWSConfig, AppConfig
-from repository import WorkflowRepository
+from repository import WorkflowRepository, DataStudioMappingRepository
 from .server_response import ServerResponse
 from .common_controller import server_response
-from service import DataStudioService
+from service import WorkflowService, DataStudioMappingService
 from model import User
 from enums import APIStatus
 
@@ -17,7 +17,10 @@ log = api.logger
 app_config = AppConfig()
 aws_config = AWSConfig()
 workflow_repository = WorkflowRepository(app_config, aws_config)
-data_studio_service = DataStudioService(workflow_repository=workflow_repository)
+data_studio_mapping_repository = DataStudioMappingRepository(app_config, aws_config)
+
+data_studio_mapping_service = DataStudioMappingService(data_studio_mapping_repository=data_studio_mapping_repository)
+workflow_service = WorkflowService(workflow_repository=workflow_repository)
 
 
 data_studio_workflows_response_dto = api.inherit("Get workflows list", server_response, {
@@ -37,6 +40,27 @@ data_studio_workflows_response_dto = api.inherit("Get workflows list", server_re
     })))
 })
 
+data_studio_mapping_response_dto = api.inherit("Get mapping list", server_response, {
+    "payload": fields.List(fields.Nested(api.model("Mapping", {
+        "id": fields.String(description="The unique identifier of the mapping configuration"),
+        "owner_id": fields.String(description="The unique identifier of the mapping's owner"),
+        "revision": fields.Integer(description="The revision number of the mapping"),
+        "status": fields.String(description="The current status of the mapping"),
+        "active": fields.Boolean(description="Indicates if the mapping is currently active"),
+        "created_by": fields.String(description="The user ID of the individual who created the mapping"),
+        "created_at": fields.Integer(description="Timestamp of when the mapping was created"),
+        "name": fields.String(description="The name of the mapping", required=False),
+        "description": fields.String(description="A brief description of the mapping", required=False),
+        "sources": fields.Raw(description="The source data for the mapping", required=False),
+        "output": fields.Raw(description="The output configuration for the mapping", required=False),
+        "mapping": fields.Raw(description="The mapping configuration details", required=False),
+        "published_by": fields.String(description="The user ID of the individual who published the mapping", required=False),
+        "published_at": fields.Integer(description="Timestamp of when the mapping was published", required=False),
+        "version": fields.String(description="The version of the mapping", required=False),
+        "tags": fields.String(description="The tags of the mapping for searching", required=False),
+    })))
+})
+
 
 @api.route("/workflows")
 class DataStudioWorkflowsResource(Resource):
@@ -52,7 +76,7 @@ class DataStudioWorkflowsResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
         user_data = g.get("user")
         user = User(**user_data)
-        workflows = data_studio_service.get_workflows(user.organization_id)
+        workflows = workflow_service.get_data_studio_workflows(user.organization_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflows), 200
 
@@ -65,12 +89,13 @@ class DataStudioMappingsResource(Resource):
         super().__init__(api, *args, **kwargs)
     
 
-    @api.doc(description="Get list of mappings")
+    @api.doc(description="Get list of active mappings")
+    @api.marshal_with(data_studio_mapping_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
         user_data = g.get("user")
         user = User(**user_data)
-        mappings = data_studio_service.get_mappings(user.organization_id)
+        mappings = data_studio_mapping_service.get_active_mappings(user.organization_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=mappings), 200
     
