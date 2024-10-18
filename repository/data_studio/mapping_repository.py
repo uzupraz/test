@@ -40,7 +40,7 @@ class DataStudioMappingRepository(metaclass=Singleton):
         log.info('Retrieving data studio mappings. owner_id: %s', owner_id)
         try:
             response = self.table.query(
-                IndexName=self.app_config.data_studio_mappings_gis_name,
+                IndexName=self.app_config.data_studio_mappings_gsi_name,
                 KeyConditionExpression=Key('owner_id').eq(owner_id),
                 FilterExpression=Attr('active').eq(True)
             )

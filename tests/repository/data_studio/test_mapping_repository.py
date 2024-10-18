@@ -3,16 +3,17 @@ from unittest.mock import Mock, patch
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
 
+from tests.test_utils import TestUtils
 from repository import DataStudioMappingRepository
 from exception import ServiceException
-from enums import ServiceStatus, DataStudioMappingStatus
+from enums import ServiceStatus
 from utils import Singleton
 
 
 class TestDataStudioMappingRepository(unittest.TestCase):
 
 
-    OWNER_ID_INDEX = "owner_id-index"
+    TEST_RESOURCE_PATH = '/tests/resources/data_studio/'
 
 
     def setUp(self):
@@ -39,37 +40,43 @@ class TestDataStudioMappingRepository(unittest.TestCase):
 
         Expected Result: The method returns a list of active mappings associated with the owner.
         """
-        owner_id = 'test_owner_id'
+        owner_id = 'owner_id'
         
-        mock_items = [
-            {
-                "owner_id": owner_id,
-                "mapping_id": "map1",
-                "revision": 1,
-                "status": DataStudioMappingStatus.PUBLISHED,
-                "active": True,
-                "created_by": "creator1",
-                "name": "Mapping 1",
-                "description": "Test mapping 1",
-                "sources": {"source1": "data1"},
-                "output": {"output1": "result1"},
-                "mapping": {"map_field": "mapped_data"},
-                "published_by": "publisher1",
-                "published_at": 1633036800
-            }
-        ]
+        mock_table_items_path = self.TEST_RESOURCE_PATH + "get_data_studio_mappings_response.json"
+        mock_items = TestUtils.get_file_content(mock_table_items_path)
+
         self.mock_table.query.return_value = {'Items': mock_items}
 
         result = self.data_studio_mapping_repository.get_active_mappings(owner_id)
 
         self.mock_table.query.assert_called_once_with(
-            IndexName=self.app_config.data_studio_mappings_gis_name,
+            IndexName=self.app_config.data_studio_mappings_gsi_name,
             KeyConditionExpression=Key('owner_id').eq(owner_id),
             FilterExpression=Attr('active').eq(True)
         )
 
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].mapping_id, 'map1')
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].active, True)
+        self.assertEqual(result[1].active, True)
+
+
+    def test_get_active_mappings_returns_empty_response_when_given_owner_id_does_not_have_active_or_inactive_mappings(self):
+        """
+        Test case for successfully retrieving empty data when owner does not have any mappings or any active mappings.
+
+        Expected Result: The method returns an empty list mappings.
+        """
+        owner_id = 'owner_id'
+        self.mock_table.query.return_value = {'Items': []}
+
+        result = self.data_studio_mapping_repository.get_active_mappings(owner_id)
+
+        self.mock_table.query.assert_called_once_with(
+            IndexName=self.app_config.data_studio_mappings_gsi_name,
+            KeyConditionExpression=Key('owner_id').eq(owner_id),
+            FilterExpression=Attr('active').eq(True)
+        )
+        self.assertEqual(len(result), 0)
 
 
     def test_get_active_mappings_failure(self):
@@ -99,7 +106,7 @@ class TestDataStudioMappingRepository(unittest.TestCase):
         self.assertEqual(str(context.exception.message), 'Failed to retrieve data studio mappings')
 
         self.mock_table.query.assert_called_once_with(
-            IndexName=self.app_config.data_studio_mappings_gis_name,
+            IndexName=self.app_config.data_studio_mappings_gsi_name,
             KeyConditionExpression=Key('owner_id').eq(owner_id),
             FilterExpression=Attr('active').eq(True)
         )

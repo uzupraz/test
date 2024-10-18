@@ -53,7 +53,6 @@ class Mapping:
     input_schema: InputSchema
 
 
-### Mapping
 @dataclass
 class DataStudioMapping:
     id: str
@@ -70,4 +69,5 @@ class DataStudioMapping:
     published_by: Optional[str] = None
     published_at: Optional[int] = None
     version: Optional[str] = None
+    tags: Optional[str] = None
     created_at: int = field(default_factory=lambda: int(time.time()))

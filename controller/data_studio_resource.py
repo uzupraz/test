@@ -42,8 +42,8 @@ data_studio_workflows_response_dto = api.inherit("Get workflows list", server_re
 
 data_studio_mapping_response_dto = api.inherit("Get mapping list", server_response, {
     "payload": fields.List(fields.Nested(api.model("Mapping", {
+        "id": fields.String(description="The unique identifier of the mapping configuration"),
         "owner_id": fields.String(description="The unique identifier of the mapping's owner"),
-        "mapping_id": fields.String(description="The unique identifier of the mapping configuration"),
         "revision": fields.Integer(description="The revision number of the mapping"),
         "status": fields.String(description="The current status of the mapping"),
         "active": fields.Boolean(description="Indicates if the mapping is currently active"),
@@ -55,7 +55,9 @@ data_studio_mapping_response_dto = api.inherit("Get mapping list", server_respon
         "output": fields.Raw(description="The output configuration for the mapping", required=False),
         "mapping": fields.Raw(description="The mapping configuration details", required=False),
         "published_by": fields.String(description="The user ID of the individual who published the mapping", required=False),
-        "published_at": fields.Integer(description="Timestamp of when the mapping was published", required=False)
+        "published_at": fields.Integer(description="Timestamp of when the mapping was published", required=False),
+        "version": fields.String(description="The version of the mapping", required=False),
+        "tags": fields.String(description="The tags of the mapping for searching", required=False),
     })))
 })
 
