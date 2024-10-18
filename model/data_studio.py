@@ -56,20 +56,18 @@ class Mapping:
 ### Mapping
 @dataclass
 class DataStudioMapping:
+    id: str
+    revision: str
     owner_id: str
-    mapping_id: str
-    revision: int
-    status: DataStudioMappingStatus
-    active: bool
     created_by: str
-
-    name: Optional[str]
-    description: Optional[str]
-    sources: Optional[Dict]
-    output: Optional[Dict]
-    mapping: Optional[Dict]
-    published_by: Optional[str]
-    published_at: Optional[int]
-
-    created_at: int = field(default=int(time.time()))
-    
+    status: str = DataStudioMappingStatus.DRAFT.value
+    active: bool = False
+    name: Optional[str] = None
+    description: Optional[str] = None
+    sources: Optional[Dict] = None
+    output: Optional[Dict] = None
+    mapping: Optional[Dict] = None
+    published_by: Optional[str] = None
+    published_at: Optional[int] = None
+    version: Optional[str] = None
+    created_at: int = field(default_factory=lambda: int(time.time()))

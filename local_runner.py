@@ -40,7 +40,7 @@ if __name__ == '__main__':
                     "requestContext": {
                         "authorizer": {
                             "claims": {
-                                "sub": "this_is_owner_id",
+                                "sub": "this_is_user_id",
                                 "custom:organizationId": "this_is_organization_id",
                                 "custom:permissions": json.dumps(['this_is_organization_id:this_is_permission'])
                             }
