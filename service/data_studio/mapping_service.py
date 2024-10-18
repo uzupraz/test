@@ -42,7 +42,8 @@ class DataStudioMappingService(metaclass=Singleton):
             owner_id=owner_id,
             id=nanoid.generate(),
             revision=user_id,
-            created_by=user_id
+            created_by=user_id,
+            active=True
             )
         self.data_studio_mapping_repository.create_mapping(mapping)
         return mapping

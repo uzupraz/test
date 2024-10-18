@@ -1,6 +1,5 @@
 from dataclasses import asdict
 import boto3
-import nanoid
 import boto3.resources
 import boto3.resources.factory
 from botocore.config import Config
@@ -73,7 +72,7 @@ class DataStudioMappingRepository(metaclass=Singleton):
             log.info('Successfully created data studio mapping. mapping_id: %s, user_id: %s, owner_id: %s', mapping.id, mapping.created_by, mapping.owner_id)
         except ClientError as e:
             log.exception('Failed to create mapping. mapping_id: %s, user_id: %s, owner_id: %s', mapping.id, mapping.created_by, mapping.owner_id)
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t create the mapping')
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t create the mapping')
 
 
     def __configure_dynamodb(self):

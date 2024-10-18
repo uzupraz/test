@@ -1,6 +1,6 @@
 [
   {
-    "owner_id": "owner_id",
+    "owner_id": "test_owner_id",
     "id": "map1",
     "revision": "1",
     "status": "PUBLISHED",
@@ -15,7 +15,7 @@
     "published_at": 1633036800
   },
   {
-    "owner_id": "owner_id",
+    "owner_id": "test_owner_id",
     "id": "map2",
     "revision": "1",
     "status": "PUBLISHED",
