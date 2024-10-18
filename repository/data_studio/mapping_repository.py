@@ -35,6 +35,15 @@ class DataStudioMappingRepository(metaclass=Singleton):
 
 
     def get_active_mappings(self, owner_id: str) -> List[DataStudioMapping]:
+        """
+        Retrieve active data studio mappings for a specific owner.
+
+        Args:
+            owner_id (str): The ID of the owner whose active mappings are to be retrieved.
+
+        Returns:
+            List[DataStudioMapping]: A list of active mappings for the specified owner.
+        """
         log.info('Retrieving data studio mappings. owner_id: %s', owner_id)
         try:
             response = self.table.query(
