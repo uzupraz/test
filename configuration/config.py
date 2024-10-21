@@ -14,9 +14,11 @@ class AppConfig(metaclass=Singleton):
     workflow_table_name:str = os.getenv('APP_WORKFLOW_TABLENAME')
     customer_table_info_table_name:str = os.getenv('APP_CUSTOMER_TABLE_INFO_TABLENAME')
     custom_script_table_name:str = os.getenv('APP_CUSTOM_SCRIPT_TABLENAME')
+    data_studio_mappings_table_name:str = os.getenv('APP_DATA_STUDIO_MAPPINGS_TABLENAME')
     processor_templates_table_name:str = os.getenv('APP_PROCESSORTEMPLATES_TABLENAME')
     csa_module_versions_table_name: str = os.getenv('CSA_MODULE_VERSIONS_TABLENAME')
     csa_machines_table_name: str = os.getenv('CSA_MACHINES_TABLENAME')
+    data_studio_mappings_gsi_name:str = os.getenv('APP_DATA_STUDIO_MAPPINGS_GSI_NAME')
 
 
 @dataclasses.dataclass(init=False)
