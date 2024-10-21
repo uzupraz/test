@@ -50,16 +50,22 @@ class CsaModuleVersionsRepository(metaclass=Singleton):
             response = self.table.query(
                 KeyConditionExpression=Key('module_name').eq(module_name)
             )
-            items = response.get('Items',[])
-            latest_modules = []
+            items = response.get('Items')
+            if not items:
+                log.error('Modules do not exist. module_name: %s', module_name)
+                raise ServiceException(400, ServiceStatus.FAILURE, 'Modules do not exist')
+            
+            log.info("Successfully retrived modules. module_name: %s", module_name)
+            
+            module_infos = []
             for item in items:
-                latest_modules.append(from_dict(ModuleInfo, item))
+                module_infos.append(from_dict(ModuleInfo, item))
         except ClientError as e:
-            log.exception("Failed to retrieve modules. module_name: %s", module_name)
+            log.exception('Failed to retrieve modules. module_name: %s', module_name)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
-            raise ServiceException(code, ServiceStatus.FAILURE, "Could not retrieve modules")
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Could not retrieve modules')
         
-        return latest_modules
+        return module_infos
         
 
     def __configure_dynamodb(self):

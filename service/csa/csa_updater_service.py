@@ -42,18 +42,21 @@ class CsaUpdaterService(metaclass=Singleton):
         Returns:
             UpdateResponse: The response containing the target list of modules.
         """
+        if not machine_modules:
+            log.error("No machine modules found. owner_id: %s, machine_id: %s", owner_id, machine_id)
+            raise ServiceException(400, ServiceStatus.FAILURE, "No machine modules found.")
+        
         log.info('Getting target list for owner_id: %s, machine_id: %s', owner_id, machine_id)
         
         csa_machine_info: MachineInfo = self.csa_machines_repository.get_csa_machine_info(owner_id, machine_id)
         
-
         machine_versions = self._get_machine_versions(machine_modules)
         
         targets = self._process_modules(csa_machine_info.modules, machine_versions, csa_machine_info.platform)
         
         self._update_modules(machine_id, owner_id, targets)
         
-        log.info("Successfully got target list. owner_id: %s, machine_id: %s, targets: %s", owner_id, machine_id, targets)
+        log.info('Successfully got target list. owner_id: %s, machine_id: %s, targets: %s', owner_id, machine_id, targets)
         
         return UpdateResponse(targets=targets)
 
@@ -118,27 +121,19 @@ class CsaUpdaterService(metaclass=Singleton):
         Returns:
             version.Version: The next version to update to, or the current version if no updates are available.
         """
-        next_minor_version, next_patch_version = None, None
+        next_patch, next_minor= None, None
 
-        for available_version in available_versions:
-            if available_version <= current_version:
-                continue  # Skip versions that are older or equal to the current version
+        for version in available_versions:
+            if version <= current_version:
+                continue
             
-            is_same_major_minor: bool = (available_version.major == current_version.major and 
-                                   available_version.minor == current_version.minor)
-            is_same_major_next_minor: bool = (available_version.major == current_version.major and 
-                                          available_version.minor > current_version.minor)
-            
-            # Check for the next patch version (same major.minor but higher patch)
-            if is_same_major_minor and (next_patch_version is None or available_version > next_patch_version):
-                next_patch_version = available_version
-            
-            # Check for the next minor version (higher minor)
-            if is_same_major_next_minor and (next_minor_version is None or available_version < next_minor_version):
-                next_minor_version = available_version
-
-        # If there is a higher patch version, return that, otherwise return the next minor version and current if no new versions.
-        return next_patch_version or next_minor_version or current_version
+            if version.major == current_version.major:
+                if version.minor == current_version.minor:
+                    next_patch = max(next_patch, version) if next_patch else version
+                elif version.minor > current_version.minor:
+                    next_minor = min(next_minor, version) if next_minor else version
+        
+        return next_patch or next_minor or current_version
 
 
     def _generate_asset_key(self, module_name: str, next_version: version.Version, platform: str) -> str:
@@ -152,6 +147,9 @@ class CsaUpdaterService(metaclass=Singleton):
         
         Returns:
             str: The generated S3 key.
+        
+        Raises:
+            ValueError: If the platform is unknown.
         """
         file_extension = '.zip' if platform == 'windows' else '.tar'
         
@@ -171,13 +169,14 @@ class CsaUpdaterService(metaclass=Singleton):
         Returns:
             Targets: The target list item for the specified module, version, and platform.
         """
-        s3_key = self._generate_asset_key(module_name, next_version, platform)
         module_info_item = next((item for item in module_infos if item.version == str(next_version)), None)
 
         if not module_info_item:
             log.error("No matching version found for module_name: %s", module_name)
             raise ServiceException(400, ServiceStatus.FAILURE, "No matching version found")
 
+        s3_key = self._generate_asset_key(module_name, next_version, platform)
+        
         return Targets(
             module_name=module_name,
             version=str(next_version),
@@ -195,6 +194,10 @@ class CsaUpdaterService(metaclass=Singleton):
             owner_id (str): The owner ID associated with the machine.
             targets (List[Targets]): The list of modules with updates.
         """
+        if not targets:
+            log.error("No targets found. owner_id: %s, machine_id: %s", owner_id, machine_id)
+            raise ServiceException(400, ServiceStatus.FAILURE, "No targets found")
+
         update_dependency_list = [
             {"module_name": item.module_name, "version": item.version} for item in targets
         ]

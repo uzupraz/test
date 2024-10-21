@@ -60,10 +60,9 @@ class CsaMachinesRepository(metaclass=Singleton):
             return from_dict(MachineInfo, item)
 
         except ClientError as e:
-            log.exception("Failed to retrieve owner's machine information. owner_id: %s, machine_id: %s", owner_id, machine_id)
+            log.exception('Failed to retrieve owner machine information. owner_id: %s, machine_id: %s', owner_id, machine_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, "Could not retrieve owner's machine info")
-        
         
 
     def update_modules(self, owner_id: str, machine_id: str, modules: List[Module]) -> None:
@@ -78,6 +77,10 @@ class CsaMachinesRepository(metaclass=Singleton):
         Raises:
             ServiceException: If the update of modules fails.
         """
+        if not modules:
+            log.info("No module update. Skipping update for owner_id: %s, machine_id: %s", owner_id, machine_id)
+            return
+        
         try:
             log.info('Updating modules. owner_id: %s, machine_id: %s', owner_id, machine_id)
             self.table.update_item(
