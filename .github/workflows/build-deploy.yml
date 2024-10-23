@@ -29,7 +29,7 @@ jobs:
           docker build -t ${{ env.IMAGE_NAME }} .
 
       - name: Configure AWS credentials
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/pull/')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -37,7 +37,7 @@ jobs:
           aws-region: ${{ env.AWS_DEFAULT_REGION }}
 
       - name: Deploy to Lambda
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/pull/')
         run: |
           # Cleanup working directory
           rm -f dist.zip
