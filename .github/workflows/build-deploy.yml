@@ -2,7 +2,7 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ develop ]
     types: [ opened, synchronize, reopened ]
@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker image
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/pull/')
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/pull/')
         run: |
           docker build -t ${{ env.IMAGE_NAME }} .
 
