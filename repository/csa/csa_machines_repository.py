@@ -1,16 +1,15 @@
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError 
-from boto3.dynamodb.conditions import Key
 from dacite import from_dict
 from typing import List
 
-from model import Module, MachineInfo, ModuleInfo
+from model import Module, MachineInfo
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
-from utils import Singleton, DataTypeUtils
+from utils import Singleton
 
 log = common_ctrl.log
 
@@ -62,7 +61,7 @@ class CsaMachinesRepository(metaclass=Singleton):
         except ClientError as e:
             log.exception('Failed to retrieve owner machine information. owner_id: %s, machine_id: %s', owner_id, machine_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
-            raise ServiceException(code, ServiceStatus.FAILURE, "Could not retrieve owner's machine info")
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Could not retrieve owner\'s machine info')
         
 
     def update_modules(self, owner_id: str, machine_id: str, modules: List[Module]) -> None:

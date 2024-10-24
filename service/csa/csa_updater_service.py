@@ -42,10 +42,6 @@ class CsaUpdaterService(metaclass=Singleton):
         Returns:
             UpdateResponse: The response containing the target list of modules.
         """
-        if not machine_modules:
-            log.error("No machine modules found. owner_id: %s, machine_id: %s", owner_id, machine_id)
-            raise ServiceException(400, ServiceStatus.FAILURE, "No machine modules found.")
-        
         log.info('Getting target list for owner_id: %s, machine_id: %s', owner_id, machine_id)
         
         csa_machine_info: MachineInfo = self.csa_machines_repository.get_csa_machine_info(owner_id, machine_id)
@@ -72,6 +68,7 @@ class CsaUpdaterService(metaclass=Singleton):
         Returns:
             Dict[str, version.Version]: A dictionary of module names and their parsed versions.
         """
+            
         return {
             module['module_name']: version.parse(module['version']) 
             for module in machine_modules

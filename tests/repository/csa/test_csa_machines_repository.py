@@ -5,7 +5,7 @@ from botocore.exceptions import ClientError
 from repository import CsaMachinesRepository
 from tests.test_utils import TestUtils
 from exception import ServiceException
-from model import MachineInfo, ModuleInfo, Module
+from model import MachineInfo, Module
 from utils import Singleton
 
 
@@ -25,11 +25,11 @@ class TestCsaMachinesRepository(unittest.TestCase):
 
             self.mock_configure_resource = mock_configure_resource
             mock_configure_resource.return_value = self.mock_dynamodb_table
-            self.csa_machine_repository = CsaMachinesRepository(self.app_config, self.aws_config)
+            self.csa_machine_repo = CsaMachinesRepository(self.app_config, self.aws_config)
 
 
     def tearDown(self) -> None:
-        self.csa_machine_repository = None
+        self.csa_machine_repo = None
         self.mock_configure_resource = None
 
 
@@ -46,7 +46,7 @@ class TestCsaMachinesRepository(unittest.TestCase):
         self.mock_dynamodb_table.get_item.return_value = {"Item": item} 
 
         # Call method
-        machine_info = self.csa_machine_repository.get_csa_machine_info("owner123", "machine123")
+        machine_info = self.csa_machine_repo.get_csa_machine_info("owner123", "machine123")
 
         # Assertions
         self.assertIsInstance(machine_info, MachineInfo)  
@@ -76,7 +76,7 @@ class TestCsaMachinesRepository(unittest.TestCase):
 
         # Call the method under test
         with self.assertRaises(ServiceException) as e:
-            self.csa_machine_repository.get_csa_machine_info("owner123", "machine123")
+            self.csa_machine_repo.get_csa_machine_info("owner123", "machine123")
 
         # Assertions
         self.assertEqual(e.exception.status_code, 400)
@@ -96,7 +96,7 @@ class TestCsaMachinesRepository(unittest.TestCase):
 
         # Call method 
         with self.assertRaises(ServiceException) as e:
-            self.csa_machine_repository.get_csa_machine_info("owner123", "machine123")
+            self.csa_machine_repo.get_csa_machine_info("owner123", "machine123")
 
         # Assertions
         self.assertEqual(e.exception.status_code, 400)
@@ -117,7 +117,7 @@ class TestCsaMachinesRepository(unittest.TestCase):
 
         #Method under test
         with self.assertRaises(ServiceException) as e:
-            self.csa_machine_repository.get_csa_machine_info("invalid_owner", "invalid_machine")
+            self.csa_machine_repo.get_csa_machine_info("invalid_owner", "invalid_machine")
 
         #Assertions
         self.assertEqual(e.exception.status_code, 400)
@@ -138,7 +138,7 @@ class TestCsaMachinesRepository(unittest.TestCase):
 
         # Call method
         modules = [Module(module_name="module_name", version="1.0.0")]
-        self.csa_machine_repository.update_modules("owner123", "machine123", modules)
+        self.csa_machine_repo.update_modules("owner123", "machine123", modules)
 
         # Assertions
         self.mock_dynamodb_table.update_item.assert_called_once_with(
@@ -157,7 +157,7 @@ class TestCsaMachinesRepository(unittest.TestCase):
         Expected Result: The method does not call update_item on DynamoDB.
         """
         # Call method with empty modules list
-        self.csa_machine_repository.update_modules("owner123", "machine123", [])
+        self.csa_machine_repo.update_modules("owner123", "machine123", [])
 
         # Assert that update_item was never called
         self.mock_dynamodb_table.update_item.assert_not_called()
@@ -180,7 +180,7 @@ class TestCsaMachinesRepository(unittest.TestCase):
         # Test exception handling
         modules = [Module(module_name="module_name", version="1.0.0")]
         with self.assertRaises(ServiceException) as e:
-            self.csa_machine_repository.update_modules("owner123", "machine123", modules)
+            self.csa_machine_repo.update_modules("owner123", "machine123", modules)
 
         self.assertEqual(e.exception.status_code, 400)
         self.assertEqual(e.exception.message, "Failed to update modules")
@@ -205,7 +205,7 @@ class TestCsaMachinesRepository(unittest.TestCase):
         # Test exception handling
         modules = [Module(module_name="module_name", version="1.0.0")]
         with self.assertRaises(ServiceException) as e:
-            self.csa_machine_repository.update_modules("", "", modules)
+            self.csa_machine_repo.update_modules("", "", modules)
 
         self.assertEqual(e.exception.status_code, 400)
         self.assertEqual(e.exception.message, "Failed to update modules")

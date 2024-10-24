@@ -23,6 +23,27 @@ data_studio_mapping_service = DataStudioMappingService(data_studio_mapping_repos
 workflow_service = WorkflowService(workflow_repository=workflow_repository)
 
 
+# Model
+mapping = api.model("Mapping", {
+    "id": fields.String(description="The unique identifier of the mapping configuration"),
+    "owner_id": fields.String(description="The unique identifier of the mapping's owner"),
+    "revision": fields.Integer(description="The revision number of the mapping"),
+    "status": fields.String(description="The current status of the mapping"),
+    "active": fields.Boolean(description="Indicates if the mapping is currently active"),
+    "created_by": fields.String(description="The user ID of the individual who created the mapping"),
+    "created_at": fields.Integer(description="Timestamp of when the mapping was created"),
+    "name": fields.String(description="The name of the mapping", required=False),
+    "description": fields.String(description="A brief description of the mapping", required=False),
+    "sources": fields.Raw(description="The source data for the mapping", required=False),
+    "output": fields.Raw(description="The output configuration for the mapping", required=False),
+    "mapping": fields.Raw(description="The mapping configuration details", required=False),
+    "published_by": fields.String(description="The user ID of the individual who published the mapping", required=False),
+    "published_at": fields.Integer(description="Timestamp of when the mapping was published", required=False),
+    "version": fields.String(description="The version of the mapping", required=False),
+    "tags": fields.String(description="The tags of the mapping for searching", required=False),
+})
+
+# DTO
 data_studio_workflows_response_dto = api.inherit("Get workflows list", server_response, {
     "payload": fields.List(fields.Nested(api.model("Workflow", {
         "owner_id": fields.String(description="The unique identifier of the workflow's owner"),
@@ -40,25 +61,15 @@ data_studio_workflows_response_dto = api.inherit("Get workflows list", server_re
     })))
 })
 
-data_studio_mapping_response_dto = api.inherit("Get mapping list", server_response, {
-    "payload": fields.List(fields.Nested(api.model("Mapping", {
-        "id": fields.String(description="The unique identifier of the mapping configuration"),
-        "owner_id": fields.String(description="The unique identifier of the mapping's owner"),
-        "revision": fields.Integer(description="The revision number of the mapping"),
-        "status": fields.String(description="The current status of the mapping"),
-        "active": fields.Boolean(description="Indicates if the mapping is currently active"),
-        "created_by": fields.String(description="The user ID of the individual who created the mapping"),
-        "created_at": fields.Integer(description="Timestamp of when the mapping was created"),
-        "name": fields.String(description="The name of the mapping", required=False),
-        "description": fields.String(description="A brief description of the mapping", required=False),
-        "sources": fields.Raw(description="The source data for the mapping", required=False),
-        "output": fields.Raw(description="The output configuration for the mapping", required=False),
-        "mapping": fields.Raw(description="The mapping configuration details", required=False),
-        "published_by": fields.String(description="The user ID of the individual who published the mapping", required=False),
-        "published_at": fields.Integer(description="Timestamp of when the mapping was published", required=False),
-        "version": fields.String(description="The version of the mapping", required=False),
-        "tags": fields.String(description="The tags of the mapping for searching", required=False),
-    })))
+data_studio_active_mappings_response_dto = api.inherit("Get mapping list", server_response, {
+    "payload": fields.List(fields.Nested(mapping))
+})
+
+data_studio_mapping_response_dto = api.inherit("Get mapping revisions & draft", server_response, {
+    "payload": fields.Nested(api.model("Mapping Draft & Revisions", {
+        "draft": fields.Nested(mapping, description="The users active mapping draft", required=False),
+        "revisions": fields.List(fields.Nested(mapping), description="The list of mapping revisions", required=True)
+    }))
 })
 
 
@@ -90,7 +101,7 @@ class DataStudioMappingsResource(Resource):
 
 
     @api.doc(description="Get list of active mappings")
-    @api.marshal_with(data_studio_mapping_response_dto, skip_none=True)
+    @api.marshal_with(data_studio_active_mappings_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
         user_data = g.get("user")
@@ -98,7 +109,7 @@ class DataStudioMappingsResource(Resource):
         mappings = data_studio_mapping_service.get_active_mappings(user.organization_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=mappings), 200
-
+    
 
     @api.doc(description="Create a new initial mapping that stores only the partial mapping entry and returns the mapping including partial values.")
     @api.marshal_with(data_studio_mapping_response_dto, skip_none=True)
@@ -109,3 +120,22 @@ class DataStudioMappingsResource(Resource):
         mapping_id = data_studio_mapping_service.create_mapping(user.sub, user.organization_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=mapping_id), 201
+    
+
+@api.route("/mappings/<string:mapping_id>")
+class DataStudioMappingResource(Resource):
+
+
+    def __init__(self, api=None, *args, **kwargs):
+        super().__init__(api, *args, **kwargs)
+    
+
+    @api.doc(description="Get revisions & draft of the mapping")
+    @api.marshal_with(data_studio_mapping_response_dto, skip_none=True)
+    def get(self, mapping_id: str):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+        user_data = g.get("user")
+        user = User(**user_data)
+        mappings = data_studio_mapping_service.get_mapping(user.organization_id, user.sub, mapping_id)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=mappings), 200

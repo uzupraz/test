@@ -15,14 +15,20 @@ api = Namespace('CSA Updater API ', description='API for updating CSA modules in
 log=api.logger
 
 
-update_response_dto = api.inherit('Update Response',server_response,{
-    'targets':fields.List(fields.Nested(targets_dto))
+# Response
+update_response_dto = api.inherit('Csa updater targets response',server_response,{
+    'payload':fields.List(fields.Nested(targets_dto))
 })
 
+# Request
 update_request_dto = api.model('UpdateRequest', {
     'machine_id': fields.String(required=True, description='ID of the machine'),
-    'modules': fields.List(fields.String, required=True, description='List of modules to be updated')
+    'modules': fields.List(fields.Nested(api.model('Module', {
+        'module_name': fields.String(required=True, description='Name of the module'),
+        'version': fields.String(required=True, description='Version of the module')
+    })), required=True, description='List of modules to be updated')
 })
+
 
 
 @api.route('')
@@ -39,8 +45,8 @@ class CsaUpdaterResource(Resource):
         self.csa_updater_service = CsaUpdaterService(self.csa_machines_repository, self.csa_module_versions_repository, self.s3_assets_file_config)
 
 
-    @api.doc('Check for available updates')
-    @api.expect(update_request_dto, description='Machine module information')
+    @api.doc('Gets latest updates to compair with the current version and returns target updates.')
+    @api.expect(update_request_dto, validate=True)
     @api.marshal_with(update_response_dto, skip_none=True)
     def post(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)

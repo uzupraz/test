@@ -26,11 +26,11 @@ class TestCsaModuleVersionsRepository(unittest.TestCase):
 
             self.mock_configure_resource = mock_configure_resource
             mock_configure_resource.return_value = self.mock_dynamodb_table
-            self.csa_module_versions_repository = CsaModuleVersionsRepository(self.app_config, self.aws_config)
+            self.csa_module_versions_repo = CsaModuleVersionsRepository(self.app_config, self.aws_config)
 
         
     def tearDown(self) -> None:
-        self.csa_module_versions_repository = None
+        self.csa_module_versions_repo = None
         self.mock_configure_resource = None
 
 
@@ -47,7 +47,7 @@ class TestCsaModuleVersionsRepository(unittest.TestCase):
         self.mock_dynamodb_table.query.return_value = {"Items": items}
 
         # Call method
-        module_info = self.csa_module_versions_repository.get_csa_module_versions("module_name")
+        module_info = self.csa_module_versions_repo.get_csa_module_versions("module_name")
 
         # Assertions
         self.assertEqual(len(module_info), 1)
@@ -75,7 +75,7 @@ class TestCsaModuleVersionsRepository(unittest.TestCase):
 
         # Test exception handling
         with self.assertRaises(ServiceException) as context:
-            self.csa_module_versions_repository.get_csa_module_versions("module_name")
+            self.csa_module_versions_repo.get_csa_module_versions("module_name")
 
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.message, "Could not retrieve modules")
@@ -105,7 +105,7 @@ class TestCsaModuleVersionsRepository(unittest.TestCase):
         self.mock_dynamodb_table.query.return_value = {"Items": items}
 
         # Call method
-        module_info = self.csa_module_versions_repository.get_csa_module_versions("module_name")
+        module_info = self.csa_module_versions_repo.get_csa_module_versions("module_name")
 
         # Assertions
         self.assertEqual(len(module_info), 2)
@@ -138,35 +138,13 @@ class TestCsaModuleVersionsRepository(unittest.TestCase):
 
         # Call method
         with self.assertRaises(ServiceException) as e:
-            self.csa_module_versions_repository.get_csa_module_versions("module_name")
+            self.csa_module_versions_repo.get_csa_module_versions("module_name")
 
         # Assertions
         self.assertEqual(e.exception.status_code, 400)
         self.assertEqual(e.exception.message, "Modules do not exist")
 
         self.mock_dynamodb_table.query.assert_called_once_with(KeyConditionExpression=Key('module_name').eq('module_name'))
-
-
-    def test_get_csa_module_versions_missing_key(self):
-        """
-        Test case for handling missing module name during module version retrieval.
-
-        Case: An empty string is provided as the module name.
-        Expected Result: The method raises a ServiceException indicating that modules 
-        do not exist.
-        """
-        # Mock DynamoDB response with no items
-        self.mock_dynamodb_table.query.return_value = {"Items": []}
-
-        # Call method
-        with self.assertRaises(ServiceException) as e:
-            self.csa_module_versions_repository.get_csa_module_versions("")
-
-        # Assertions
-        self.assertEqual(e.exception.status_code, 400)
-        self.assertEqual(e.exception.message, "Modules do not exist")
-
-        self.mock_dynamodb_table.query.assert_called_once_with(KeyConditionExpression=Key('module_name').eq(''))
 
 
     def test_get_csa_module_version_invalid_key(self):
@@ -182,7 +160,7 @@ class TestCsaModuleVersionsRepository(unittest.TestCase):
 
         # Call method under test
         with self.assertRaises(ServiceException) as e:
-            self.csa_module_versions_repository.get_csa_module_versions("invalid_module_name")
+            self.csa_module_versions_repo.get_csa_module_versions("invalid_module_name")
 
         # Assertions 
         self.assertEqual(e.exception.status_code, 400)

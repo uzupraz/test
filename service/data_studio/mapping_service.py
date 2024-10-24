@@ -4,8 +4,8 @@ from typing import List
 from dacite import from_dict
 
 from repository import DataStudioMappingRepository
-from utils import Singleton, DataTypeUtils
-from model import DataStudioMapping
+from utils import Singleton
+from model import DataStudioMapping, DataStudioMappingResponse
 from enums import DataStudioMappingStatus
 
 
@@ -24,7 +24,31 @@ class DataStudioMappingService(metaclass=Singleton):
         Returns:
             list[DataStudioMapping]: List of active mappings for the given owner.
         """
+        print(owner_id)
         return self.data_studio_mapping_repository.get_active_mappings(owner_id)
+    
+
+    def get_mapping(self, owner_id:str, user_id: str, mapping_id: str) -> DataStudioMappingResponse:
+        """
+        Returns revisions & draft for the given owner & mapping.
+        Note: There is only one draft per user.
+        Args:
+            owner_id (str): The owner ID for which the mappings are to be returned.
+            mapping_id (str): The mapping ID.
+        Returns:
+            DataStudioMappingResponse: Draft & Revisions of mapping for the given owner & mapping.
+        """
+        mappings = self.data_studio_mapping_repository.get_mapping(owner_id, mapping_id)
+
+        draft = None
+        revisions = []
+        for mapping in mappings:
+            if mapping.revision == user_id and mapping.status == DataStudioMappingStatus.DRAFT.value:
+                draft = mapping
+            elif mapping.status == DataStudioMappingStatus.PUBLISHED.value:
+                revisions.append(mapping)
+
+        return from_dict(DataStudioMappingResponse, {"draft": draft, "revisions": revisions})
 
 
     def create_mapping(self, user_id: str, owner_id: str) -> DataStudioMapping:
