@@ -1,0 +1,58 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ develop ]
+    types: [ opened, synchronize, reopened ]
+
+env:
+  IMAGE_NAME: elephanti-soft/interconnecthub-management-api
+  CONTAINER_NAME: interconnecthub-management-api
+  LAMBDA_NAME: interconnecthub-management-api
+  AWS_DEFAULT_REGION: eu-central-1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/pull/')
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }} .
+
+      - name: Configure AWS credentials
+        if: github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Deploy to Lambda
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Cleanup working directory
+          rm -f dist.zip
+
+          # Create container and extract dist.zip
+          docker create --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE_NAME }}
+          docker cp ${{ env.CONTAINER_NAME }}:/app/dist.zip .
+
+          # Update Lambda function
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_NAME }} \
+            --zip-file fileb://dist.zip
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm ${{ env.CONTAINER_NAME }} || true
+          docker image rm ${{ env.IMAGE_NAME }} || true
