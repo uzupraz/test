@@ -11,7 +11,7 @@ from enums import APIStatus
 from model import User,UpdateRequest
 
 
-api = Namespace('CSA Updater API ', description='API for updating CSA modules in client side.', path='/interconnecthub/updates')
+api = Namespace('CSA Updater API ', description='API for updating CSA modules in client side.', path='/interconnecthub/csa')
 log=api.logger
 
 
@@ -31,7 +31,7 @@ update_request_dto = api.model('UpdateRequest', {
 
 
 
-@api.route('')
+@api.route('/updates')
 class CsaUpdaterResource(Resource):
 
 
