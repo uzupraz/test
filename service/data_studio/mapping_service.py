@@ -3,10 +3,14 @@ import nanoid
 from typing import List
 from dacite import from_dict
 
+from controller import common_controller as common_ctrl
 from repository import DataStudioMappingRepository
 from utils import Singleton
-from model import DataStudioMapping, DataStudioMappingResponse
-from enums import DataStudioMappingStatus
+from model import DataStudioMapping, DataStudioMappingResponse, DataStudioSaveMapping
+from exception import ServiceException
+from enums import ServiceStatus, DataStudioMappingStatus
+
+log = common_ctrl.log
 
 
 class DataStudioMappingService(metaclass=Singleton):
@@ -71,3 +75,15 @@ class DataStudioMappingService(metaclass=Singleton):
             )
         self.data_studio_mapping_repository.create_mapping(mapping)
         return mapping
+
+
+    def save_mapping(self, owner_id: str, user_id: str, mapping_id: str, mapping: DataStudioSaveMapping) -> None:
+        """
+        Save mapping details for the provided user's draft.   
+        """
+        draft = self.data_studio_mapping_repository.get_user_draft(owner_id, mapping_id, user_id)
+        if not draft:
+            log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", owner_id, user_id, mapping_id)
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Unable to find draft.')
+        
+        self.data_studio_mapping_repository.save_mapping(owner_id=owner_id, mapping_id=mapping_id, revision=user_id, mapping=mapping)

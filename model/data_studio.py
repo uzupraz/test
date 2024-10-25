@@ -77,3 +77,13 @@ class DataStudioMapping:
 class DataStudioMappingResponse:
     draft: Optional[DataStudioMapping]
     revisions: List[DataStudioMapping]
+
+
+@dataclass
+class DataStudioSaveMapping:
+    name: Optional[str] = None
+    description: Optional[str] = None
+    sources: Optional[Dict] = None
+    output: Optional[Dict] = None
+    mapping: Optional[Dict] = None
+    tags: Optional[str] = None
