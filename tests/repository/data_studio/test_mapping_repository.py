@@ -19,6 +19,7 @@ class TestDataStudioMappingRepository(unittest.TestCase):
     TEST_RESOURCE_PATH = '/tests/resources/data_studio/'
     TEST_OWNER_ID = 'test_owner_id'
     TEST_USER_ID = 'test_user_id'
+    TEST_MAPPING_ID = 'test_mapping_id'
 
 
     def setUp(self):
@@ -111,6 +112,69 @@ class TestDataStudioMappingRepository(unittest.TestCase):
             FilterExpression=Attr('active').eq(True)
         )
 
+    
+    def test_get_mapping_success(self):
+        """
+        Test case for successfully retrieving data studio mapping for a given owner & mapping.
+        """
+        mock_table_items_path = self.TEST_RESOURCE_PATH + "get_data_studio_mapping_response.json"
+        mock_items = TestUtils.get_file_content(mock_table_items_path)
+
+        self.mock_table.query.return_value = {'Items': mock_items}
+
+        result = self.data_studio_mapping_repository.get_mapping(self.TEST_OWNER_ID, self.TEST_MAPPING_ID)
+
+        # Assertion
+        self.mock_table.query.assert_called_once_with(
+            KeyConditionExpression=Key('id').eq(self.TEST_MAPPING_ID),
+            FilterExpression=Attr('owner_id').eq(self.TEST_OWNER_ID)
+        )
+        self.assertEqual(len(result), 3)
+
+    
+    def test_get_mapping_return_empty_list_for_non_existing_mapping_id(self):
+        """
+        Test case for successfully retrieving empty list for non existing mapping id.
+        """
+        self.mock_table.query.return_value = {'Items': []}
+
+        result = self.data_studio_mapping_repository.get_mapping(self.TEST_OWNER_ID, self.TEST_MAPPING_ID)
+
+        # Assertion
+        self.mock_table.query.assert_called_once_with(
+            KeyConditionExpression=Key('id').eq(self.TEST_MAPPING_ID),
+            FilterExpression=Attr('owner_id').eq(self.TEST_OWNER_ID)
+        )
+        self.assertEqual(len(result), 0)
+
+    
+    def test_get_mapping_failure(self):
+        """
+        Test case for handling failure while retrieving data studio mapping due to a ClientError.
+        """
+        error_response = {
+            'Error': {
+                'Code': 'InternalServerError',
+                'Message': 'An internal server error occurred'
+            },
+            'ResponseMetadata': {
+                'HTTPStatusCode': 500
+            }
+        }
+        self.mock_table.query.side_effect = ClientError(error_response, 'query')
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_studio_mapping_repository.get_mapping(self.TEST_OWNER_ID, self.TEST_MAPPING_ID)
+
+        # Assertion
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(str(context.exception.message), 'Failed to retrieve data studio mapping')
+
+        self.mock_table.query.assert_called_once_with(
+            KeyConditionExpression=Key('id').eq(self.TEST_MAPPING_ID),
+            FilterExpression=Attr('owner_id').eq(self.TEST_OWNER_ID)
+        )
 
     def test_create_mapping_success(self):
         """

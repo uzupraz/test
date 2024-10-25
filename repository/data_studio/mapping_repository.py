@@ -60,6 +60,34 @@ class DataStudioMappingRepository(metaclass=Singleton):
             log.exception('Failed to retrieve data studio mappings. owner_id: %s', owner_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve data studio mappings')
+        
+
+    def get_mapping(self, owner_id: str, mapping_id: str) -> List[DataStudioMapping]:
+        """
+        Retrieve a specific data studio mapping for an owner.
+
+        Args:
+            owner_id (str): The ID of the owner of the mapping.
+            mapping_id (str): The ID of the mapping to retrieve.
+
+        Returns:
+            List[DataStudioMapping]: A list containing the requested mapping.
+        """
+        log.info('Retrieving data studio mapping. mapping_id: %s, owner_id: %s', mapping_id, owner_id)
+        try:
+            response = self.table.query(
+                KeyConditionExpression=Key('id').eq(mapping_id),
+                FilterExpression=Attr('owner_id').eq(owner_id)
+            )
+
+            return [
+                from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(item)) 
+                for item in response.get('Items', [])
+            ]
+        except ClientError as e:
+            log.exception('Failed to retrieve data studio mapping. mapping_id: %s, owner_id: %s', mapping_id, owner_id)
+            code = e.response['ResponseMetadata']['HTTPStatusCode']
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve data studio mapping')
 
 
     def create_mapping(self, mapping: DataStudioMapping) -> None:

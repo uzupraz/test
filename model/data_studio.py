@@ -1,7 +1,7 @@
 import time
 
 from dataclasses import dataclass, field
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 from enums import DataStudioMappingStatus
 
@@ -71,3 +71,9 @@ class DataStudioMapping:
     version: Optional[str] = None
     tags: Optional[str] = None
     created_at: int = field(default_factory=lambda: int(time.time()))
+ 
+
+@dataclass
+class DataStudioMappingResponse:
+    draft: Optional[DataStudioMapping]
+    revisions: List[DataStudioMapping]
