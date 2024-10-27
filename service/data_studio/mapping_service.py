@@ -79,7 +79,16 @@ class DataStudioMappingService(metaclass=Singleton):
 
     def save_mapping(self, owner_id: str, user_id: str, mapping_id: str, mapping: DataStudioSaveMapping) -> None:
         """
-        Save mapping details for the provided user's draft.   
+        Updates the draft mapping for a user if it exists.
+        
+        Args:
+            owner_id (str): Owner ID for the mapping.
+            user_id (str): User ID for the draft.
+            mapping_id (str): Unique ID of the mapping.
+            mapping (DataStudioSaveMapping): Mapping data to save.
+            
+        Raises:
+            ServiceException: If the draft is not found or update fails.
         """
         draft = self.data_studio_mapping_repository.get_user_draft(owner_id, mapping_id, user_id)
         if not draft:

@@ -113,6 +113,20 @@ class DataStudioMappingRepository(metaclass=Singleton):
 
 
     def get_user_draft(self, owner_id: str, mapping_id: str, user_id: str) -> Optional[DataStudioMapping]:
+        """
+        Retrieves a draft data studio mapping for a specified user.
+
+        Args:
+            owner_id (str): The ID of the mapping owner.
+            mapping_id (str): The ID of the mapping entry.
+            user_id (str): The ID of the user requesting the draft.
+
+        Returns:
+            Optional[DataStudioMapping]: The draft mapping entry if found, or None.
+
+        Raises:
+            ServiceException: If an error occurs while retrieving the draft.
+        """
         log.info('Retrieving user draft. owner_id: %s, mapping_id: %s, user_id: %s', owner_id, mapping_id, user_id)
         try:
             response = self.table.query(
@@ -131,6 +145,18 @@ class DataStudioMappingRepository(metaclass=Singleton):
         
 
     def save_mapping(self, owner_id: str, id: str, revision: str,  mapping: DataStudioSaveMapping) -> None:
+        """
+        Updates an existing data studio mapping entry in the database.
+
+        Args:
+            owner_id (str): The ID of the mapping owner.
+            id (str): The primary ID of the mapping entry.
+            revision (str): The revision ID of the mapping entry.
+            mapping (DataStudioSaveMapping): The mapping object containing updated values.
+
+        Raises:
+            ServiceException: If an error occurs while updating the mapping.
+        """
         log.info('Updating data studio mapping draft. owner_id: %s, mapping_id: %s, revision_id: %s', owner_id, id, revision)
         try:
             mapping_dict = asdict(mapping)
