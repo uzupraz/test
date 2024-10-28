@@ -133,7 +133,6 @@ class DataStudioMappingRepository(metaclass=Singleton):
                 KeyConditionExpression=Key('id').eq(mapping_id) & Key('revision').eq(user_id),
                 FilterExpression=Attr('owner_id').eq(owner_id) & Attr('status').eq(DataStudioMappingStatus.DRAFT.value)
             )
-            print(response)
             draft = response.get('Items', [])
             
             if not draft:

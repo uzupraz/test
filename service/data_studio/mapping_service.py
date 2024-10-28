@@ -77,7 +77,7 @@ class DataStudioMappingService(metaclass=Singleton):
         return mapping
 
 
-    def save_mapping(self, user: User, mapping: DataStudioSaveMapping) -> None:
+    def save_mapping(self, user: User, mapping_dto: DataStudioSaveMapping) -> None:
         """
         Updates the draft mapping for a user if it exists.
         
@@ -88,17 +88,17 @@ class DataStudioMappingService(metaclass=Singleton):
         Raises:
             ServiceException: If the draft is not found or update fails.
         """
-        draft = self.data_studio_mapping_repository.get_user_draft(user.organization_id, mapping.id, user.sub)
-        if not draft:
-            log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", user.organization_id, user.sub, mapping.id)
+        draft_mapping = self.data_studio_mapping_repository.get_user_draft(user.organization_id, mapping_dto.id, user.sub)
+        if not draft_mapping:
+            log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", user.organization_id, user.sub, mapping_dto.id)
             raise ServiceException(400, ServiceStatus.FAILURE, 'Unable to find draft.')
         
         # Updating changable fields
-        draft.name = mapping.name
-        draft.description = mapping.description
-        draft.sources = mapping.sources
-        draft.output = mapping.output
-        draft.mapping = mapping.mapping
-        draft.tags = mapping.tags
+        draft_mapping.name = mapping_dto.name
+        draft_mapping.description = mapping_dto.description
+        draft_mapping.sources = mapping_dto.sources
+        draft_mapping.output = mapping_dto.output
+        draft_mapping.mapping = mapping_dto.mapping
+        draft_mapping.tags = mapping_dto.tags
 
-        self.data_studio_mapping_repository.save_mapping(owner_id=user.organization_id, revision=user.sub, mapping=draft)
+        self.data_studio_mapping_repository.save_mapping(owner_id=user.organization_id, revision=user.sub, mapping=draft_mapping)
