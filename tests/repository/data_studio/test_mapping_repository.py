@@ -241,7 +241,7 @@ class TestDataStudioMappingRepository(unittest.TestCase):
         mock_table_item_path = self.TEST_RESOURCE_PATH + "get_data_studio_user_mapping_draft_response.json"
         mock_item = TestUtils.get_file_content(mock_table_item_path)
 
-        self.mock_table.query.return_value = {'Item': mock_item}
+        self.mock_table.query.return_value = {'Items': [mock_item]}
 
         result = self.data_studio_mapping_repository.get_user_draft(self.TEST_OWNER_ID, self.TEST_MAPPING_ID, self.TEST_USER_ID)
 
@@ -257,7 +257,7 @@ class TestDataStudioMappingRepository(unittest.TestCase):
         """
         Test case for retrieving none when user data studio mapping draft does not exist.
         """
-        self.mock_table.query.return_value = {'Item': None}
+        self.mock_table.query.return_value = {'Items': []}
 
         result = self.data_studio_mapping_repository.get_user_draft(self.TEST_OWNER_ID, self.TEST_MAPPING_ID, self.TEST_USER_ID)
 
@@ -302,20 +302,22 @@ class TestDataStudioMappingRepository(unittest.TestCase):
         """
         Test that save_mapping successfully updates the item in the database.
         """
-        mock_table_item_path = self.TEST_RESOURCE_PATH + "data_studio_save_mapping_request.json"
+        mock_table_item_path = self.TEST_RESOURCE_PATH + "get_data_studio_user_mapping_draft_response.json"
         mock_item = TestUtils.get_file_content(mock_table_item_path)
 
-        save_mapping_request = from_dict(DataStudioSaveMapping, mock_item)
-        self.mock_table.update_item = MagicMock()
+        mapping = from_dict(DataStudioSaveMapping, mock_item)
+        self.mock_table.put_item = MagicMock()
 
-        self.data_studio_mapping_repository.save_mapping(self.TEST_OWNER_ID, self.TEST_MAPPING_ID, self.TEST_USER_ID, save_mapping_request)
+        self.data_studio_mapping_repository.save_mapping(self.TEST_OWNER_ID, self.TEST_USER_ID, mapping)
+        self.mock_table.put_item.assert_called_once_with(Item=asdict(mapping))
 
 
     def test_save_mapping_should_raise_exception_when_db_call_fails(self):
         """Test that save_mapping raises ServiceException on database update failure."""
-        mock_table_item_path = self.TEST_RESOURCE_PATH + "data_studio_save_mapping_request.json"
+        mock_table_item_path = self.TEST_RESOURCE_PATH + "get_data_studio_user_mapping_draft_response.json"
         mock_item = TestUtils.get_file_content(mock_table_item_path)
-        save_mapping_request = from_dict(DataStudioSaveMapping, mock_item)
+        mapping = from_dict(DataStudioSaveMapping, mock_item)
+
         error_response = {
             'Error': {
                 'Code': 'InternalServerError',
@@ -325,11 +327,13 @@ class TestDataStudioMappingRepository(unittest.TestCase):
                 'HTTPStatusCode': 500
             }
         }
-        self.mock_table.update_item.side_effect = ClientError(error_response, 'update_item')
+        self.mock_table.put_item.side_effect = ClientError(error_response, 'put_item')
 
         with self.assertRaises(ServiceException) as context:
-            self.data_studio_mapping_repository.save_mapping(self.TEST_OWNER_ID, self.TEST_MAPPING_ID, self.TEST_USER_ID, save_mapping_request)
+            self.data_studio_mapping_repository.save_mapping(self.TEST_OWNER_ID, self.TEST_USER_ID, mapping)
 
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(str(context.exception.message), 'Could not update the mapping draft')
+
+        self.mock_table.put_item.assert_called_once_with(Item=asdict(mapping))

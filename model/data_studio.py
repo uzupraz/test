@@ -81,6 +81,7 @@ class DataStudioMappingResponse:
 
 @dataclass
 class DataStudioSaveMapping:
+    id: str
     name: Optional[str] = None
     description: Optional[str] = None
     sources: Optional[Dict] = None

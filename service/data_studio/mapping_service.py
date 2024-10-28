@@ -6,7 +6,7 @@ from dacite import from_dict
 from controller import common_controller as common_ctrl
 from repository import DataStudioMappingRepository
 from utils import Singleton
-from model import DataStudioMapping, DataStudioMappingResponse, DataStudioSaveMapping
+from model import User, DataStudioMapping, DataStudioMappingResponse, DataStudioSaveMapping
 from exception import ServiceException
 from enums import ServiceStatus, DataStudioMappingStatus
 
@@ -77,22 +77,28 @@ class DataStudioMappingService(metaclass=Singleton):
         return mapping
 
 
-    def save_mapping(self, owner_id: str, user_id: str, mapping_id: str, mapping: DataStudioSaveMapping) -> None:
+    def save_mapping(self, user: User, mapping: DataStudioSaveMapping) -> None:
         """
         Updates the draft mapping for a user if it exists.
         
         Args:
-            owner_id (str): Owner ID for the mapping.
-            user_id (str): User ID for the draft.
-            mapping_id (str): Unique ID of the mapping.
+            user (str): User model.
             mapping (DataStudioSaveMapping): Mapping data to save.
             
         Raises:
             ServiceException: If the draft is not found or update fails.
         """
-        draft = self.data_studio_mapping_repository.get_user_draft(owner_id, mapping_id, user_id)
+        draft = self.data_studio_mapping_repository.get_user_draft(user.organization_id, mapping.id, user.sub)
         if not draft:
-            log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", owner_id, user_id, mapping_id)
+            log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", user.organization_id, user.sub, mapping.id)
             raise ServiceException(400, ServiceStatus.FAILURE, 'Unable to find draft.')
         
-        self.data_studio_mapping_repository.save_mapping(owner_id=owner_id, mapping_id=mapping_id, revision=user_id, mapping=mapping)
+        # Updating changable fields
+        draft.name = mapping.name
+        draft.description = mapping.description
+        draft.sources = mapping.sources
+        draft.output = mapping.output
+        draft.mapping = mapping.mapping
+        draft.tags = mapping.tags
+
+        self.data_studio_mapping_repository.save_mapping(owner_id=user.organization_id, revision=user.sub, mapping=draft)

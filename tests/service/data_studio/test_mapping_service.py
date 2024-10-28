@@ -235,23 +235,29 @@ class TestDataStudioMappingService(unittest.TestCase):
         """
         Test that save_mapping successfully calls the repository method.
         """
+        mock_user = MagicMock()
+
         mock_table_item_path = self.TEST_RESOURCE_PATH + "data_studio_save_mapping_request.json"
         mock_item = TestUtils.get_file_content(mock_table_item_path)
         mock_save_mapping = from_dict(DataStudioSaveMapping, mock_item)
 
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_user_draft = MagicMock()
         self.data_studio_mapping_service.data_studio_mapping_repository.save_mapping = MagicMock()
 
-        self.data_studio_mapping_service.save_mapping(self.TEST_OWNER_ID, self.TEST_USER_ID, self.TEST_MAPPING_ID, mock_save_mapping)
+        self.data_studio_mapping_service.save_mapping(mock_user, mock_save_mapping)
 
 
     def test_save_mapping_should_raise_exception_when_repository_call_fails(self):
         """
         Test that save_mapping raises ServiceException on repository failure.
         """
+        mock_user = MagicMock()
+
         mock_table_item_path = self.TEST_RESOURCE_PATH + "data_studio_save_mapping_request.json"
         mock_item = TestUtils.get_file_content(mock_table_item_path)
         mock_save_mapping = from_dict(DataStudioSaveMapping, mock_item)
 
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_user_draft = MagicMock()
         mock_create_mapping = self.data_studio_mapping_service.data_studio_mapping_repository.save_mapping = MagicMock()
         mock_create_mapping.side_effect = ServiceException(
             status=ServiceStatus.FAILURE,
@@ -260,7 +266,7 @@ class TestDataStudioMappingService(unittest.TestCase):
         )
 
         with self.assertRaises(ServiceException) as context:
-            self.data_studio_mapping_service.save_mapping(self.TEST_OWNER_ID, self.TEST_USER_ID, self.TEST_MAPPING_ID, mock_save_mapping)
+            self.data_studio_mapping_service.save_mapping(mock_user, mock_save_mapping)
 
         self.assertEqual(context.exception.message, 'Could not update the mapping draft')
         self.assertEqual(context.exception.status_code, 500)

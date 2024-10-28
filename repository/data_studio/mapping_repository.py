@@ -133,18 +133,20 @@ class DataStudioMappingRepository(metaclass=Singleton):
                 KeyConditionExpression=Key('id').eq(mapping_id) & Key('revision').eq(user_id),
                 FilterExpression=Attr('owner_id').eq(owner_id) & Attr('status').eq(DataStudioMappingStatus.DRAFT.value)
             )
-            draft = response.get('Item', None)
+            print(response)
+            draft = response.get('Items', [])
             
             if not draft:
+                log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", owner_id, user_id, mapping_id)
                 return None
-            return from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(draft)) 
+            return from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(draft[0])) 
         except ClientError as e:
             log.exception('Failed to retrieve user draft. owner_id: %s, mapping_id: %s, user_id: %s', owner_id, mapping_id, user_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve user draft')
         
 
-    def save_mapping(self, owner_id: str, id: str, revision: str,  mapping: DataStudioSaveMapping) -> None:
+    def save_mapping(self, owner_id: str, revision: str,  mapping: DataStudioMapping) -> None:
         """
         Updates an existing data studio mapping entry in the database.
 
@@ -152,32 +154,18 @@ class DataStudioMappingRepository(metaclass=Singleton):
             owner_id (str): The ID of the mapping owner.
             id (str): The primary ID of the mapping entry.
             revision (str): The revision ID of the mapping entry.
-            mapping (DataStudioSaveMapping): The mapping object containing updated values.
+            mapping (DataStudioMapping): The mapping object containing updated values.
 
         Raises:
             ServiceException: If an error occurs while updating the mapping.
         """
-        log.info('Updating data studio mapping draft. owner_id: %s, mapping_id: %s, revision_id: %s', owner_id, id, revision)
+        log.info('Updating data studio mapping draft. owner_id: %s, mapping_id: %s, revision_id: %s', owner_id, mapping.id, revision)
         try:
             mapping_dict = asdict(mapping)
-
-            update_expression = "SET " + ", ".join(f"#{key} = :{key}" for key in mapping_dict)
-            expression_attribute_names = {f"#{key}": key for key in mapping_dict}
-            expression_attribute_values = {f":{key}": value for key, value in mapping_dict.items()}
-
-            self.table.update_item(
-                Key={
-                    'id': id,
-                    'revision': revision
-                },
-                UpdateExpression=update_expression,
-                ConditionExpression='attribute_exists(id) AND attribute_exists(revision) AND owner_id = :owner_id',
-                ExpressionAttributeNames=expression_attribute_names,
-                ExpressionAttributeValues={**expression_attribute_values, ':owner_id': owner_id}
-            )
-            log.info('Successfully updated data studio mapping draft. owner_id: %s, mapping_id: %s, revision_id: %s', owner_id, id, revision)
+            self.table.put_item(Item=mapping_dict)
+            log.info('Successfully updated data studio mapping draft. owner_id: %s, mapping_id: %s, revision_id: %s', owner_id, mapping.id, revision)
         except ClientError as e:
-            log.exception('Failed to update mapping draft. owner_id: %s, mapping_id: %s, revision_id: %s', owner_id, id, revision)
+            log.exception('Failed to update mapping draft. owner_id: %s, mapping_id: %s, revision_id: %s', owner_id, mapping.id, revision)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Could not update the mapping draft')
 
 

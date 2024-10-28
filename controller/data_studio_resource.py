@@ -46,6 +46,7 @@ mapping = api.model("Mapping", {
 
 # DTO
 data_studio_save_mapping_request_dto = api.model('Save data of user mapping draft', {
+    "id": fields.String(description="The id of the mapping", required=True),
     "name": fields.String(description="The name of the mapping", required=False),
     "description": fields.String(description="A brief description of the mapping", required=False),
     "sources": fields.Raw(description="The source data for the mapping", required=False),
@@ -132,6 +133,20 @@ class DataStudioMappingsResource(Resource):
         return ServerResponse.success(payload=mapping_id), 201
     
 
+    @api.doc(description="Save user mapping draft")
+    @api.expect(data_studio_save_mapping_request_dto, validate=True, skip_none=True)
+    @api.marshal_with(server_response, skip_none=True)
+    def patch(self):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+        user_data = g.get("user")
+        user = User(**user_data)
+
+        mapping = from_dict(DataStudioSaveMapping, request.json)
+        data_studio_mapping_service.save_mapping(user, mapping)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=None), 200
+    
+
 @api.route("/mappings/<string:mapping_id>")
 class DataStudioMappingResource(Resource):
 
@@ -149,17 +164,3 @@ class DataStudioMappingResource(Resource):
         mappings = data_studio_mapping_service.get_mapping(user.organization_id, user.sub, mapping_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=mappings), 200
-
-
-    @api.doc(description="Save user mapping draft")
-    @api.expect(data_studio_save_mapping_request_dto, validate=True)
-    @api.marshal_with(server_response, skip_none=True)
-    def patch(self, mapping_id: str):
-        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        user_data = g.get("user")
-        user = User(**user_data)
-
-        mapping = from_dict(DataStudioSaveMapping, request.json)
-        data_studio_mapping_service.save_mapping(user.organization_id, user.sub, mapping_id, mapping)
-        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
-        return ServerResponse.success(payload=None), 200

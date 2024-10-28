@@ -1,4 +1,5 @@
 {
+  "id": "test_mapping_id",
   "name": "Mapping 1",
   "description": "Test mapping 1",
   "sources": { "source1": "data1" },
