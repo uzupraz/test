@@ -218,7 +218,6 @@ class DataStudioMappingRepository(metaclass=Singleton):
                     item['active'] = False
                     batch.put_item(Item=item)
 
-                print(published_mapping)
                 # Write new published version
                 batch.put_item(Item=asdict(published_mapping))
 
