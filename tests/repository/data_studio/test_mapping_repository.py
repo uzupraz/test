@@ -3,9 +3,10 @@ import unittest
 from unittest.mock import MagicMock, Mock, patch
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
+from  dacite import from_dict
 
 from enums.data_studio import DataStudioMappingStatus
-from model.data_studio import DataStudioMapping
+from model.data_studio import DataStudioMapping, DataStudioSaveMapping
 from tests.test_utils import TestUtils
 from repository import DataStudioMappingRepository
 from exception import ServiceException
@@ -176,6 +177,7 @@ class TestDataStudioMappingRepository(unittest.TestCase):
             FilterExpression=Attr('owner_id').eq(self.TEST_OWNER_ID)
         )
 
+
     def test_create_mapping_success(self):
         """
         Test case for successfully creating a data studio mapping entry in database.
@@ -230,3 +232,108 @@ class TestDataStudioMappingRepository(unittest.TestCase):
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(str(context.exception.message), 'Couldn\'t create the mapping')
+
+
+    def test_get_user_draft_success(self):
+        """
+        Test case for successfully retrieving user data studio mapping draft.
+        """
+        mock_table_item_path = self.TEST_RESOURCE_PATH + "get_data_studio_user_mapping_draft_response.json"
+        mock_item = TestUtils.get_file_content(mock_table_item_path)
+
+        self.mock_table.query.return_value = {'Items': [mock_item]}
+
+        result = self.data_studio_mapping_repository.get_user_draft(self.TEST_OWNER_ID, self.TEST_MAPPING_ID, self.TEST_USER_ID)
+
+        # Assertion
+        self.mock_table.query.assert_called_once_with(
+            KeyConditionExpression=Key('id').eq(self.TEST_MAPPING_ID) & Key('revision').eq(self.TEST_USER_ID),
+            FilterExpression=Attr('owner_id').eq(self.TEST_OWNER_ID) & Attr('status').eq(DataStudioMappingStatus.DRAFT.value)
+        )
+        self.assertEqual(result, from_dict(DataStudioMapping, mock_item))
+
+    
+    def test_get_user_draft_without_user_draft_must_return_none(self):
+        """
+        Test case for retrieving none when user data studio mapping draft does not exist.
+        """
+        self.mock_table.query.return_value = {'Items': []}
+
+        result = self.data_studio_mapping_repository.get_user_draft(self.TEST_OWNER_ID, self.TEST_MAPPING_ID, self.TEST_USER_ID)
+
+        # Assertion
+        self.mock_table.query.assert_called_once_with(
+            KeyConditionExpression=Key('id').eq(self.TEST_MAPPING_ID) & Key('revision').eq(self.TEST_USER_ID),
+            FilterExpression=Attr('owner_id').eq(self.TEST_OWNER_ID) & Attr('status').eq(DataStudioMappingStatus.DRAFT.value)
+        )
+        self.assertIsNone(result)
+
+
+    def test_get_user_draft_failure(self):
+        """
+        Test case for handling failure while retrieving data studio user mapping draft due to a ClientError.
+        """
+        error_response = {
+            'Error': {
+                'Code': 'InternalServerError',
+                'Message': 'An internal server error occurred'
+            },
+            'ResponseMetadata': {
+                'HTTPStatusCode': 500
+            }
+        }
+        self.mock_table.query.side_effect = ClientError(error_response, 'query')
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_studio_mapping_repository.get_user_draft(self.TEST_OWNER_ID, self.TEST_MAPPING_ID, self.TEST_USER_ID)
+
+        # Assertion
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(str(context.exception.message), 'Failed to retrieve user draft')
+
+        self.mock_table.query.assert_called_once_with(
+            KeyConditionExpression=Key('id').eq(self.TEST_MAPPING_ID) & Key('revision').eq(self.TEST_USER_ID),
+            FilterExpression=Attr('owner_id').eq(self.TEST_OWNER_ID) & Attr('status').eq(DataStudioMappingStatus.DRAFT.value)
+        )
+
+
+    def test_save_mapping_success(self):
+        """
+        Test that save_mapping successfully updates the item in the database.
+        """
+        mock_table_item_path = self.TEST_RESOURCE_PATH + "get_data_studio_user_mapping_draft_response.json"
+        mock_item = TestUtils.get_file_content(mock_table_item_path)
+
+        mapping = from_dict(DataStudioSaveMapping, mock_item)
+        self.mock_table.put_item = MagicMock()
+
+        self.data_studio_mapping_repository.save_mapping(self.TEST_OWNER_ID, self.TEST_USER_ID, mapping)
+        self.mock_table.put_item.assert_called_once_with(Item=asdict(mapping))
+
+
+    def test_save_mapping_should_raise_exception_when_db_call_fails(self):
+        """Test that save_mapping raises ServiceException on database update failure."""
+        mock_table_item_path = self.TEST_RESOURCE_PATH + "get_data_studio_user_mapping_draft_response.json"
+        mock_item = TestUtils.get_file_content(mock_table_item_path)
+        mapping = from_dict(DataStudioSaveMapping, mock_item)
+
+        error_response = {
+            'Error': {
+                'Code': 'InternalServerError',
+                'Message': 'An internal server error occurred'
+            },
+            'ResponseMetadata': {
+                'HTTPStatusCode': 500
+            }
+        }
+        self.mock_table.put_item.side_effect = ClientError(error_response, 'put_item')
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_studio_mapping_repository.save_mapping(self.TEST_OWNER_ID, self.TEST_USER_ID, mapping)
+
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(str(context.exception.message), 'Could not update the mapping draft')
+
+        self.mock_table.put_item.assert_called_once_with(Item=asdict(mapping))

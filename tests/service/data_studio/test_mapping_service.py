@@ -5,7 +5,7 @@ from dacite import from_dict
 from enums.data_studio import DataStudioMappingStatus
 from tests.test_utils import TestUtils
 from exception import ServiceException
-from model import DataStudioMapping
+from model import DataStudioMapping, DataStudioSaveMapping
 from service import DataStudioMappingService
 from enums import ServiceStatus, DataStudioMappingStatus
 
@@ -229,3 +229,44 @@ class TestDataStudioMappingService(unittest.TestCase):
         self.assertEqual(context.exception.status_code, 500)
 
         self.data_studio_mapping_service.data_studio_mapping_repository.create_mapping.assert_called_once_with(expected_data)
+
+
+    def test_save_mapping_success(self):
+        """
+        Test that save_mapping successfully calls the repository method.
+        """
+        mock_user = MagicMock()
+
+        mock_table_item_path = self.TEST_RESOURCE_PATH + "data_studio_save_mapping_request.json"
+        mock_item = TestUtils.get_file_content(mock_table_item_path)
+        mock_save_mapping = from_dict(DataStudioSaveMapping, mock_item)
+
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_user_draft = MagicMock()
+        self.data_studio_mapping_service.data_studio_mapping_repository.save_mapping = MagicMock()
+
+        self.data_studio_mapping_service.save_mapping(mock_user, mock_save_mapping)
+
+
+    def test_save_mapping_should_raise_exception_when_repository_call_fails(self):
+        """
+        Test that save_mapping raises ServiceException on repository failure.
+        """
+        mock_user = MagicMock()
+
+        mock_table_item_path = self.TEST_RESOURCE_PATH + "data_studio_save_mapping_request.json"
+        mock_item = TestUtils.get_file_content(mock_table_item_path)
+        mock_save_mapping = from_dict(DataStudioSaveMapping, mock_item)
+
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_user_draft = MagicMock()
+        mock_create_mapping = self.data_studio_mapping_service.data_studio_mapping_repository.save_mapping = MagicMock()
+        mock_create_mapping.side_effect = ServiceException(
+            status=ServiceStatus.FAILURE,
+            status_code=500,
+            message='Could not update the mapping draft'
+        )
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_studio_mapping_service.save_mapping(mock_user, mock_save_mapping)
+
+        self.assertEqual(context.exception.message, 'Could not update the mapping draft')
+        self.assertEqual(context.exception.status_code, 500)
