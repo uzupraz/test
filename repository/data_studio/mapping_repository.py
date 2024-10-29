@@ -1,5 +1,7 @@
 from dataclasses import asdict
 import boto3
+import time
+import copy
 import boto3.resources
 import boto3.resources.factory
 from botocore.config import Config
@@ -60,7 +62,7 @@ class DataStudioMappingRepository(metaclass=Singleton):
             log.exception('Failed to retrieve data studio mappings. owner_id: %s', owner_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve data studio mappings')
-        
+
 
     def get_mapping(self, owner_id: str, mapping_id: str) -> List[DataStudioMapping]:
         """
@@ -81,7 +83,7 @@ class DataStudioMappingRepository(metaclass=Singleton):
             )
 
             return [
-                from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(item)) 
+                from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(item))
                 for item in response.get('Items', [])
             ]
         except ClientError as e:
@@ -134,16 +136,16 @@ class DataStudioMappingRepository(metaclass=Singleton):
                 FilterExpression=Attr('owner_id').eq(owner_id) & Attr('status').eq(DataStudioMappingStatus.DRAFT.value)
             )
             draft = response.get('Items', [])
-            
+
             if not draft:
                 log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", owner_id, user_id, mapping_id)
                 return None
-            return from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(draft[0])) 
+            return from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(draft[0]))
         except ClientError as e:
             log.exception('Failed to retrieve user draft. owner_id: %s, mapping_id: %s, user_id: %s', owner_id, mapping_id, user_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve user draft')
-        
+
 
     def save_mapping(self, owner_id: str, revision: str,  mapping: DataStudioMapping) -> None:
         """
@@ -166,6 +168,74 @@ class DataStudioMappingRepository(metaclass=Singleton):
         except ClientError as e:
             log.exception('Failed to update mapping draft. owner_id: %s, mapping_id: %s, revision_id: %s', owner_id, mapping.id, revision)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Could not update the mapping draft')
+
+
+    def publish_mapping(self, owner_id: str, user_id: str, draft_mapping: DataStudioMapping) -> DataStudioMapping:
+        """
+        Publishes a mapping by getting the latest revision number and creating a new published version and deleting the draft.
+
+        Args:
+            owner_id (str): The ID of the mapping owner
+            mapping_id (str): The ID of the mapping
+            draft_mapping (DataStudioMapping): The draft mapping to publish
+
+        Returns:
+            DataStudioMapping: The published mapping
+
+        Raises:
+            ServiceException: If publication fails
+        """
+        try:
+            # Get all the publishes of the mapping (active and inactive both)
+            response = self.table.query(
+                KeyConditionExpression=Key('id').eq(draft_mapping.id),
+                FilterExpression=Attr('owner_id').eq(owner_id) &
+                            Attr('status').eq(DataStudioMappingStatus.PUBLISHED.value),
+                ConsistentRead=True
+            )
+
+            # Determine next revision number
+            published_items = response.get('Items', [])
+            next_revision = '1'
+            if published_items:
+                revisions = [int(item['revision']) for item in published_items if item['revision'].isdigit()]
+                if revisions:
+                    next_revision = str(max(revisions) + 1)
+
+            # Create published version from draft
+            published_mapping = copy.deepcopy(draft_mapping)
+            published_mapping.revision = next_revision
+            published_mapping.status = DataStudioMappingStatus.PUBLISHED.value
+            published_mapping.active = True
+            published_mapping.published_by = user_id
+            published_mapping.published_at = int(time.time())
+            published_mapping.version = 'v1'
+
+            # Start transaction
+            with self.table.batch_writer() as batch:
+                # Deactivate previous published versions
+                for item in published_items:
+                    item['active'] = False
+                    batch.put_item(Item=item)
+
+                print(published_mapping)
+                # Write new published version
+                batch.put_item(Item=asdict(published_mapping))
+
+                # Delete the draft
+                batch.delete_item(
+                    Key={
+                        'id': draft_mapping.id,
+                        'revision': draft_mapping.revision
+                    }
+                )
+
+            return published_mapping
+
+        except ClientError as e:
+            log.exception('Failed to publish mapping. mapping_id: %s, owner_id: %s', draft_mapping.id, owner_id)
+            code = e.response['ResponseMetadata']['HTTPStatusCode']
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to publish mapping')
 
 
     def __configure_dynamodb(self):

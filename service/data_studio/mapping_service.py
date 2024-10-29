@@ -30,7 +30,7 @@ class DataStudioMappingService(metaclass=Singleton):
         """
         print(owner_id)
         return self.data_studio_mapping_repository.get_active_mappings(owner_id)
-    
+
 
     def get_mapping(self, owner_id:str, user_id: str, mapping_id: str) -> DataStudioMappingResponse:
         """
@@ -80,11 +80,11 @@ class DataStudioMappingService(metaclass=Singleton):
     def save_mapping(self, user: User, mapping_dto: DataStudioSaveMapping) -> None:
         """
         Updates the draft mapping for a user if it exists.
-        
+
         Args:
             user (str): User model.
             mapping (DataStudioSaveMapping): Mapping data to save.
-            
+
         Raises:
             ServiceException: If the draft is not found or update fails.
         """
@@ -92,7 +92,7 @@ class DataStudioMappingService(metaclass=Singleton):
         if not draft_mapping:
             log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", user.organization_id, user.sub, mapping_dto.id)
             raise ServiceException(400, ServiceStatus.FAILURE, 'Unable to find draft.')
-        
+
         # Updating changable fields
         draft_mapping.name = mapping_dto.name
         draft_mapping.description = mapping_dto.description
@@ -102,3 +102,26 @@ class DataStudioMappingService(metaclass=Singleton):
         draft_mapping.tags = mapping_dto.tags
 
         self.data_studio_mapping_repository.save_mapping(owner_id=user.organization_id, revision=user.sub, mapping=draft_mapping)
+
+
+    def publish_mapping(self, user_id: str, owner_id: str, mapping_id: str) -> DataStudioMapping:
+        """
+        Publishes a mapping draft if found.
+
+        Args:
+            user_id (str): The ID of the user performing the action.
+            owner_id (str): The ID of the mapping owner.
+            mapping_id (str): The ID of the mapping to publish.
+
+        Returns:
+            DataStudioMapping: The published mapping.
+
+        Raises:
+            ServiceException: If mapping draft not found or publication fails
+        """
+        draft_mapping = self.data_studio_mapping_repository.get_user_draft(owner_id, mapping_id, user_id)
+        if not draft_mapping:
+            log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", owner_id, user_id, mapping_id)
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Unable to find draft.')
+
+        return self.data_studio_mapping_repository.publish_mapping(owner_id, user_id, draft_mapping)
