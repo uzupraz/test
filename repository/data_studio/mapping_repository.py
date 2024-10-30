@@ -170,69 +170,70 @@ class DataStudioMappingRepository(metaclass=Singleton):
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Could not update the mapping draft')
 
 
-    def publish_mapping(self, owner_id: str, user_id: str, draft_mapping: DataStudioMapping) -> DataStudioMapping:
+    def get_active_published_mapping(self, owner_id: str, mapping_id: str) -> Optional[DataStudioMapping]:
         """
-        Publishes a mapping by getting the latest revision number and creating a new published version and deleting the draft.
+        Get the currently active published mapping.
 
         Args:
-            owner_id (str): The ID of the mapping owner
-            mapping_id (str): The ID of the mapping
-            draft_mapping (DataStudioMapping): The draft mapping to publish
+            owner_id (str): The ID of the mapping owner.
+            mapping_id (str): The ID of the mapping entry.
 
         Returns:
-            DataStudioMapping: The published mapping
+            Optional[DataStudioMapping]: The active published mapping if found, or None.
 
         Raises:
-            ServiceException: If publication fails
+            ServiceException: If an error occurs while retrieving the active published mapping.
         """
+        log.info('Retrieving active published mapping. owner_id: %s, mapping_id: %s', owner_id, mapping_id)
         try:
-            # Get all the publishes of the mapping (active and inactive both)
             response = self.table.query(
-                KeyConditionExpression=Key('id').eq(draft_mapping.id),
+                KeyConditionExpression=Key('id').eq(mapping_id),
                 FilterExpression=Attr('owner_id').eq(owner_id) &
-                            Attr('status').eq(DataStudioMappingStatus.PUBLISHED.value),
+                                Attr('status').eq(DataStudioMappingStatus.PUBLISHED.value) &
+                                Attr('active').eq(True),
                 ConsistentRead=True
             )
+            items = response.get('Items', [])
+            return DataStudioMapping(**items[0]) if items else None
+        except ClientError as e:
+            log.exception('Failed to get active mapping. owner_id: %s, mapping_id: %s', owner_id, mapping_id)
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to get active mapping')
 
-            # Determine next revision number
-            published_items = response.get('Items', [])
-            next_revision = '1'
-            if published_items:
-                revisions = [int(item['revision']) for item in published_items if item['revision'].isdigit()]
-                if revisions:
-                    next_revision = str(max(revisions) + 1)
 
-            # Create published version from draft
-            published_mapping = copy.deepcopy(draft_mapping)
-            published_mapping.revision = next_revision
-            published_mapping.status = DataStudioMappingStatus.PUBLISHED.value
-            published_mapping.active = True
-            published_mapping.published_by = user_id
-            published_mapping.published_at = int(time.time())
-            published_mapping.version = 'v1'
+    def publish_mapping(self, new_mapping: DataStudioMapping, draft_mapping: DataStudioMapping, current_active_mapping: Optional[DataStudioMapping] = None) -> None:
+        """
+        Publish mapping in a single atomic transaction:
+        - Deactivate current active (if exists)
+        - Save new published version
+        - Delete draft
 
-            # Start transaction
+        Args:
+            new_mapping (DataStudioMapping): The new published mapping.
+            current_active_mapping (Optional[DataStudioMapping], optional): The current active mapping. Defaults to None.
+            draft_mapping (Optional[DataStudioMapping], optional): The draft mapping. Defaults to None.
+
+        Raises:
+            ServiceException: If an error occurs while publishing the mapping.
+        """
+        log.info('Publishing mapping. mapping_id: %s, owner_id: %s', new_mapping.id, new_mapping.owner_id)
+        try:
             with self.table.batch_writer() as batch:
-                # Deactivate previous published versions
-                for item in published_items:
-                    item['active'] = False
-                    batch.put_item(Item=item)
+                # Deactivate current active if exists
+                if current_active_mapping:
+                    batch.put_item(Item=asdict(current_active_mapping))
 
-                # Write new published version
-                batch.put_item(Item=asdict(published_mapping))
+                # Save new published version
+                batch.put_item(Item=asdict(new_mapping))
 
-                # Delete the draft
+                # Delete draft mapping
                 batch.delete_item(
                     Key={
                         'id': draft_mapping.id,
                         'revision': draft_mapping.revision
                     }
                 )
-
-            return published_mapping
-
         except ClientError as e:
-            log.exception('Failed to publish mapping. mapping_id: %s, owner_id: %s', draft_mapping.id, owner_id)
+            log.exception('Failed to publish mapping. mapping_id: %s, owner_id: %s', new_mapping.id, new_mapping.owner_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to publish mapping')
 

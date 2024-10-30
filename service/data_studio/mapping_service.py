@@ -1,6 +1,8 @@
+import copy
+import time
 import nanoid
 
-from typing import List
+from typing import List, Optional
 from dacite import from_dict
 
 from controller import common_controller as common_ctrl
@@ -106,7 +108,8 @@ class DataStudioMappingService(metaclass=Singleton):
 
     def publish_mapping(self, user_id: str, owner_id: str, mapping_id: str) -> DataStudioMapping:
         """
-        Publishes a mapping draft if found.
+        Publishes a mapping draft if found. If current active exists, mark it inactive.
+        Creates a new published version and stores it in the database.
 
         Args:
             user_id (str): The ID of the user performing the action.
@@ -124,4 +127,58 @@ class DataStudioMappingService(metaclass=Singleton):
             log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", owner_id, user_id, mapping_id)
             raise ServiceException(400, ServiceStatus.FAILURE, 'Unable to find draft.')
 
-        return self.data_studio_mapping_repository.publish_mapping(owner_id, user_id, draft_mapping)
+        current_active_mapping = self.data_studio_mapping_repository.get_active_published_mapping(owner_id, mapping_id)
+
+        # Prepare new published version
+        published_mapping = self._create_published_mapping(
+            draft_mapping,
+            user_id,
+            self._get_next_revision(current_active_mapping)
+        )
+
+        # If current active exists, mark it inactive
+        if current_active_mapping:
+            current_active_mapping.active = False
+
+        self.data_studio_mapping_repository.publish_mapping(
+            new_mapping=published_mapping,
+            current_active_mapping=current_active_mapping,
+            draft_mapping=draft_mapping
+        )
+
+        return published_mapping
+
+
+    def _create_published_mapping(self, draft_mapping: DataStudioMapping, user_id: str, next_revision: str) -> DataStudioMapping:
+        """
+        Create a new published mapping from draft
+
+        Args:
+            draft_mapping (DataStudioMapping): The draft mapping to be published.
+            user_id (str): The ID of the user performing the action.
+            next_revision (str): The next revision number.
+
+        Returns:
+            DataStudioMapping: The new published mapping.
+        """
+        published_mapping = copy.deepcopy(draft_mapping)
+        published_mapping.revision = next_revision
+        published_mapping.status = DataStudioMappingStatus.PUBLISHED.value
+        published_mapping.active = True
+        published_mapping.published_by = user_id
+        published_mapping.published_at = int(time.time())
+        published_mapping.version = 'v1'
+        return published_mapping
+
+
+    def _get_next_revision(self, current_active: Optional[DataStudioMapping]) -> str:
+        """
+        Determine next revision number.
+
+        Args:
+            current_active (Optional[DataStudioMapping]): The current active mapping.
+
+        Returns:
+            str: The next revision number.
+        """
+        return str(int(current_active.revision) + 1) if current_active else '1'
