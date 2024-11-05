@@ -1,0 +1,20 @@
+[
+    {
+      "owner_id": "test_owner_id",
+      "id": "test_mapping_id",
+      "revision": "1",
+      "status": "PUBLISHED",
+      "active": true,
+      "created_by": "creator1",
+      "name": "Mapping 1",
+      "description": "Test mapping 1",
+      "sources": { "source1": "data1" },
+      "output": { "output1": "result1" },
+      "mapping": { "map_field": "mapped_data" },
+      "published_by": "publisher1",
+      "published_at": 1633036800,
+      "tags": "one,two",
+      "created_at": 1633036800,
+      "version": "v1"
+    }
+]

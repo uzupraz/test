@@ -1,7 +1,5 @@
 from dataclasses import asdict
 import boto3
-import time
-import copy
 import boto3.resources
 import boto3.resources.factory
 from botocore.config import Config
@@ -194,7 +192,7 @@ class DataStudioMappingRepository(metaclass=Singleton):
                 ConsistentRead=True
             )
             items = response.get('Items', [])
-            return DataStudioMapping(**items[0]) if items else None
+            return from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(items[0])) if items else None
         except ClientError as e:
             log.exception('Failed to get active mapping. owner_id: %s, mapping_id: %s', owner_id, mapping_id)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to get active mapping')
@@ -202,7 +200,7 @@ class DataStudioMappingRepository(metaclass=Singleton):
 
     def publish_mapping(self, new_mapping: DataStudioMapping, draft_mapping: DataStudioMapping, current_active_mapping: Optional[DataStudioMapping] = None) -> None:
         """
-        Publish mapping in a single atomic transaction:
+        Publish mapping in a single request but not an atomic transaction:
         - Deactivate current active (if exists)
         - Save new published version
         - Delete draft
