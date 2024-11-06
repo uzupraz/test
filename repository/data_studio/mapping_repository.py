@@ -60,7 +60,7 @@ class DataStudioMappingRepository(metaclass=Singleton):
             log.exception('Failed to retrieve data studio mappings. owner_id: %s', owner_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve data studio mappings')
-        
+
 
     def get_mapping(self, owner_id: str, mapping_id: str) -> List[DataStudioMapping]:
         """
@@ -81,7 +81,7 @@ class DataStudioMappingRepository(metaclass=Singleton):
             )
 
             return [
-                from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(item)) 
+                from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(item))
                 for item in response.get('Items', [])
             ]
         except ClientError as e:
@@ -134,16 +134,16 @@ class DataStudioMappingRepository(metaclass=Singleton):
                 FilterExpression=Attr('owner_id').eq(owner_id) & Attr('status').eq(DataStudioMappingStatus.DRAFT.value)
             )
             draft = response.get('Items', [])
-            
+
             if not draft:
                 log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", owner_id, user_id, mapping_id)
                 return None
-            return from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(draft[0])) 
+            return from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(draft[0]))
         except ClientError as e:
             log.exception('Failed to retrieve user draft. owner_id: %s, mapping_id: %s, user_id: %s', owner_id, mapping_id, user_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve user draft')
-        
+
 
     def save_mapping(self, owner_id: str, revision: str,  mapping: DataStudioMapping) -> None:
         """
@@ -166,6 +166,74 @@ class DataStudioMappingRepository(metaclass=Singleton):
         except ClientError as e:
             log.exception('Failed to update mapping draft. owner_id: %s, mapping_id: %s, revision_id: %s', owner_id, mapping.id, revision)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Could not update the mapping draft')
+
+
+    def get_active_published_mapping(self, owner_id: str, mapping_id: str) -> Optional[DataStudioMapping]:
+        """
+        Get the currently active published mapping.
+
+        Args:
+            owner_id (str): The ID of the mapping owner.
+            mapping_id (str): The ID of the mapping entry.
+
+        Returns:
+            Optional[DataStudioMapping]: The active published mapping if found, or None.
+
+        Raises:
+            ServiceException: If an error occurs while retrieving the active published mapping.
+        """
+        log.info('Retrieving active published mapping. owner_id: %s, mapping_id: %s', owner_id, mapping_id)
+        try:
+            response = self.table.query(
+                KeyConditionExpression=Key('id').eq(mapping_id),
+                FilterExpression=Attr('owner_id').eq(owner_id) &
+                                Attr('status').eq(DataStudioMappingStatus.PUBLISHED.value) &
+                                Attr('active').eq(True),
+                ConsistentRead=True
+            )
+            items = response.get('Items', [])
+            return from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(items[0])) if items else None
+        except ClientError as e:
+            log.exception('Failed to get active mapping. owner_id: %s, mapping_id: %s', owner_id, mapping_id)
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to get active mapping')
+
+
+    def publish_mapping(self, new_mapping: DataStudioMapping, draft_mapping: DataStudioMapping, current_active_mapping: Optional[DataStudioMapping] = None) -> None:
+        """
+        Publish mapping in a single request but not an atomic transaction:
+        - Deactivate current active (if exists)
+        - Save new published version
+        - Delete draft
+
+        Args:
+            new_mapping (DataStudioMapping): The new published mapping.
+            current_active_mapping (Optional[DataStudioMapping], optional): The current active mapping. Defaults to None.
+            draft_mapping (Optional[DataStudioMapping], optional): The draft mapping. Defaults to None.
+
+        Raises:
+            ServiceException: If an error occurs while publishing the mapping.
+        """
+        log.info('Publishing mapping. mapping_id: %s, owner_id: %s', new_mapping.id, new_mapping.owner_id)
+        try:
+            with self.table.batch_writer() as batch:
+                # Deactivate current active if exists
+                if current_active_mapping:
+                    batch.put_item(Item=asdict(current_active_mapping))
+
+                # Save new published version
+                batch.put_item(Item=asdict(new_mapping))
+
+                # Delete draft mapping
+                batch.delete_item(
+                    Key={
+                        'id': draft_mapping.id,
+                        'revision': draft_mapping.revision
+                    }
+                )
+        except ClientError as e:
+            log.exception('Failed to publish mapping. mapping_id: %s, owner_id: %s', new_mapping.id, new_mapping.owner_id)
+            code = e.response['ResponseMetadata']['HTTPStatusCode']
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to publish mapping')
 
 
     def __configure_dynamodb(self):

@@ -119,7 +119,7 @@ class DataStudioMappingsResource(Resource):
         mappings = data_studio_mapping_service.get_active_mappings(user.organization_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=mappings), 200
-    
+
 
     @api.doc(description="Create a new initial mapping that stores only the partial mapping entry and returns the mapping including partial values.")
     @api.marshal_with(data_studio_mapping_response_dto, skip_none=True)
@@ -130,7 +130,7 @@ class DataStudioMappingsResource(Resource):
         mapping_id = data_studio_mapping_service.create_mapping(user.sub, user.organization_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=mapping_id), 201
-    
+
 
 @api.route("/mappings/<string:mapping_id>")
 class DataStudioMappingResource(Resource):
@@ -138,7 +138,7 @@ class DataStudioMappingResource(Resource):
 
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
-    
+
 
     @api.doc(description="Get revisions & draft of the mapping")
     @api.marshal_with(data_studio_mapping_response_dto, skip_none=True)
@@ -164,3 +164,22 @@ class DataStudioMappingResource(Resource):
         data_studio_mapping_service.save_mapping(user, mapping)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=None), 200
+
+
+@api.route("/mappings/<string:mapping_id>/publish")
+class PublishMappingResource(Resource):
+
+
+    def __init__(self, api=None, *args, **kwargs):
+        super().__init__(api, *args, **kwargs)
+
+
+    @api.doc(description="Publishes the mapping and makes it active.")
+    @api.marshal_with(data_studio_active_mappings_response_dto, skip_none=True)
+    def post(self, mapping_id: str):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+        user_data = g.get('user')
+        user = User(**user_data)
+        published_mapping = data_studio_mapping_service.publish_mapping(user.sub, user.organization_id, mapping_id)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=published_mapping), 200

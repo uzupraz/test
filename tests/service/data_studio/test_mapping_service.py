@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 from dacite import from_dict
+from dataclasses import replace
 
 from enums.data_studio import DataStudioMappingStatus
 from tests.test_utils import TestUtils
@@ -153,8 +154,8 @@ class TestDataStudioMappingService(unittest.TestCase):
 
         self.assertEqual(result.draft.revision, mock_mappings[2].revision)
         self.assertEqual(len(result.revisions), 1)
-        
-    
+
+
     def test_get_mapping_failure(self):
         """
         Test case for handling failure in the repository layer.
@@ -270,3 +271,74 @@ class TestDataStudioMappingService(unittest.TestCase):
 
         self.assertEqual(context.exception.message, 'Could not update the mapping draft')
         self.assertEqual(context.exception.status_code, 500)
+
+
+    @patch('time.time')
+    def test_publish_mapping_success(self, mock_time):
+        """
+        Tests the successful publishing of a mapping when a draft and an active published mapping is found. The new mapping should have revision number incremented by one from the found active published mapping, status as PUBLISHED, active as False. The current active published mapping should be marked as inactive.
+        """
+        mock_table_items_path = self.TEST_RESOURCE_PATH + "get_active_published_mapping_response.json"
+        mock_items = TestUtils.get_file_content(mock_table_items_path)
+        mock_active_mapping = from_dict(DataStudioMapping, mock_items[0])
+
+        mock_draft_mapping = replace(mock_active_mapping, revision=self.TEST_USER_ID, status=DataStudioMappingStatus.DRAFT.value)
+
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_active_published_mapping = MagicMock(return_value=mock_active_mapping)
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_user_draft = MagicMock(return_value=mock_draft_mapping)
+        self.data_studio_mapping_service.data_studio_mapping_repository.publish_mapping = MagicMock()
+
+        mock_time.return_value = 12345678
+        self.data_studio_mapping_service.publish_mapping(self.TEST_USER_ID, self.TEST_OWNER_ID, self.TEST_MAPPING_ID)
+
+        mock_active_mapping_updated = replace(mock_active_mapping, active=False)
+        mock_new_mapping = replace(mock_active_mapping, revision='2', status=DataStudioMappingStatus.PUBLISHED.value, active=True, published_by=self.TEST_USER_ID, published_at=12345678, version='v1')
+
+        #Assert
+        self.data_studio_mapping_service.data_studio_mapping_repository.publish_mapping.assert_called_once_with(new_mapping=mock_new_mapping, current_active_mapping=mock_active_mapping_updated, draft_mapping=mock_draft_mapping)
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_active_published_mapping.assert_called_once_with(self.TEST_OWNER_ID, self.TEST_MAPPING_ID)
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_user_draft.assert_called_once_with(self.TEST_OWNER_ID, self.TEST_MAPPING_ID, self.TEST_USER_ID)
+
+
+    def test_publish_mapping_raises_service_exception_when_draft_not_found(self):
+        """
+        Test that attempting to publish a mapping raises a ServiceException when the user draft is not found.
+        """
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_user_draft = MagicMock(return_value=None)
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_studio_mapping_service.publish_mapping(self.TEST_USER_ID, self.TEST_OWNER_ID, self.TEST_MAPPING_ID)
+
+        #Assert
+        self.assertEqual(context.exception.message, 'Unable to find draft.')
+        self.assertEqual(context.exception.status_code, 400)
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_user_draft.assert_called_once_with(self.TEST_OWNER_ID, self.TEST_MAPPING_ID, self.TEST_USER_ID)
+
+
+    @patch('time.time')
+    def test_publish_mapping_with_first_revision(self, mock_time):
+        """
+        Test the publishing of a mapping when it is the first revision.
+
+        This test verifies that when a user attempts to publish a mapping that has no currently active published version,
+        the system correctly processes it as the first revision.
+        """
+        mock_table_items_path = self.TEST_RESOURCE_PATH + "get_active_published_mapping_response.json"
+        mock_items = TestUtils.get_file_content(mock_table_items_path)
+        mock_mapping = from_dict(DataStudioMapping, mock_items[0])
+
+        mock_draft_mapping = replace(mock_mapping, revision=self.TEST_USER_ID, status=DataStudioMappingStatus.DRAFT.value)
+
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_active_published_mapping = MagicMock(return_value=None)
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_user_draft = MagicMock(return_value=mock_draft_mapping)
+        self.data_studio_mapping_service.data_studio_mapping_repository.publish_mapping = MagicMock()
+
+        mock_time.return_value = 12345678
+        self.data_studio_mapping_service.publish_mapping(self.TEST_USER_ID, self.TEST_OWNER_ID, self.TEST_MAPPING_ID)
+
+        mock_new_mapping = replace(mock_mapping, revision='1', status=DataStudioMappingStatus.PUBLISHED.value, active=True, published_by=self.TEST_USER_ID, published_at=12345678, version='v1')
+
+        #Assert
+        self.data_studio_mapping_service.data_studio_mapping_repository.publish_mapping.assert_called_once_with(new_mapping=mock_new_mapping, current_active_mapping=None, draft_mapping=mock_draft_mapping)
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_active_published_mapping.assert_called_once_with(self.TEST_OWNER_ID, self.TEST_MAPPING_ID)
+        self.data_studio_mapping_service.data_studio_mapping_repository.get_user_draft.assert_called_once_with(self.TEST_OWNER_ID, self.TEST_MAPPING_ID, self.TEST_USER_ID)
