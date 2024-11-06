@@ -5,15 +5,15 @@ import boto3.resources.factory
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Attr, Key
-from typing import List
+from typing import List, Optional
 from dacite import from_dict
 
 from utils import Singleton, DataTypeUtils
-from model import DataStudioMapping
+from model import DataStudioMapping, DataStudioSaveMapping
 from controller import common_controller as common_ctrl
 from configuration import AppConfig, AWSConfig
 from exception import ServiceException
-from enums import ServiceStatus
+from enums import ServiceStatus, DataStudioMappingStatus
 
 log = common_ctrl.log
 
@@ -110,6 +110,62 @@ class DataStudioMappingRepository(metaclass=Singleton):
         except ClientError as e:
             log.exception('Failed to create mapping. mapping_id: %s, user_id: %s, owner_id: %s', mapping.id, mapping.created_by, mapping.owner_id)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Couldn\'t create the mapping')
+
+
+    def get_user_draft(self, owner_id: str, mapping_id: str, user_id: str) -> Optional[DataStudioMapping]:
+        """
+        Retrieves a draft data studio mapping for a specified user.
+
+        Args:
+            owner_id (str): The ID of the mapping owner.
+            mapping_id (str): The ID of the mapping entry.
+            user_id (str): The ID of the user requesting the draft.
+
+        Returns:
+            Optional[DataStudioMapping]: The draft mapping entry if found, or None.
+
+        Raises:
+            ServiceException: If an error occurs while retrieving the draft.
+        """
+        log.info('Retrieving user draft. owner_id: %s, mapping_id: %s, user_id: %s', owner_id, mapping_id, user_id)
+        try:
+            response = self.table.query(
+                KeyConditionExpression=Key('id').eq(mapping_id) & Key('revision').eq(user_id),
+                FilterExpression=Attr('owner_id').eq(owner_id) & Attr('status').eq(DataStudioMappingStatus.DRAFT.value)
+            )
+            draft = response.get('Items', [])
+            
+            if not draft:
+                log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", owner_id, user_id, mapping_id)
+                return None
+            return from_dict(DataStudioMapping, DataTypeUtils.convert_decimals_to_float_or_int(draft[0])) 
+        except ClientError as e:
+            log.exception('Failed to retrieve user draft. owner_id: %s, mapping_id: %s, user_id: %s', owner_id, mapping_id, user_id)
+            code = e.response['ResponseMetadata']['HTTPStatusCode']
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve user draft')
+        
+
+    def save_mapping(self, owner_id: str, revision: str,  mapping: DataStudioMapping) -> None:
+        """
+        Updates an existing data studio mapping entry in the database.
+
+        Args:
+            owner_id (str): The ID of the mapping owner.
+            id (str): The primary ID of the mapping entry.
+            revision (str): The revision ID of the mapping entry.
+            mapping (DataStudioMapping): The mapping object containing updated values.
+
+        Raises:
+            ServiceException: If an error occurs while updating the mapping.
+        """
+        log.info('Updating data studio mapping draft. owner_id: %s, mapping_id: %s, revision_id: %s', owner_id, mapping.id, revision)
+        try:
+            mapping_dict = asdict(mapping)
+            self.table.put_item(Item=mapping_dict)
+            log.info('Successfully updated data studio mapping draft. owner_id: %s, mapping_id: %s, revision_id: %s', owner_id, mapping.id, revision)
+        except ClientError as e:
+            log.exception('Failed to update mapping draft. owner_id: %s, mapping_id: %s, revision_id: %s', owner_id, mapping.id, revision)
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Could not update the mapping draft')
 
 
     def __configure_dynamodb(self):

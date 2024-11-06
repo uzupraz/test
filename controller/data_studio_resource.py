@@ -1,12 +1,13 @@
 from flask import g, request
 from flask_restx import Namespace, Resource, fields
+from dacite import from_dict
 
 from configuration import AWSConfig, AppConfig
 from repository import WorkflowRepository, DataStudioMappingRepository
 from .server_response import ServerResponse
 from .common_controller import server_response
 from service import WorkflowService, DataStudioMappingService
-from model import User
+from model import User, DataStudioSaveMapping
 from enums import APIStatus
 
 
@@ -44,6 +45,15 @@ mapping = api.model("Mapping", {
 })
 
 # DTO
+data_studio_save_mapping_request_dto = api.model('Save data of user mapping draft', {
+    "name": fields.String(description="The name of the mapping", required=False),
+    "description": fields.String(description="A brief description of the mapping", required=False),
+    "sources": fields.Raw(description="The source data for the mapping", required=False),
+    "output": fields.Raw(description="The output configuration for the mapping", required=False),
+    "mapping": fields.Raw(description="The mapping configuration details", required=False),
+    "tags": fields.String(description="The tags of the mapping for searching", required=False),
+})
+
 data_studio_workflows_response_dto = api.inherit("Get workflows list", server_response, {
     "payload": fields.List(fields.Nested(api.model("Workflow", {
         "owner_id": fields.String(description="The unique identifier of the workflow's owner"),
@@ -139,3 +149,18 @@ class DataStudioMappingResource(Resource):
         mappings = data_studio_mapping_service.get_mapping(user.organization_id, user.sub, mapping_id)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=mappings), 200
+
+
+    @api.doc(description="Save user mapping draft")
+    @api.expect(data_studio_save_mapping_request_dto, validate=True, skip_none=True)
+    @api.marshal_with(server_response, skip_none=True)
+    def patch(self, mapping_id: str):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+        user_data = g.get("user")
+        user = User(**user_data)
+
+        request.json['id'] = mapping_id
+        mapping = from_dict(DataStudioSaveMapping, request.json)
+        data_studio_mapping_service.save_mapping(user, mapping)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=None), 200

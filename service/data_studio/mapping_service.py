@@ -3,10 +3,14 @@ import nanoid
 from typing import List
 from dacite import from_dict
 
+from controller import common_controller as common_ctrl
 from repository import DataStudioMappingRepository
 from utils import Singleton
-from model import DataStudioMapping, DataStudioMappingResponse
-from enums import DataStudioMappingStatus
+from model import User, DataStudioMapping, DataStudioMappingResponse, DataStudioSaveMapping
+from exception import ServiceException
+from enums import ServiceStatus, DataStudioMappingStatus
+
+log = common_ctrl.log
 
 
 class DataStudioMappingService(metaclass=Singleton):
@@ -71,3 +75,30 @@ class DataStudioMappingService(metaclass=Singleton):
             )
         self.data_studio_mapping_repository.create_mapping(mapping)
         return mapping
+
+
+    def save_mapping(self, user: User, mapping_dto: DataStudioSaveMapping) -> None:
+        """
+        Updates the draft mapping for a user if it exists.
+        
+        Args:
+            user (str): User model.
+            mapping (DataStudioSaveMapping): Mapping data to save.
+            
+        Raises:
+            ServiceException: If the draft is not found or update fails.
+        """
+        draft_mapping = self.data_studio_mapping_repository.get_user_draft(user.organization_id, mapping_dto.id, user.sub)
+        if not draft_mapping:
+            log.error("Unable to find draft. owner_id: %s, user_id: %s, mapping_id: %s", user.organization_id, user.sub, mapping_dto.id)
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Unable to find draft.')
+        
+        # Updating changable fields
+        draft_mapping.name = mapping_dto.name
+        draft_mapping.description = mapping_dto.description
+        draft_mapping.sources = mapping_dto.sources
+        draft_mapping.output = mapping_dto.output
+        draft_mapping.mapping = mapping_dto.mapping
+        draft_mapping.tags = mapping_dto.tags
+
+        self.data_studio_mapping_repository.save_mapping(owner_id=user.organization_id, revision=user.sub, mapping=draft_mapping)
