@@ -1,0 +1,12 @@
+[
+  {
+    "id": "CSV",
+    "parser": { "parameters": { "name": "DUMMY1" } },
+    "writer": {}
+  },
+  {
+    "id": "JSON",
+    "parser": { "parameters": { "name": "DUMMY2" } },
+    "writer": {}
+  }
+]

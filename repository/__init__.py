@@ -6,3 +6,4 @@ from .csa.csa_machines_repository import CsaMachinesRepository
 from .csa.csa_module_versions_repository import CsaModuleVersionsRepository
 from .custom_script_repository import CustomScriptRepository
 from .data_studio.mapping_repository import DataStudioMappingRepository
+from .data_format_repository import DataFormatRepository

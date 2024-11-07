@@ -7,6 +7,7 @@ from .opensearch_service import OpensearchService
 from .data_table_service import DataTableService
 from .csa.csa_updater_service import CsaUpdaterService
 from .custom_script_service import  CustomScriptService
+from .data_format_service import DataFormatService
 from .data_studio.mapping_service import DataStudioMappingService
 
 from .s3_service.s3_assets_service import S3AssetsService

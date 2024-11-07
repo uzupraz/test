@@ -3,10 +3,10 @@ from flask_restx import Namespace, Resource, fields
 from dacite import from_dict
 
 from configuration import AWSConfig, AppConfig
-from repository import WorkflowRepository, DataStudioMappingRepository
+from repository import WorkflowRepository, DataStudioMappingRepository, DataFormatRepository
 from .server_response import ServerResponse
 from .common_controller import server_response
-from service import WorkflowService, DataStudioMappingService
+from service import WorkflowService, DataStudioMappingService, DataFormatService
 from model import User, DataStudioSaveMapping
 from enums import APIStatus
 
@@ -19,9 +19,11 @@ app_config = AppConfig()
 aws_config = AWSConfig()
 workflow_repository = WorkflowRepository(app_config, aws_config)
 data_studio_mapping_repository = DataStudioMappingRepository(app_config, aws_config)
+data_format_repository = DataFormatRepository(app_config, aws_config)
 
 data_studio_mapping_service = DataStudioMappingService(data_studio_mapping_repository=data_studio_mapping_repository)
 workflow_service = WorkflowService(workflow_repository=workflow_repository)
+data_format_service = DataFormatService(data_format_repository=data_format_repository)
 
 
 # Model
@@ -71,6 +73,14 @@ data_studio_workflows_response_dto = api.inherit("Get workflows list", server_re
     })))
 })
 
+data_studio_data_formats_response_dto = api.inherit("Get data format list", server_response, {
+    "payload": fields.List(fields.Nested(api.model("DataFormat", {
+        "id": fields.String(description="The unique identifier for the data format"),
+        "parser": fields.Raw(description="Parser configuration as a dictionary with nested dictionaries"),
+        "writer": fields.Raw(description="Writer configuration as a dictionary with nested dictionaries"),
+    })))
+})
+
 data_studio_active_mappings_response_dto = api.inherit("Get mapping list", server_response, {
     "payload": fields.List(fields.Nested(mapping))
 })
@@ -98,6 +108,23 @@ class DataStudioWorkflowsResource(Resource):
         user_data = g.get("user")
         user = User(**user_data)
         workflows = workflow_service.get_data_studio_workflows(user.organization_id)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=workflows), 200
+    
+
+@api.route("/data-formats")
+class DataStudioDataFromatsResource(Resource):
+
+
+    def __init__(self, api=None, *args, **kwargs):
+        super().__init__(api, *args, **kwargs)
+
+
+    @api.doc(description="Get a list of available data formats for data studio.")
+    @api.marshal_with(data_studio_data_formats_response_dto, skip_none=True)
+    def get(self):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+        workflows = data_format_service.get_data_formats()
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflows), 200
 
