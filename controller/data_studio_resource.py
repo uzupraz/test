@@ -3,10 +3,10 @@ from flask_restx import Namespace, Resource, fields
 from dacite import from_dict
 
 from configuration import AWSConfig, AppConfig
-from repository import WorkflowRepository, DataStudioMappingRepository, DataFormatRepository
+from repository import WorkflowRepository, DataStudioMappingRepository, DataFormatsRepository
 from .server_response import ServerResponse
 from .common_controller import server_response
-from service import WorkflowService, DataStudioMappingService, DataFormatService
+from service import WorkflowService, DataStudioMappingService, DataFormatsService
 from model import User, DataStudioSaveMapping
 from enums import APIStatus
 
@@ -19,11 +19,11 @@ app_config = AppConfig()
 aws_config = AWSConfig()
 workflow_repository = WorkflowRepository(app_config, aws_config)
 data_studio_mapping_repository = DataStudioMappingRepository(app_config, aws_config)
-data_format_repository = DataFormatRepository(app_config, aws_config)
+data_formats_repository = DataFormatsRepository(app_config, aws_config)
 
 data_studio_mapping_service = DataStudioMappingService(data_studio_mapping_repository=data_studio_mapping_repository)
 workflow_service = WorkflowService(workflow_repository=workflow_repository)
-data_format_service = DataFormatService(data_format_repository=data_format_repository)
+data_formats_service = DataFormatsService(data_formats_repository=data_formats_repository)
 
 
 # Model
@@ -75,7 +75,8 @@ data_studio_workflows_response_dto = api.inherit("Get workflows list", server_re
 
 data_studio_data_formats_response_dto = api.inherit("Get data format list", server_response, {
     "payload": fields.List(fields.Nested(api.model("DataFormat", {
-        "id": fields.String(description="The unique identifier for the data format"),
+        "format_id": fields.String(description="The unique identifier for the data format"),
+        "name": fields.String(description="The name of the data format"),
         "parser": fields.Raw(description="Parser configuration as a dictionary with nested dictionaries"),
         "writer": fields.Raw(description="Writer configuration as a dictionary with nested dictionaries"),
     })))
@@ -124,7 +125,7 @@ class DataStudioDataFromatsResource(Resource):
     @api.marshal_with(data_studio_data_formats_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        workflows = data_format_service.get_data_formats()
+        workflows = data_formats_service.list_all_data_formats()
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflows), 200
 

@@ -1,11 +1,13 @@
 [
   {
-    "id": "CSV",
+    "format_id": "CSV",
+    "name": "FORMAT1",
     "parser": { "parameters": { "name": "DUMMY1" } },
     "writer": {}
   },
   {
-    "id": "JSON",
+    "format_id": "JSON",
+    "name": "FORMAT2",
     "parser": { "parameters": { "name": "DUMMY2" } },
     "writer": {}
   }
