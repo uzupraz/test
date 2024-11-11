@@ -125,9 +125,9 @@ class DataStudioDataFromatsResource(Resource):
     @api.marshal_with(data_studio_data_formats_response_dto, skip_none=True)
     def get(self):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-        workflows = data_formats_service.list_all_data_formats()
+        data_formats = data_formats_service.list_all_data_formats()
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
-        return ServerResponse.success(payload=workflows), 200
+        return ServerResponse.success(payload=data_formats), 200
 
 
 @api.route("/mappings")
