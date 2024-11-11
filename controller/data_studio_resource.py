@@ -114,7 +114,7 @@ class DataStudioWorkflowsResource(Resource):
     
 
 @api.route("/data-formats")
-class DataStudioDataFromatsResource(Resource):
+class DataStudioDataFormatsResource(Resource):
 
 
     def __init__(self, api=None, *args, **kwargs):
