@@ -5,10 +5,11 @@ import nanoid
 from typing import List, Optional
 from dacite import from_dict
 
+from service import WorkflowService, DataStudioMappingStepFunctionService
 from controller import common_controller as common_ctrl
 from repository import DataStudioMappingRepository
 from utils import Singleton
-from model import User, DataStudioMapping, DataStudioMappingResponse, DataStudioSaveMapping
+from model import User, DataStudioMapping, DataStudioMappingResponse, DataStudioSaveMapping, Workflow
 from exception import ServiceException
 from enums import ServiceStatus, DataStudioMappingStatus
 
@@ -18,8 +19,15 @@ log = common_ctrl.log
 class DataStudioMappingService(metaclass=Singleton):
 
 
-    def __init__(self, data_studio_mapping_repository: DataStudioMappingRepository) -> None:
+    def __init__(
+        self, 
+        data_studio_mapping_repository: DataStudioMappingRepository,
+        workflow_service: WorkflowService,
+        mapping_step_function_service: DataStudioMappingStepFunctionService
+    ) -> None:
         self.data_studio_mapping_repository = data_studio_mapping_repository
+        self.mapping_step_function_service = mapping_step_function_service
+        self.workflow_service = workflow_service
 
 
     def get_active_mappings(self, owner_id:str) -> List[DataStudioMapping]:
@@ -145,6 +153,25 @@ class DataStudioMappingService(metaclass=Singleton):
             current_active_mapping=current_active_mapping,
             draft_mapping=draft_mapping
         )
+
+        workflow = self.workflow_service.get_workflow(owner_id, mapping_id)
+        if workflow:
+            self.mapping_step_function_service.update_mapping_state_machine(published_mapping, workflow.state_machine_arn)
+        else:
+            arn = self.mapping_step_function_service.create_mapping_state_machine(published_mapping)
+            workflow = Workflow(
+                owner_id=owner_id,
+                workflow_id=mapping_id,
+                event_name=f"es:workflow:{owner_id}:{mapping_id}",
+                created_by=user_id,
+                created_by_name="",
+                state="ACTIVE",
+                version=1,
+                is_sync_execution=True,
+                state_machine_arn=arn,
+                is_binary_event=False,
+            )
+            self.workflow_service.save_workflow(workflow)
 
         return published_mapping
 

@@ -3,6 +3,8 @@ from repository import WorkflowRepository
 from controller import common_controller as common_ctrl
 from utils import Singleton
 
+from typing import Optional
+
 
 log = common_ctrl.log
 
@@ -43,3 +45,7 @@ class WorkflowService(metaclass=Singleton):
             for workflow_response in workflows_response
         ]
         return workflows
+    
+
+    def get_workflow(self, owner_id:str, workflow_id: str) -> Optional[Workflow]:
+        return self.workflow_repository.get_workflow(owner_id, workflow_id)

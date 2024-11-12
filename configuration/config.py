@@ -29,6 +29,8 @@ class AWSConfig(metaclass=Singleton):
     """
     is_local: bool = os.getenv('AWS_IS_LOCAL', 'False').lower() == 'true'
     dynamodb_aws_region: str = os.getenv('AWS_DYNAMODB_REGION')
+    stepfunctions_execution_role_arn: str = os.getenv('AWS_STEP_FUNCTION_EXECUTION_ROLE_ARN')
+    sqs_billing_arn: str = os.getenv('AWS_SQS_BILLING_ARN')
 
 
 @dataclasses.dataclass(init=False)

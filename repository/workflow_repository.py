@@ -3,6 +3,7 @@ import dataclasses
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
+from typing import Optional
 
 from model import Workflow
 from configuration import AWSConfig, AppConfig
@@ -68,6 +69,24 @@ class WorkflowRepository(metaclass=Singleton):
         except ClientError as e:
             log.exception('Failed to list data studio workflows. owner_id: %s', owner_id)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t list data studio workflows')
+
+
+    def get_workflow(self, owner_id:str, workflow_id:str) -> Optional[Workflow]:
+        log.info('Getting workflow. owner_id: %s, workflow_id: %s', owner_id, workflow_id)
+        try:
+            response = self.workflow_table.query(
+                KeyConditionExpression=Key("ownerId").eq(owner_id) & Key("workflowId").eq(workflow_id),
+            )
+            workflows = response.get("Items", [])
+
+            if not workflows:
+                log.error('Unable to find workflow. owner_id: %s, workflow_id: %s', owner_id, workflow_id)
+                return None
+            
+            return Workflow.from_dict(workflows[0])
+        except ClientError as e:
+            log.exception('Failed to retrieve workflow. owner_id: %s, workflow_id: %s', owner_id, workflow_id)
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to retrieve workflow')
 
 
     def count_active_workflows(self, owner_id: str) -> int:
