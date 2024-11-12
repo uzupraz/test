@@ -1,0 +1,15 @@
+{
+  "owner_id": "test_owner_id",
+  "id": "test_mapping_id",
+  "revision": "test_user_id",
+  "status": "DRAFT",
+  "active": false,
+  "created_by": "test_user_id",
+  "name": "Mapping 1",
+  "description": "Test mapping 1",
+  "sources": { "source1": "data1" },
+  "output": { "output1": "result1" },
+  "mapping": { "map_field": "mapped_data" },
+  "published_by": null,
+  "published_at": null
+}

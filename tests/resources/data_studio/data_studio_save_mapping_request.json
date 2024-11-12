@@ -1,0 +1,9 @@
+{
+  "id": "test_mapping_id",
+  "name": "Mapping 1",
+  "description": "Test mapping 1",
+  "sources": { "source1": "data1" },
+  "output": { "output1": "result1" },
+  "mapping": { "map_field": "mapped_data" },
+  "tags": "one,two"
+}
