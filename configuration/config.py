@@ -19,6 +19,8 @@ class AppConfig(metaclass=Singleton):
     csa_module_versions_table_name: str = os.getenv('CSA_MODULE_VERSIONS_TABLENAME')
     csa_machines_table_name: str = os.getenv('CSA_MACHINES_TABLENAME')
     data_studio_mappings_gsi_name:str = os.getenv('APP_DATA_STUDIO_MAPPINGS_GSI_NAME')
+    chatbot_messages_table_name: str = os.getenv('CHATBOT_MESSAGES_TABLENAME')
+    chatbot_gsi_name:str = os.getenv('Chatbot_GSI_NAME')
 
 
 @dataclasses.dataclass(init=False)

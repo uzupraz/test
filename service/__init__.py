@@ -8,5 +8,6 @@ from .data_table_service import DataTableService
 from .csa.csa_updater_service import CsaUpdaterService
 from .custom_script_service import  CustomScriptService
 from .data_studio.mapping_service import DataStudioMappingService
+from .chatbot.chatbot_service import ChatbotService
 
 from .s3_service.s3_assets_service import S3AssetsService
