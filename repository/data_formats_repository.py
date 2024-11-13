@@ -2,8 +2,9 @@ import boto3
 import boto3.resources
 import boto3.resources.factory
 from botocore.config import Config
+from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
-from typing import List
+from typing import List, Optional
 from dacite import from_dict
 
 from utils import Singleton
@@ -54,6 +55,32 @@ class DataFormatsRepository(metaclass=Singleton):
             log.exception('Error while retrieving data formats')
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Error while retrieving data formats')
+        
+
+    def get_data_format(self, format: str) -> Optional[DataFormat]:
+        """
+        Retrieve data format from the DynamoDB table for the given format.
+
+        Returns:
+            Optional[DataFormat]: A DataFormat objects retrieved from the DynamoDB table.
+
+        Raises:
+            ServiceException: If there is an issue retrieving data format from the DynamoDB table.
+        """
+        log.info('Retrieving data format. format: %s', format)
+        try:
+            response = self.table.scan(
+                FilterExpression=Attr('name').eq(format)
+            )
+            formats = response.get('Items', [])
+            if not formats:
+                return None
+            
+            return from_dict(DataFormat, formats[0])
+        except ClientError as e:
+            log.exception('Error while retrieving data format')
+            code = e.response['ResponseMetadata']['HTTPStatusCode']
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Error while retrieving data format')
 
 
     def __configure_dynamodb(self):

@@ -39,10 +39,8 @@ class WorkflowRepository(metaclass=Singleton):
         """
         log.info('Saving workflow. workflowId: %s, organizationId:%s', workflow.workflow_id, workflow.owner_id)
         try:
-            # Convert the Workflow object to a dictionary
-            workflow_dict = dataclasses.asdict(workflow)
             # Save the dictionary to DynamoDB
-            self.workflow_table.put_item(Item=workflow_dict)
+            self.workflow_table.put_item(Item=workflow.as_dict())
             log.info('Successfully saved workflow. workflowId: %s, organizationId:%s', workflow.workflow_id, workflow.owner_id)
             return workflow
         except ClientError as e:
