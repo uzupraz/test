@@ -28,6 +28,18 @@ class AWSCloudWatchService(metaclass=Singleton):
 
 
     def create_log_group(self, log_group_name: str):
+        """
+        Creates a new CloudWatch log group with the specified name, retrieves its ARN, and returns it.
+
+        Args:
+            log_group_name (str): The name of the log group to be created.
+
+        Returns:
+            str: The ARN of the created log group.
+
+        Raises:
+            ServiceException: If the log group cannot be created or if the ARN cannot be retrieved.
+        """
         log.info("Creating log group. log_group_name: %s", log_group_name)
         try:
             self.cloudwatch_client.create_log_group(logGroupName=log_group_name)
@@ -49,6 +61,16 @@ class AWSCloudWatchService(metaclass=Singleton):
         
 
     def update_retention_policy(self, log_group_name: str, retention_in_days: int) -> bool:
+        """
+        Updates the retention policy for the specified log group in CloudWatch.
+
+        Args:
+            log_group_name (str): The name of the log group.
+            retention_in_days (int): Number of days to retain log data.
+
+        Raises:
+            ServiceException: If updating the retention policy fails.
+        """
         log.info("Updating log group retention policy. log_group_name: %s", log_group_name)
         try:
             self.cloudwatch_client.put_retention_policy(logGroupName=log_group_name, retentionInDays=retention_in_days)
@@ -59,6 +81,17 @@ class AWSCloudWatchService(metaclass=Singleton):
     
     
     def get_logging_configuration(self, log_group_arn: str, level: str = "ALL", include_execution_date: bool = True):
+        """
+        Constructs the logging configuration with specified log level and execution data inclusion.
+
+        Args:
+            log_group_arn (str): ARN of the CloudWatch log group for logging configuration.
+            level (str): Log level (default: "ALL").
+            include_execution_date (bool): Whether to include execution data (default: True).
+
+        Returns:
+            dict: Configuration for logging including log level and destinations.
+        """
         return {
             "level": level,
             "includeExecutionData": include_execution_date,
@@ -73,6 +106,18 @@ class AWSCloudWatchService(metaclass=Singleton):
     
 
     def does_log_group_exist(self, log_group_name: str) -> bool:
+        """
+        Checks if a CloudWatch log group with the specified name exists.
+
+        Args:
+            log_group_name (str): The name of the log group.
+
+        Returns:
+            bool: True if the log group exists, False otherwise.
+
+        Raises:
+            ServiceException: If an error occurs during the check.
+        """
         log.info("Checking log group existance. log_group_name: %s", log_group_name)
         try:
             response = self.cloudwatch_client.describe_log_groups(logGroupNamePrefix=log_group_name)

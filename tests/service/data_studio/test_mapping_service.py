@@ -288,7 +288,7 @@ class TestDataStudioMappingService(unittest.TestCase):
         self.data_studio_mapping_service.data_studio_mapping_repository.get_active_published_mapping = MagicMock(return_value=mock_active_mapping)
         self.data_studio_mapping_service.data_studio_mapping_repository.get_user_draft = MagicMock(return_value=mock_draft_mapping)
         self.data_studio_mapping_service.data_studio_mapping_repository.publish_mapping = MagicMock()
-        self.data_studio_mapping_service.workflow_service.create_data_studio_workflow = MagicMock()
+        self.data_studio_mapping_service._create_or_update_workflow = MagicMock()
 
         mock_time.return_value = 12345678
         self.data_studio_mapping_service.publish_mapping(self.TEST_USER_ID, self.TEST_OWNER_ID, self.TEST_MAPPING_ID)
@@ -334,7 +334,7 @@ class TestDataStudioMappingService(unittest.TestCase):
         self.data_studio_mapping_service.data_studio_mapping_repository.get_active_published_mapping = MagicMock(return_value=None)
         self.data_studio_mapping_service.data_studio_mapping_repository.get_user_draft = MagicMock(return_value=mock_draft_mapping)
         self.data_studio_mapping_service.data_studio_mapping_repository.publish_mapping = MagicMock()
-        self.data_studio_mapping_service.workflow_service.create_data_studio_workflow = MagicMock()
+        self.data_studio_mapping_service._create_or_update_workflow = MagicMock()
 
         mock_time.return_value = 12345678
         self.data_studio_mapping_service.publish_mapping(self.TEST_USER_ID, self.TEST_OWNER_ID, self.TEST_MAPPING_ID)
