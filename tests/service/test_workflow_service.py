@@ -40,12 +40,14 @@ class TestWorkflowService(unittest.TestCase):
                 event_name="event_name",
                 created_by="created_by_uuid",
                 created_by_name="created_by_name",
+                group_name="group_name",
                 state="ACTIVE",
                 version=1,
                 is_sync_execution=True,
                 state_machine_arn="state_machine_arn",
                 is_binary_event=False,
-                mapping_id="3eaddbdd-34cf-47fe-84fe-a0c971c6e4a6" 
+                name="workflow_name",
+                creation_date="2024-03-30T01:22:50.846714"
             )
         ]
 

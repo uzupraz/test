@@ -20,14 +20,9 @@ log = common_ctrl.log
 class DataStudioMappingService(metaclass=Singleton):
 
 
-    def __init__(
-        self, 
-        data_studio_mapping_repository: DataStudioMappingRepository,
-        workflow_service: WorkflowService,
-        mapping_step_function_service: DataStudioMappingStepFunctionService
-    ) -> None:
+    def __init__(self, data_studio_mapping_repository: DataStudioMappingRepository, workflow_service: WorkflowService, data_studio_mapping_step_function_service: DataStudioMappingStepFunctionService) -> None:
         self.data_studio_mapping_repository = data_studio_mapping_repository
-        self.mapping_step_function_service = mapping_step_function_service
+        self.data_studio_mapping_step_function_service = data_studio_mapping_step_function_service
         self.workflow_service = workflow_service
 
 
@@ -205,9 +200,9 @@ class DataStudioMappingService(metaclass=Singleton):
             None
         """
         if workflow:
-            self.mapping_step_function_service.update_mapping_state_machine(mapping, workflow.state_machine_arn)
+            self.data_studio_mapping_step_function_service.update_mapping_state_machine(mapping, workflow.state_machine_arn)
         else:
-            state_machine_arn = self.mapping_step_function_service.create_mapping_state_machine(mapping)
+            state_machine_arn = self.data_studio_mapping_step_function_service.create_mapping_state_machine(mapping)
             workflow = Workflow(
                 owner_id=mapping.owner_id,
                 workflow_id=mapping.id,

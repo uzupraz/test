@@ -5,7 +5,6 @@ from botocore.exceptions import ClientError
 from typing import List, Tuple
 
 from configuration import AWSConfig
-from repository import DataFormatsRepository
 from service import DataFormatsService
 from controller import common_controller as common_ctrl
 from utils import Singleton
@@ -51,13 +50,13 @@ class DataStudioMappingStepFunctionService(metaclass=Singleton):
         Raises:
             ServiceException: If there's an error while creating the state machine.
         """
-        log.info("Creating state machine for the provided mapping. owenr_id: %s, mapping_id: %s", mapping.owner_id, mapping.id)
+        log.info("Creating state machine for the provided mapping. owner_id: %s, mapping_id: %s", mapping.owner_id, mapping.id)
         try:
             definition = self._create_definition_from_mapping(mapping)
             name = f"{mapping.owner_id}-{mapping.id}"
 
             # Logging
-            log.info("Creating log groups. owenr_id: %s, mapping_id: %s", mapping.owner_id, mapping.id)
+            log.info("Creating log groups. owner_id: %s, mapping_id: %s", mapping.owner_id, mapping.id)
             log_group_arn = self.aws_config.cloudwatch_log_group_base_arn + f"/{name}-Logs:*"
             log_group_name = log_group_arn.split('log-group:')[1].split(':')[0]
             self._create_log_group_if_not_exist(log_group_name)
@@ -70,7 +69,7 @@ class DataStudioMappingStepFunctionService(metaclass=Singleton):
                 loggingConfiguration=self._get_logging_configurations(log_group_arn),
                 tracingConfiguration=self._get_tracking_configuration(),
             )
-            log.info("State machine created successfully. owenr_id: %s, mapping_id: %s", mapping.owner_id, mapping.id)
+            log.info("State machine created successfully. owner_id: %s, mapping_id: %s", mapping.owner_id, mapping.id)
             return response["stateMachineArn"]
         except ClientError as e:
             log.exception('Failed to create step function. owner_id: %s, mapping_id: %s', mapping.owner_id, mapping.id)
@@ -88,7 +87,7 @@ class DataStudioMappingStepFunctionService(metaclass=Singleton):
         Raises:
             ServiceException: If there's an error while updating the state machine.
         """
-        log.info("Updating state machine for the provided mapping & arn. owenr_id: %s, mapping_id: %s", mapping.owner_id, mapping.id)
+        log.info("Updating state machine for the provided mapping & arn. owner_id: %s, mapping_id: %s", mapping.owner_id, mapping.id)
         try:
             definition = self._create_definition_from_mapping(mapping)
             self.stepfunctions.update_state_machine(
@@ -96,7 +95,7 @@ class DataStudioMappingStepFunctionService(metaclass=Singleton):
                 definition=json.dumps(definition),
                 roleArn=self.aws_config.stepfunctions_execution_role_arn
             )
-            log.info("State machine updated successfully. owenr_id: %s, mapping_id: %s", mapping.owner_id, mapping.id)
+            log.info("State machine updated successfully. owner_id: %s, mapping_id: %s", mapping.owner_id, mapping.id)
         except ClientError as e:
             log.exception('Failed to update step function. owner_id: %s, mapping_id: %s, arn: %s', mapping.owner_id, mapping.id, state_machine_arn)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to update step function')
@@ -196,14 +195,18 @@ class DataStudioMappingStepFunctionService(metaclass=Singleton):
             ValueError: If input or output formats are missing or invalid.
         """
         # Formats
-        input_format_name = mapping.sources.get("input", {}).get("format", None).upper()
-        output_format_name = mapping.output.get("format", None).upper()
+        input_format_name = mapping.sources.get("input", {}).get("format", None)
+        output_format_name = mapping.output.get("format", None)
+
+        if not input_format_name or not output_format_name:
+            log.error("Invalid input or output format in mapping. mapping_id: %s", mapping.id)
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid input or output format in mapping.")
         
-        input_format = self.data_formats_service.get_data_format(input_format_name)
+        input_format = self.data_formats_service.get_data_format(input_format_name.upper())
         output_format = input_format
         # Preventing over fetching for same data format name
         if input_format_name != output_format_name:
-            output_format = self.data_formats_service.get_data_format(output_format_name)
+            output_format = self.data_formats_service.get_data_format(output_format_name.upper())
 
         if not input_format or not output_format:
             log.error("Unable to find input or output format. mapping_id: %s", mapping.id)

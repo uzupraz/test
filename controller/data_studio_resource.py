@@ -23,11 +23,11 @@ data_formats_repository = DataFormatsRepository(app_config, aws_config)
 
 data_formats_service = DataFormatsService(data_formats_repository=data_formats_repository)
 workflow_service = WorkflowService(workflow_repository=workflow_repository)
-mapping_step_function_service = DataStudioMappingStepFunctionService(aws_config, data_formats_service)
+data_studio_mapping_step_function_service = DataStudioMappingStepFunctionService(aws_config, data_formats_service)
 data_studio_mapping_service = DataStudioMappingService(
     data_studio_mapping_repository=data_studio_mapping_repository,
     workflow_service=workflow_service,
-    mapping_step_function_service=mapping_step_function_service
+    data_studio_mapping_step_function_service=data_studio_mapping_step_function_service
 )
 
 
