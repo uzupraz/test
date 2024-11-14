@@ -41,10 +41,10 @@ class WorkflowRepository(metaclass=Singleton):
         try:
             # Save the dictionary to DynamoDB
             self.workflow_table.put_item(Item=workflow.as_dict())
-            log.info('Successfully saved workflow. workflowId: %s, organizationId:%s', workflow.workflow_id, workflow.owner_id)
+            log.info('Successfully saved workflow. workflow_id: %s, owner_id: %s', workflow.workflow_id, workflow.owner_id)
             return workflow
         except ClientError as e:
-            log.exception('Failed to save workflow. workflowId: %s, organizationId:%s', workflow.workflow_id, workflow.owner_id)
+            log.exception('Failed to save workflow. workflow_id: %s, owner_id: %s', workflow.workflow_id, workflow.owner_id)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t save the workflow')
 
 
@@ -70,6 +70,15 @@ class WorkflowRepository(metaclass=Singleton):
 
 
     def get_workflow(self, owner_id:str, workflow_id:str) -> Optional[Workflow]:
+        """Returns a workflow for the given owner & workflow id.
+
+        Args:
+            owner_id (str): The owner ID for which the workflows are to be returned.
+            workflow_id (str): The workflow ID for which the workflows are to be returned.
+
+        Returns:
+            Optional[Workflow]: Datastudio workflow for the given owner & workflow id.
+        """
         log.info('Getting workflow. owner_id: %s, workflow_id: %s', owner_id, workflow_id)
         try:
             response = self.workflow_table.query(

@@ -81,7 +81,7 @@ class DataFormatsRepository(metaclass=Singleton):
             
             return from_dict(DataFormat, formats[0])
         except ClientError as e:
-            log.exception('Error while retrieving data format')
+            log.exception('Error while retrieving data format. format: %s', format)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Error while retrieving data format')
 

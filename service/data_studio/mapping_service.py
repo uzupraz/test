@@ -5,12 +5,11 @@ import nanoid
 from typing import List, Optional
 from dacite import from_dict
 
-from .mapping_step_function_service import DataStudioMappingStepFunctionService
 from service import WorkflowService
 from controller import common_controller as common_ctrl
 from repository import DataStudioMappingRepository
 from utils import Singleton
-from model import User, DataStudioMapping, DataStudioMappingResponse, DataStudioSaveMapping, Workflow
+from model import User, DataStudioMapping, DataStudioMappingResponse, DataStudioSaveMapping
 from exception import ServiceException
 from enums import ServiceStatus, DataStudioMappingStatus
 
@@ -20,9 +19,8 @@ log = common_ctrl.log
 class DataStudioMappingService(metaclass=Singleton):
 
 
-    def __init__(self, data_studio_mapping_repository: DataStudioMappingRepository, workflow_service: WorkflowService, data_studio_mapping_step_function_service: DataStudioMappingStepFunctionService) -> None:
+    def __init__(self, data_studio_mapping_repository: DataStudioMappingRepository, workflow_service: WorkflowService) -> None:
         self.data_studio_mapping_repository = data_studio_mapping_repository
-        self.data_studio_mapping_step_function_service = data_studio_mapping_step_function_service
         self.workflow_service = workflow_service
 
 
@@ -143,8 +141,7 @@ class DataStudioMappingService(metaclass=Singleton):
         if current_active_mapping:
             current_active_mapping.active = False
 
-        workflow = self.workflow_service.get_workflow(owner_id, mapping_id)
-        self._create_or_update_state_machine_and_workflow(published_mapping, workflow)
+        self.workflow_service.create_data_studio_workflow(published_mapping)
         self.data_studio_mapping_repository.publish_mapping(
             new_mapping=published_mapping,
             current_active_mapping=current_active_mapping,
@@ -186,35 +183,3 @@ class DataStudioMappingService(metaclass=Singleton):
             str: The next revision number.
         """
         return str(int(current_active.revision) + 1) if current_active else '1'
-
-
-    def _create_or_update_state_machine_and_workflow(self, mapping: DataStudioMapping, workflow: Optional[Workflow]):
-        """
-        Create or update a state machine and corresponding workflow for the provided mapping.
-
-        Args:
-            mapping (DataStudioMapping): The DataStudio mapping containing configuration details.
-            workflow (Optional[Workflow]): An existing workflow to update, or None if a new workflow needs to be created.
-
-        Returns:
-            None
-        """
-        if workflow:
-            self.data_studio_mapping_step_function_service.update_mapping_state_machine(mapping, workflow.state_machine_arn)
-        else:
-            state_machine_arn = self.data_studio_mapping_step_function_service.create_mapping_state_machine(mapping)
-            workflow = Workflow(
-                owner_id=mapping.owner_id,
-                workflow_id=mapping.id,
-                name=mapping.name,
-                event_name=f"es:workflow:{mapping.owner_id}:{mapping.id}",
-                created_by=mapping.created_by,
-                created_by_name="DataStudio",
-                group_name="DataStudio",
-                state="ACTIVE",
-                version=1,
-                is_sync_execution=True,
-                state_machine_arn=state_machine_arn,
-                is_binary_event=False,
-            )
-            self.workflow_service.save_workflow(workflow)

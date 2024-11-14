@@ -6,7 +6,7 @@ from configuration import AWSConfig, AppConfig
 from repository import WorkflowRepository, DataStudioMappingRepository, DataFormatsRepository
 from .server_response import ServerResponse
 from .common_controller import server_response
-from service import WorkflowService, DataStudioMappingService, DataFormatsService, DataStudioMappingStepFunctionService
+from service import WorkflowService, DataStudioMappingService, DataFormatsService, AWSCloudWatchService, StepFunctionService
 from model import User, DataStudioSaveMapping
 from enums import APIStatus
 
@@ -21,13 +21,13 @@ workflow_repository = WorkflowRepository(app_config, aws_config)
 data_studio_mapping_repository = DataStudioMappingRepository(app_config, aws_config)
 data_formats_repository = DataFormatsRepository(app_config, aws_config)
 
+aws_cloudwatch_service = AWSCloudWatchService(aws_config=aws_config)
+step_function_service = StepFunctionService(aws_config=aws_config)
 data_formats_service = DataFormatsService(data_formats_repository=data_formats_repository)
-workflow_service = WorkflowService(workflow_repository=workflow_repository)
-data_studio_mapping_step_function_service = DataStudioMappingStepFunctionService(aws_config, data_formats_service)
+workflow_service = WorkflowService(aws_config=aws_config, workflow_repository=workflow_repository, data_formats_service=data_formats_service, aws_cloudwatch_service=aws_cloudwatch_service, step_function_service=step_function_service)
 data_studio_mapping_service = DataStudioMappingService(
     data_studio_mapping_repository=data_studio_mapping_repository,
     workflow_service=workflow_service,
-    data_studio_mapping_step_function_service=data_studio_mapping_step_function_service
 )
 
 
