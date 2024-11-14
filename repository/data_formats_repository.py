@@ -61,6 +61,9 @@ class DataFormatsRepository(metaclass=Singleton):
         """
         Retrieve data format from the DynamoDB table for the given format.
 
+        Args:
+            format (str): The name of the data format.
+
         Returns:
             Optional[DataFormat]: A DataFormat objects retrieved from the DynamoDB table.
 

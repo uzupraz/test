@@ -1,0 +1,10 @@
+# Write Testcase
+
+- workflow_repository.get_workflow
+- workflow_service.get_workflow
+- data_formats_repository.get_data_format
+- data_formats_service.get_data_format
+- mapping_service.publish_mapping
+- mapping_step_function_service.create_mapping_state_machine
+- mapping_step_function_service.update_mapping_state_machine
+- mapping_step_function_service.\_create_definition_from_mapping

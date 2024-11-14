@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from model import DataFormat
 from repository import DataFormatsRepository
@@ -24,3 +24,16 @@ class DataFormatsService(metaclass=Singleton):
             List[DataFormat]: A list of DataFormat objects retrieved from the repository.
         """
         return self.data_formats_repository.list_all_data_formats()
+    
+
+    def get_data_format(self, format: str) -> Optional[DataFormat]:
+        """
+        Retrieve data format using the data format repository.
+
+        Args:
+            format (str): The name of the data format.
+
+        Returns:
+            Optional[DataFormat]: A DataFormat object retrieved from the repository.
+        """
+        return self.data_formats_repository.get_data_format(format)

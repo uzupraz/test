@@ -6,6 +6,7 @@ from typing import List, Tuple
 
 from configuration import AWSConfig
 from repository import DataFormatsRepository
+from service import DataFormatsService
 from controller import common_controller as common_ctrl
 from utils import Singleton
 from model import DataStudioMapping, DataFormat
@@ -21,16 +22,16 @@ class DataStudioMappingStepFunctionService(metaclass=Singleton):
     BILLING = 'Billing'
     CLOUD_WATCH_RETENSION_IN_DAYS= 180
 
-    def __init__(self, aws_config: AWSConfig, data_formats_repository: DataFormatsRepository) -> None:
+    def __init__(self, aws_config: AWSConfig, data_formats_service: DataFormatsService) -> None:
         """
         Initializes the service with the provided AWS configuration.
 
         Args:
             aws_config (AWSConfig): The configuration object containing AWS-related details such as ARNs and execution roles.
-            data_formats_repository (DataFormatsRepository): The DataFormatsRepository provides method related to data formats used by data studio.
+            data_formats_service (DataFormatsService): The DataFormatsService provides method related to data formats used by data studio.
         """
         self.aws_config = aws_config
-        self.data_formats_repository = data_formats_repository
+        self.data_formats_service = data_formats_service
         
         self.stepfunctions = boto3.client("stepfunctions")
         self.logs_client = boto3.client('logs')
@@ -198,11 +199,11 @@ class DataStudioMappingStepFunctionService(metaclass=Singleton):
         input_format_name = mapping.sources.get("input", {}).get("format", None).upper()
         output_format_name = mapping.output.get("format", None).upper()
         
-        input_format = self.data_formats_repository.get_data_format(input_format_name)
+        input_format = self.data_formats_service.get_data_format(input_format_name)
         output_format = input_format
         # Preventing over fetching for same data format name
         if input_format_name != output_format_name:
-            output_format = self.data_formats_repository.get_data_format(output_format_name)
+            output_format = self.data_formats_service.get_data_format(output_format_name)
 
         if not input_format or not output_format:
             log.error("Unable to find input or output format. mapping_id: %s", mapping.id)
