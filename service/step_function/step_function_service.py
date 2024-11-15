@@ -152,6 +152,12 @@ class StepFunctionService(metaclass=Singleton):
     
 
     def __get_default_retry_policy(self):
+        """
+        Constructs the default retry policy definition for the state.
+
+        Returns:
+            dict: The retry definition for the state.
+        """
         return [
             {
                 "ErrorEquals": [
