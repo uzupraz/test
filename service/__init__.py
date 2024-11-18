@@ -9,6 +9,7 @@ from .csa.csa_updater_service import CsaUpdaterService
 from .custom_script_service import  CustomScriptService
 from .data_formats_service import DataFormatsService
 from .data_studio.mapping_service import DataStudioMappingService
-from .chatbot.chatbot_service import ChatbotService
+from .chatbot.chat_service import ChatService
+from .bedrock_service import BedrockService
 
 from .s3_service.s3_assets_service import S3AssetsService

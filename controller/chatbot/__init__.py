@@ -1,1 +1,1 @@
-from .chatbot_resource import ChatbotResource, ChatbotMessageHistoryResource
+from .chat_resource import ChatResource, ChatMessagesResource

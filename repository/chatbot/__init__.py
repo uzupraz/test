@@ -1,1 +1,1 @@
-from .chatbot_repository import ChatbotRepository
+from .chat_repository import ChatRepository

@@ -19,7 +19,7 @@ from .files_resource import api as files_ns
 from .data_table_resource import api as data_table_ns
 from .csa.csa_updater_resource import api as csa_updater_ns
 from .custom_script_resource import api as custom_script_ns
-from .chatbot.chatbot_resource import api as chatbot_ns
+from .chatbot.chat_resource import api as chatbot_ns
 from .server_response import ServerResponse
 from enums import ServiceStatus, APIStatus
 from exception import ServiceException

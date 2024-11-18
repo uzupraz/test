@@ -1,14 +1,15 @@
+import nanoid
 import time
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 
 
 @dataclass
-class Message:
-    prompt: str
-    response: str
+class ChatMessage:
     timestamp: int
+    prompt: Optional[str] = None
+    response: Optional[str] = None
 
 
 @dataclass
@@ -20,19 +21,76 @@ class MessageHistoryPagination:
 @dataclass
 class ChatResponse:
     chat_id: str
-    created_at: int
     title: str
 
 
 @dataclass
 class MessageHistoryResponse:
-    messages: List[Message]
+    messages: List[ChatMessage]
     pagination: MessageHistoryPagination
 
 
 @dataclass
 class Chat:
-    chat_id: str
     user_id: str
     owner_id: str
-    timestamp: int = field(default=int(time.time()))
+    model_id: str
+    chat_id: str = field(init=False)
+    timestamp: int = field(default=0)
+
+    def __post_init__(self):
+        self.chat_id = nanoid.generate()
+
+
+@dataclass
+class ChatSession:
+    chat_id: str
+    timestamp: int 
+    title: str = ""
+
+
+@dataclass
+class SaveChatResponse:
+    chat_id: str
+
+
+@dataclass
+class ChatMessageResponse:
+    messages: List[ChatMessage]
+    last_evaluated_key: Optional[dict]
+
+
+@dataclass
+class ChildChat:
+    chat_id: str
+    prompt: str
+    response: str
+    timestamp: int = None
+
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = int(time.time())
+
+
+@dataclass
+class Message:
+    role: str
+    content: str
+
+
+@dataclass
+class Messages:
+    messages: List[Message]
+
+
+@dataclass
+class ParentInfo:
+    chat_id: str
+    model_id: str
+    title: str = ""
+
+
+@dataclass
+class ModelRequest:
+    chat_id: str
+    prompt: str
