@@ -24,16 +24,16 @@ class DataFormatsService(metaclass=Singleton):
             List[DataFormat]: A list of DataFormat objects retrieved from the repository.
         """
         return self.data_formats_repository.list_all_data_formats()
-    
 
-    def get_data_format(self, format: str) -> Optional[DataFormat]:
+
+    def get_data_format(self, format_name: str) -> Optional[DataFormat]:
         """
         Retrieve data format using the data format repository.
 
         Args:
-            format (str): The name of the data format.
+            format_name (str): The name of the data format.
 
         Returns:
             Optional[DataFormat]: A DataFormat object retrieved from the repository.
         """
-        return self.data_formats_repository.get_data_format(format)
+        return self.data_formats_repository.get_data_format(format_name)

@@ -2,12 +2,12 @@ import boto3
 import boto3.resources
 import boto3.resources.factory
 from botocore.config import Config
-from boto3.dynamodb.conditions import Attr
+from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from typing import List, Optional
 from dacite import from_dict
 
-from utils import Singleton
+from utils import Singleton, DataTypeUtils
 from model import DataFormat
 from controller import common_controller as common_ctrl
 from configuration import AppConfig, AWSConfig
@@ -48,7 +48,7 @@ class DataFormatsRepository(metaclass=Singleton):
         try:
             response = self.table.scan()
             return [
-                from_dict(DataFormat, item)
+                from_dict(DataFormat, DataTypeUtils.convert_decimals_to_float_or_int(item))
                 for item in response.get('Items', [])
             ]
         except ClientError as e:
@@ -57,12 +57,12 @@ class DataFormatsRepository(metaclass=Singleton):
             raise ServiceException(code, ServiceStatus.FAILURE, 'Error while retrieving data formats')
         
 
-    def get_data_format(self, format: str) -> Optional[DataFormat]:
+    def get_data_format(self, format_name: str) -> Optional[DataFormat]:
         """
         Retrieve data format from the DynamoDB table for the given format.
 
         Args:
-            format (str): The name of the data format.
+            format_name (str): The name of the data format.
 
         Returns:
             Optional[DataFormat]: A DataFormat objects retrieved from the DynamoDB table.
@@ -72,16 +72,16 @@ class DataFormatsRepository(metaclass=Singleton):
         """
         log.info('Retrieving data format. format: %s', format)
         try:
-            response = self.table.scan(
-                FilterExpression=Attr('name').eq(format)
+            response = self.table.query(
+                KeyConditionExpression=Key('format_name').eq(format_name)
             )
             formats = response.get('Items', [])
             if not formats:
                 return None
             
-            return from_dict(DataFormat, formats[0])
+            return from_dict(DataFormat, DataTypeUtils.convert_decimals_to_float_or_int(formats[0]))
         except ClientError as e:
-            log.exception('Error while retrieving data format. format: %s', format)
+            log.exception('Error while retrieving data format. format_name: %s', format_name)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Error while retrieving data format')
 

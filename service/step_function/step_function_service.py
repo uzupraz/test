@@ -8,7 +8,7 @@ from utils import Singleton
 from  configuration import AWSConfig
 from controller import common_controller as common_ctrl
 from exception import ServiceException
-from enums import ServiceStatus
+from enums import ServiceStatus, StateMachineType
 
 log = common_ctrl.log
 
@@ -44,7 +44,7 @@ class StepFunctionService(metaclass=Singleton):
         try:
             response = self.stepfunctions.create_state_machine(
                 name=payload.state_machine_name,
-                definition=json.dumps(payload.state_machine_defination),
+                definition=json.dumps(payload.state_machine_definition),
                 roleArn=payload.execution_role_arn,
                 type=payload.type,
                 loggingConfiguration=payload.logging_configuration,
@@ -70,7 +70,7 @@ class StepFunctionService(metaclass=Singleton):
         try:
             self.stepfunctions.update_state_machine(
                 stateMachineArn=payload.state_machine_arn,
-                definition=json.dumps(payload.state_machine_defination),
+                definition=json.dumps(payload.state_machine_definition),
                 roleArn=payload.execution_role_arn
             )
             log.info("State machine updated successfully. arn: %s", payload.state_machine_arn)
@@ -79,9 +79,9 @@ class StepFunctionService(metaclass=Singleton):
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to update state machine')
 
 
-    def get_task_definition(self, resource: str, state_machine_arn: str, payload: dict, next_state: str, output_path: str = "$.Payload", retry_policy: list[dict] = None):
+    def get_lambda_task_definition(self, resource: str, state_machine_arn: str, payload: dict, next_state: str, output_path: str = "$.Payload", retry_policy: list[dict] = None):
         """
-        Builds a task definition for a state in AWS Step Functions.
+        Builds a lambda task definition for a state in AWS Step Functions.
 
         Args:
             resource (str): The ARN of the Lambda function or activity resource.
@@ -102,7 +102,7 @@ class StepFunctionService(metaclass=Singleton):
                 "FunctionName": state_machine_arn,
                 "Payload": payload
             },
-            "Retry": retry_policy if retry_policy else self.__get_default_retry_policy(),
+            "Retry": retry_policy if retry_policy else self.get_default_lambda_retry_policy(),
             "Next": next_state
         }
 
@@ -151,9 +151,9 @@ class StepFunctionService(metaclass=Singleton):
         }
     
 
-    def __get_default_retry_policy(self):
+    def get_default_lambda_retry_policy(self):
         """
-        Constructs the default retry policy definition for the state.
+        Constructs the default lambda retry policy definition for the state.
 
         Returns:
             dict: The retry definition for the state.

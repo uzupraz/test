@@ -1,0 +1,8 @@
+{
+  "format_name": "CSV",
+  "parser": {
+    "lambda_arn": "arn:lambda",
+    "parameters": { "name": "DUMMY1" }
+  },
+  "writer": { "lambda_arn": "arn:lambda", "parameters": { "name": "DUMMY1" } }
+}

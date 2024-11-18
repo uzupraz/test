@@ -16,18 +16,14 @@ log = common_ctrl.log
 class AWSCloudWatchService(metaclass=Singleton):
 
 
-    def __init__(self, aws_config: AWSConfig) -> None:
+    def __init__(self) -> None:
         """
         Initializes the service with the provided AWS configuration.
-
-        Args:
-            aws_config (AWSConfig): The configuration object containing AWS-related details such as ARNs and execution roles.
         """
-        self.aws_config = aws_config
         self.cloudwatch_client = boto3.client('logs')
 
 
-    def create_log_group(self, log_group_name: str):
+    def create_log_group(self, log_group_name: str) -> str:
         """
         Creates a new CloudWatch log group with the specified name, retrieves its ARN, and returns it.
 
@@ -47,20 +43,19 @@ class AWSCloudWatchService(metaclass=Singleton):
 
             # Getting group arn
             response = self.cloudwatch_client.describe_log_groups(logGroupNamePrefix=log_group_name)
-            log_group = response.get('logGroups', [{}])[0]
-            arn = log_group.get('arn', None)
+            log_group = response.get('logGroups', [{}])
+            # Check if log group is missing or doesn't have an ARN
+            if not log_group or not log_group[0].get('arn'):
+                log.error("Unable to create log group. log_group_name: %s", log_group_name)
+                raise ServiceException(400, ServiceStatus.FAILURE, 'Unable to create log group')
 
-            if not arn:
-                log.error("Unable to get log group arn. log_group_name: %s", log_group_name)
-                raise ServiceException(400, ServiceStatus.FAILURE, 'Unable to get log group')
-            
-            return arn
+            return log_group[0].get('arn')
         except ClientError as e:
             log.exception("Failed to create log group. log_group_name: %s", log_group_name)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to create log group')
         
 
-    def update_retention_policy(self, log_group_name: str, retention_in_days: int) -> bool:
+    def update_retention_policy(self, log_group_name: str, retention_in_days: int) -> None:
         """
         Updates the retention policy for the specified log group in CloudWatch.
 
@@ -80,7 +75,7 @@ class AWSCloudWatchService(metaclass=Singleton):
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to update log group retention policy')
     
     
-    def get_logging_configuration(self, log_group_arn: str, level: str = "ALL", include_execution_date: bool = True):
+    def get_logging_configuration(self, log_group_arn: str, level: str = "ALL", include_execution_date: bool = True) -> dict:
         """
         Constructs the logging configuration with specified log level and execution data inclusion.
 

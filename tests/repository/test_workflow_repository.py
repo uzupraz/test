@@ -9,6 +9,7 @@ from tests import TestUtils
 from model import Workflow
 from exception import ServiceException
 from utils import Singleton
+from enums import ServiceStatus
 
 
 class TestWorkflowRepository(unittest.TestCase):
@@ -149,3 +150,66 @@ class TestWorkflowRepository(unittest.TestCase):
             KeyConditionExpression=Key('ownerId').eq(owner_id),
             FilterExpression=Attr('mapping_id').exists() & Attr('mapping_id').ne(None)
         )
+
+    
+    def test_get_workflow_success(self):
+        """
+        Test get workflow for the povided owner & workflow id should return workflow.
+        """
+        owner_id = "owner123"
+        workflow_id="workflow123"
+        mock_response_path = "/tests/resources/workflows/get_data_studio_workflows_response.json"
+        mock_response_items = TestUtils.get_file_content(mock_response_path)
+        
+        self.workflow_repository.workflow_table.query = MagicMock(return_value={"Items": mock_response_items})
+
+        actual_result = self.workflow_repository.get_workflow(owner_id, workflow_id)
+
+        self.assertEqual(Workflow.from_dict(mock_response_items[0]), actual_result)
+        self.workflow_repository.workflow_table.query.assert_called_once_with(
+            KeyConditionExpression=Key("ownerId").eq(owner_id) & Key("workflowId").eq(workflow_id),
+        )
+
+    
+    def test_get_data_format_with_none_for_non_existing_data(self):
+        """
+        Test get workflow for the povided owner & workflow id which is not present in database should return None.
+        """
+        owner_id = "owner123"
+        workflow_id="workflow123"
+        self.workflow_repository.workflow_table.query = MagicMock(return_value={"Items": []})
+
+        actual_result = self.workflow_repository.get_workflow(owner_id, workflow_id)
+
+        self.assertIsNone(actual_result)
+        self.workflow_repository.workflow_table.query.assert_called_once_with(
+            KeyConditionExpression=Key("ownerId").eq(owner_id) & Key("workflowId").eq(workflow_id),
+        )
+
+
+    def test_get_data_format_should_throw_client_exception(self):
+        """Test that a ServiceException is raised when a ClientError occurs while calling get workflow."""
+        owner_id = "owner123"
+        workflow_id="workflow123"
+        error_response = {
+            'Error': {
+                'Code': 'InternalServerError',
+                'Message': 'An internal server error occurred'
+            },
+            'ResponseMetadata': {
+                'HTTPStatusCode': 500
+            }
+        }
+        self.workflow_repository.workflow_table.query = MagicMock()
+        self.workflow_repository.workflow_table.query.side_effect = ClientError(error_response, 'scan')
+
+        with self.assertRaises(ServiceException) as context:
+            self.workflow_repository.get_workflow(owner_id, workflow_id)
+
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(str(context.exception.message), 'Failed to retrieve workflow')
+        self.workflow_repository.workflow_table.query.assert_called_once_with(
+            KeyConditionExpression=Key("ownerId").eq(owner_id) & Key("workflowId").eq(workflow_id),
+        )
+    

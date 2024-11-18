@@ -97,3 +97,47 @@ class TestWorkflowService(unittest.TestCase):
             self.workflow_service.get_data_studio_workflows(owner_id)
         
         self.workflow_service.workflow_repository.get_data_studio_workflows.assert_called_once_with(owner_id)
+
+
+    def test_get_workflow_success(self):
+        """Test that workflow is retrieved successfully from the service."""
+        owner_id = "owner001"
+        workflow_id = "workflow001"
+        mock_response_path = "/tests/resources/workflows/get_data_studio_workflows_response.json"
+        mock_response_items = TestUtils.get_file_content(mock_response_path)
+
+        mock_workflow = Workflow.from_dict(mock_response_items[0])
+        self.workflow_service.workflow_repository.get_workflow = MagicMock(return_value=mock_workflow)
+
+        actual_result = self.workflow_service.get_workflow(owner_id, workflow_id)
+
+        self.assertEqual(mock_workflow, actual_result)
+        self.workflow_service.workflow_repository.get_workflow.assert_called_once_with(owner_id, workflow_id)
+
+
+    def test_get_workflow_should_return_none(self):
+        """Test that None is returned by the service when there is no workflow present in database."""
+        owner_id = "owner001"
+        workflow_id = "workflow001"
+        self.workflow_service.workflow_repository.get_workflow = MagicMock(return_value=None)
+
+        actual_result = self.workflow_service.get_workflow(owner_id, workflow_id)
+
+        self.assertIsNone(actual_result)
+        self.workflow_service.workflow_repository.get_workflow.assert_called_once_with(owner_id, workflow_id)
+
+
+    def test_get_workflow_should_throw_service_exception(self):
+        """Test that a ServiceException is raised when there is an error retrieving workflow."""
+        owner_id = "owner001"
+        workflow_id = "workflow001"
+        self.workflow_service.workflow_repository.get_workflow = MagicMock()
+        self.workflow_service.workflow_repository.get_workflow.side_effect = ServiceException(500, ServiceStatus.FAILURE, 'Error while retrieving workfow')
+
+        with self.assertRaises(ServiceException) as context:
+            self.workflow_service.get_workflow(owner_id, workflow_id)
+        
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(str(context.exception.message), 'Error while retrieving workfow')
+        self.workflow_service.workflow_repository.get_workflow.assert_called_once_with(owner_id, workflow_id)
