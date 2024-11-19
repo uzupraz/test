@@ -72,10 +72,7 @@ class ServerStreamResponse:
 
 
     @classmethod
-    def error(cls, 
-              code: ServiceStatus, 
-              message: str = 'Could not perform streaming operation', 
-              stream_generator: Generator = None) -> Response:
+    def error(cls, code: ServiceStatus, message: str = 'Could not perform streaming operation', stream_generator: Generator = None) -> Response:
         """
         Creates an error streaming response
         """
@@ -92,11 +89,7 @@ class ServerStreamResponse:
 
 
     @classmethod
-    def response(cls, 
-                code: ServiceStatus, 
-                message: str, 
-                stream_generator: Generator,
-                content_type: str = 'text/plain') -> Response:
+    def response(cls, code: ServiceStatus, message: str, stream_generator: Generator, content_type: str = 'text/plain') -> Response:
         """
         Creates a custom streaming response with specified code and message
         """

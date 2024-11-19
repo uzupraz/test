@@ -1,7 +1,7 @@
 import boto3
 import json
 
-from typing import List
+from typing import List, Dict, Any
 from controller import common_controller as common_ctrl
 from configuration import BedrockConfig
 from exception import ServiceException
@@ -24,6 +24,7 @@ class BedrockService:
             region_name=bedrock_config.region,
         )
         self.bedrock_config = bedrock_config
+        
 
     def send_prompt_to_model(self, model_id: str, prompt: str, messages: List[Message]):
         """
@@ -43,6 +44,7 @@ class BedrockService:
         Raises:
             ServiceException: If there is any failure in invoking the model or streaming the response.
         """
+        log.info('Sending prompt to model. model_id: %s', model_id)
         try:
             # Convert Message objects to dictionaries
             formatted_messages = [
@@ -81,10 +83,7 @@ class BedrockService:
 
     def generate_title(self, message: str) -> str:
         """
-        Generates a concise title for the provided message.
-
-        This method sends a prompt to the Bedrock service asking it to generate a short, concise title
-        based on the content of the provided message.
+        Generates a structured title analysis for the provided message.
 
         Args:
             message (str): The message content for which the title should be generated.
@@ -95,19 +94,10 @@ class BedrockService:
         Raises:
             ServiceException: If there is any failure in generating the title using the Bedrock model.
         """
+        log.info('Generating title for message')
         try:
-            request_body = {
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 1000,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": f"Generate a short, concise title for the following message that captures its essence: "
-                        f"'{message}'. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"
-                    }
-                ]
-            }
-
+            request_body = self._create_title_generation_prompt(message)
+            
             response = self.bedrock_client.invoke_model(
                 modelId='anthropic.claude-3-haiku-20240307-v1:0',
                 body=json.dumps(request_body),
@@ -115,17 +105,50 @@ class BedrockService:
                 accept="application/json"
             )
 
-            # Read and decode the response body content
             response_body = json.loads(response['body'].read().decode('utf-8'))
-
-            # Extract the title from the content array
-            title = response_body.get("content", [{}])[0].get("text", "Untitled")
-
-            # Return the generated title or a default if the title is missing
-            return title if title else "Untitled"
+            try:
+                # Parse the JSON response from the model
+                title_analysis = json.loads(response_body.get("content", [{}])[0].get("text", "{}"))
+                return title_analysis.get("title", "Untitled").strip()
+            except json.JSONDecodeError:
+                log.error("Failed to parse JSON response from model")
+                return "Untitled"
         
         except Exception:
             log.exception('Failed to generate title.')
             raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to generate title.')
+        
 
-
+    def _create_title_generation_prompt(self, message: str) -> Dict[str, Any]:
+        """
+        Creates a structured prompt for title generation following the defined schema.
+        
+        Args:
+            message (str): The message to generate a title for
+            
+        Returns:
+            Dict[str, Any]: A properly formatted request body following the schema
+        """
+        return {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 1000,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": (
+                        "Analyze the following message and provide a response in JSON format following this schema:\n"
+                        "{\n"
+                        '  "title": "string (max 6 words)",\n'
+                        '  "keywords": ["string (max 3 keywords)"],\n'
+                        '  "content_type": "Question|Discussion|Statement|Request",\n'
+                        "}\n\n"
+                        f"Message to analyze: {message}\n\n"
+                        "Requirements:\n"
+                        "- Title should be concise and capture the main topic\n"
+                        "- Do not include phrases like 'Title:' or quotation marks\n"
+                        "- Keywords should be the most relevant terms\n"
+                        "Respond only with the JSON object, no additional text."
+                    )
+                }
+            ]
+        }

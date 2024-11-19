@@ -130,7 +130,7 @@ class ChatMessagesResource(Resource):
     def get(self, chat_id):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
-        size = request.args.get('size', type=int) or 20
+        size = request.args.get('size', default=20, type=int) 
         last_evaluated_key = request.args.get('last_evaluated_key', default=None, type=str)
         
         response_payload = chat_service.get_message_history(

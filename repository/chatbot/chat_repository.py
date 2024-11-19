@@ -80,7 +80,7 @@ class ChatRepository(metaclass=Singleton):
         Raises:
             ServiceException: If there's an error while retrieving messages.
         """
-        log.info('Retrieving messages for chat. chat_id: %s', chat_id)
+        log.info('Retrieving messages for chat. chat_id: %s, limit: %s, exclusive_start_key: %s', chat_id, limit, exclusive_start_key)
         try:
             params = {
                 'KeyConditionExpression': Key('chat_id').eq(chat_id),
@@ -160,6 +160,7 @@ class ChatRepository(metaclass=Singleton):
         Raises:
             ServiceException: If there's an error while updating the title.
         """
+        log.info('Updating parent chat title. chat_id: %s', chat_id)
         try:
             self.table.update_item(
                 Key={"chat_id": chat_id, "timestamp": 0},
@@ -188,7 +189,7 @@ class ChatRepository(metaclass=Singleton):
         Raises:
             ServiceException: If there's an error while retrieving the parent info.
         """
-        log.info('Retriving parent info for chat. chat_id: %s', chat_id)
+        log.info('Retriving parent info for chat. chat_id: %s, timestamp: %s', chat_id, timestamp)
         try:
             response = self.table.get_item(
                 Key={
