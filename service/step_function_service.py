@@ -172,3 +172,28 @@ class StepFunctionService(metaclass=Singleton):
             }
         ]
     
+
+    def get_logging_configuration(self, log_group_arn: str, level: str = "ALL", include_execution_date: bool = True) -> dict:
+        """
+        Constructs the logging configuration with specified log level and execution data inclusion.
+
+        Args:
+            log_group_arn (str): ARN of the CloudWatch log group for logging configuration.
+            level (str): Log level (default: "ALL").
+            include_execution_date (bool): Whether to include execution data (default: True).
+
+        Returns:
+            dict: Configuration for logging including log level and destinations.
+        """
+        return {
+            "level": level,
+            "includeExecutionData": include_execution_date,
+            "destinations": [
+                {
+                    "cloudWatchLogsLogGroup": {
+                        "logGroupArn": log_group_arn
+                    }
+                }
+            ]
+        }
+    

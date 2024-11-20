@@ -76,8 +76,36 @@ class TestAWSCloudWatchService(unittest.TestCase):
         )
 
 
-    def test_describe_log_groups_returns_empty_list_should_throw_exception(self):
-        """Test that a describe log groups returns empty group & raises exception"""
+    def test_create_log_group_fails_when_describe_log_group_throws_exception(self):
+        """Test that create log groups fails due to exception in describe log group."""
+        log_group_name = "test_log_group_name"
+        error_response = {
+            'Error': {
+                'Code': 'InternalServerError',
+                'Message': 'An internal server error occurred'
+            },
+            'ResponseMetadata': {
+                'HTTPStatusCode': 500
+            }
+        }
+        self.aws_cloudwatch_service.cloudwatch_client.describe_log_groups = MagicMock()
+        self.aws_cloudwatch_service.cloudwatch_client.describe_log_groups.side_effect = ClientError(error_response, "describe_log_groups")
+
+        with self.assertRaises(ServiceException) as context:
+            self.aws_cloudwatch_service.create_log_group(log_group_name)
+
+        self.assertEqual(context.exception.message, "Failed to get log group arn")
+        self.assertEqual(context.exception.status_code, 500)
+        self.aws_cloudwatch_service.cloudwatch_client.create_log_group.assert_called_once_with(
+            logGroupName=log_group_name
+        )
+        self.aws_cloudwatch_service.cloudwatch_client.describe_log_groups.assert_called_once_with(
+            logGroupNamePrefix=log_group_name
+        )
+
+
+    def test_create_log_group_failes_when_describe_log_groups_returns_empty_list_should_throw_exception(self):
+        """Test that create log group fails when describe log groups returns empty group & raises exception"""
         log_group_name = "test_log_group_name"
         self.aws_cloudwatch_service.cloudwatch_client.create_log_group = MagicMock()
 
@@ -135,78 +163,38 @@ class TestAWSCloudWatchService(unittest.TestCase):
         )
 
 
-    def test_get_logging_configuration(self):
-        """Test that the logging configuration is returned correctly."""
-        log_group_arn = "arn:aws:logs:region:account-id:log_group_name"
-        expected_config = {
-            "level": "ALL",
-            "includeExecutionData": True,
-            "destinations": [
-                {
-                    "cloudWatchLogsLogGroup": {
-                        "logGroupArn": log_group_arn
-                    }
-                }
-            ]
-        }
-
-        result = self.aws_cloudwatch_service.get_logging_configuration(log_group_arn)
-
-        self.assertEqual(result, expected_config)
-
-
-    def test_get_logging_configuration_with_custom_level(self):
-        """Test that the logging configuration is returned with a custom level."""
-        log_group_arn = "arn:aws:logs:region:account-id:log_group_name"
-        expected_config = {
-            "level": "ERROR",
-            "includeExecutionData": True,
-            "destinations": [
-                {
-                    "cloudWatchLogsLogGroup": {
-                        "logGroupArn": log_group_arn
-                    }
-                }
-            ]
-        }
-
-        result = self.aws_cloudwatch_service.get_logging_configuration(log_group_arn, level="ERROR")
-
-        self.assertEqual(result, expected_config)
-
-
-    def test_does_log_group_exist_true(self):
-        """Test that the method returns True if the log group exists."""
+    def test_get_log_group_arn(self):
+        """Test that the method returns arn if the log group exists."""
         log_group_name = "test_log_group_name"
         self.aws_cloudwatch_service.cloudwatch_client.describe_log_groups = MagicMock(return_value={
-            "logGroups": [{"logGroupName": log_group_name}]
+            "logGroups": [{"logGroupName": log_group_name, "arn": "test_arn"}]
         })
 
-        result = self.aws_cloudwatch_service.does_log_group_exist(log_group_name)
+        result = self.aws_cloudwatch_service.get_log_group_arn(log_group_name)
 
-        self.assertTrue(result)
+        self.assertEqual(result, "test_arn")
         self.aws_cloudwatch_service.cloudwatch_client.describe_log_groups.assert_called_once_with(
             logGroupNamePrefix=log_group_name
         )
 
 
-    def test_does_log_group_exist_false(self):
-        """Test that the method returns False if the log group does not exist."""
+    def test_get_log_group_returns_none(self):
+        """Test that the method returns None if the log group does not exist."""
         log_group_name = "test_log_group_name"
         self.aws_cloudwatch_service.cloudwatch_client.describe_log_groups = MagicMock(return_value={
             "logGroups": []
         })
 
-        result = self.aws_cloudwatch_service.does_log_group_exist(log_group_name)
+        result = self.aws_cloudwatch_service.get_log_group_arn(log_group_name)
 
-        self.assertFalse(result)
+        self.assertIsNone(result)
         self.aws_cloudwatch_service.cloudwatch_client.describe_log_groups.assert_called_once_with(
             logGroupNamePrefix=log_group_name
         )
 
 
-    def test_does_log_group_exist_failure(self):
-        """Test that a failure in checking log group existence results in a ServiceException."""
+    def test_get_log_group_arn_failure(self):
+        """Test that a failure in getting log group arn results in a ServiceException."""
         log_group_name = "test_log_group_name"
         error_response = {
             'Error': {
@@ -220,9 +208,9 @@ class TestAWSCloudWatchService(unittest.TestCase):
         self.aws_cloudwatch_service.cloudwatch_client.describe_log_groups.side_effect = ClientError(error_response, "describe_log_groups")
 
         with self.assertRaises(ServiceException) as context:
-            self.aws_cloudwatch_service.does_log_group_exist(log_group_name)
+            self.aws_cloudwatch_service.get_log_group_arn(log_group_name)
 
-        self.assertEqual(context.exception.message, "Failed to check log group existance")
+        self.assertEqual(context.exception.message, "Failed to get log group arn")
         self.assertEqual(context.exception.status_code, 500)
         self.aws_cloudwatch_service.cloudwatch_client.describe_log_groups.assert_called_once_with(
             logGroupNamePrefix=log_group_name

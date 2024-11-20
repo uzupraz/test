@@ -85,7 +85,7 @@ class TestDataFormatsRepository(unittest.TestCase):
 
     def test_get_data_format_success(self):
         """Test that data format is retrieved successfully."""
-        format_name="dummy"
+        format_name="CSV"
         mock_response_path = self.test_resource_path + 'get_data_format_response.json'
         mock_response_items = TestUtils.get_file_content(mock_response_path)
         
@@ -94,6 +94,7 @@ class TestDataFormatsRepository(unittest.TestCase):
         actual_result = self.data_formats_repository.get_data_format(format_name)
 
         self.assertEqual(from_dict(DataFormat, mock_response_items), actual_result)
+        self.assertEqual(actual_result.format_name, format_name)
         self.data_formats_repository.table.query.assert_called_once_with(
             KeyConditionExpression=Key('format_name').eq(format_name)
         )
@@ -101,7 +102,7 @@ class TestDataFormatsRepository(unittest.TestCase):
     
     def test_get_data_format_with_none_for_non_existing_data(self):
         """Test that None is returned when there are no data format in the table."""
-        format_name="dummy"
+        format_name="CSV"
         self.data_formats_repository.table.query = MagicMock(return_value={"Items": []})
 
         actual_result = self.data_formats_repository.get_data_format(format_name)
@@ -114,7 +115,7 @@ class TestDataFormatsRepository(unittest.TestCase):
 
     def test_get_data_format_should_throw_client_exception(self):
         """Test that a ServiceException is raised when a ClientError occurs during data format retrieval."""
-        format_name="dummy"
+        format_name="CSV"
         error_response = {
             'Error': {
                 'Code': 'InternalServerError',
@@ -125,7 +126,7 @@ class TestDataFormatsRepository(unittest.TestCase):
             }
         }
         self.data_formats_repository.table.query = MagicMock()
-        self.data_formats_repository.table.query.side_effect = ClientError(error_response, 'scan')
+        self.data_formats_repository.table.query.side_effect = ClientError(error_response, 'query')
 
         with self.assertRaises(ServiceException) as context:
             self.data_formats_repository.get_data_format(format_name)

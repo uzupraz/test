@@ -77,6 +77,7 @@ class DataFormatsRepository(metaclass=Singleton):
             )
             formats = response.get('Items', [])
             if not formats:
+                log.error('Unable to find data format. format_name: %s', format_name)
                 return None
             
             return from_dict(DataFormat, DataTypeUtils.convert_decimals_to_float_or_int(formats[0]))

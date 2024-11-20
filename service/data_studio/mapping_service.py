@@ -5,7 +5,8 @@ import nanoid
 from typing import List, Optional
 from dacite import from_dict
 
-from service import DataStudioStepFunctionService, WorkflowService
+from service import WorkflowService
+from .data_studio_step_function_service import DataStudioStepFunctionService
 from controller import common_controller as common_ctrl
 from repository import DataStudioMappingRepository
 from utils import Singleton
@@ -154,7 +155,10 @@ class DataStudioMappingService(metaclass=Singleton):
     def _create_or_update_workflow(self, mapping: DataStudioMapping):
         """
         Creates or updates a Data Studio workflow based on the provided mapping.
-        If a workflow already exists for the mapping, updates the workflow; otherwise, creates a new one.
+
+        Assumptions:
+            - Mapping id is used as workflow id while creating workflow
+            - Gets Workflow, If found it updates state machine else it creates state machine.
 
         Args:
             mapping (DataStudioMapping): Mapping configuration with workflow details.

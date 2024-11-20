@@ -2,10 +2,9 @@ import boto3
 import json
 
 from botocore.exceptions import ClientError
-from typing import List, Tuple
+from typing import Optional
 
 from utils import Singleton
-from  configuration import AWSConfig
 from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
@@ -42,14 +41,12 @@ class AWSCloudWatchService(metaclass=Singleton):
             log.info("Log group created. log_group_name: %s", log_group_name)
 
             # Getting group arn
-            response = self.cloudwatch_client.describe_log_groups(logGroupNamePrefix=log_group_name)
-            log_group = response.get('logGroups', [{}])
-            # Check if log group is missing or doesn't have an ARN
-            if not log_group or not log_group[0].get('arn'):
+            arn = self.get_log_group_arn(log_group_name)
+            if not arn:
                 log.error("Unable to create log group. log_group_name: %s", log_group_name)
                 raise ServiceException(400, ServiceStatus.FAILURE, 'Unable to create log group')
 
-            return log_group[0].get('arn')
+            return arn
         except ClientError as e:
             log.exception("Failed to create log group. log_group_name: %s", log_group_name)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to create log group')
@@ -74,54 +71,30 @@ class AWSCloudWatchService(metaclass=Singleton):
             log.exception("Failed to update log group retention policy. log_group_name: %s", log_group_name)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to update log group retention policy')
     
-    
-    def get_logging_configuration(self, log_group_arn: str, level: str = "ALL", include_execution_date: bool = True) -> dict:
-        """
-        Constructs the logging configuration with specified log level and execution data inclusion.
 
-        Args:
-            log_group_arn (str): ARN of the CloudWatch log group for logging configuration.
-            level (str): Log level (default: "ALL").
-            include_execution_date (bool): Whether to include execution data (default: True).
-
-        Returns:
-            dict: Configuration for logging including log level and destinations.
+    def get_log_group_arn(self, log_group_name: str) -> Optional[str]:
         """
-        return {
-            "level": level,
-            "includeExecutionData": include_execution_date,
-            "destinations": [
-                {
-                    "cloudWatchLogsLogGroup": {
-                        "logGroupArn": log_group_arn
-                    }
-                }
-            ]
-        }
-    
-
-    def does_log_group_exist(self, log_group_name: str) -> bool:
-        """
-        Checks if a CloudWatch log group with the specified name exists.
+        Returns log group arns for the provided log group name
 
         Args:
             log_group_name (str): The name of the log group.
 
         Returns:
-            bool: True if the log group exists, False otherwise.
+            arn: True if the log group exists, False otherwise.
 
         Raises:
-            ServiceException: If an error occurs during the check.
+            ServiceException: If an error occurs during the process.
         """
-        log.info("Checking log group existance. log_group_name: %s", log_group_name)
+        log.info("Getting log group arn. log_group_name: %s", log_group_name)
         try:
             response = self.cloudwatch_client.describe_log_groups(logGroupNamePrefix=log_group_name)
-            if any(group['logGroupName'] == log_group_name for group in response['logGroups']):
-                log.info("Log group exists. log_group_name: %s", log_group_name)
-                return True
+            log_group = response.get('logGroups', [])
+
+            if not log_group:
+                log.error("Log group not found. log_group_name: %s", log_group_name)
+                return None
             
-            log.info("Log group does not exists. log_group_name: %s", log_group_name)
-            return False
+            return log_group[0].get('arn')
         except ClientError as e:
-            log.exception("Failed to check log group existance. log_group_name: %s", log_group_name)
-            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to check log group existance')
+            log.exception("Failed to get log group arn. log_group_name: %s", log_group_name)
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to get log group arn')

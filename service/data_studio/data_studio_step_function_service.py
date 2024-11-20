@@ -1,5 +1,4 @@
-from .step_function_service import StepFunctionService
-from service import AWSCloudWatchService, DataFormatsService
+from service import AWSCloudWatchService, DataFormatsService, StepFunctionService
 from model import StateMachineCreatePayload, StateMachineUpdatePayload, Workflow, DataStudioMapping
 from  configuration import AWSConfig
 from controller import common_controller as common_ctrl
@@ -46,15 +45,17 @@ class DataStudioStepFunctionService(StepFunctionService):
 
         # Logging
         log_group_name = self.aws_config.cloudwatch_log_group_base + f"/{name}-Logs"
-        log_group_arn = self.aws_cloudwatch_service.create_log_group(log_group_name)
-        self.aws_cloudwatch_service.update_retention_policy(log_group_name, int(self.aws_config.cloudwatch_retention_in_days))
+        log_group_arn = self.aws_cloudwatch_service.get_log_group_arn(log_group_name)
+        if not log_group_arn:
+            log_group_arn = self.aws_cloudwatch_service.create_log_group(log_group_name)
+            self.aws_cloudwatch_service.update_retention_policy(log_group_name, int(self.aws_config.cloudwatch_retention_in_days))
         
         payload = StateMachineCreatePayload(
             state_machine_name=name,
             state_machine_definition=definition,
             execution_role_arn=self.aws_config.stepfunction_execution_role_arn,
             type=StateMachineType.EXPRESS.value,
-            logging_configuration=self.aws_cloudwatch_service.get_logging_configuration(log_group_arn)
+            logging_configuration=self.get_logging_configuration(log_group_arn)
         )
         return self.create_state_machine(payload)
         
@@ -89,7 +90,7 @@ class DataStudioStepFunctionService(StepFunctionService):
         """
         # Validation
         if not mapping.mapping:
-            log.error("Mapping schema not found. owner_id: %s, mapping_id: %s", mapping.owner_id, mapping.id)
+            log.error("Mapping schema not found. Could not create workflow and state machine. owner_id: %s, mapping_id: %s", mapping.owner_id, mapping.id)
             raise ServiceException(400, ServiceStatus.FAILURE, "Unable to find mapping schema.")
         
         (parser_name, parser_arn), (writer_name, writer_arn) = self.__get_parser_and_writer_details(mapping)

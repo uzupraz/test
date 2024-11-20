@@ -8,6 +8,7 @@ from .csa.csa_updater_service import CsaUpdaterService
 from .custom_script_service import  CustomScriptService
 from .data_formats_service import DataFormatsService
 from .aws_cloudwatch_service import AWSCloudWatchService
-from .step_function import StepFunctionService, DataStudioStepFunctionService
+from .step_function_service import StepFunctionService
 from .data_studio.mapping_service import DataStudioMappingService
+from .data_studio.data_studio_step_function_service import DataStudioStepFunctionService
 from .s3_service.s3_assets_service import S3AssetsService

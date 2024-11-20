@@ -16,6 +16,7 @@ class TestWorkflowRepository(unittest.TestCase):
 
 
     test_resource_path = '/tests/resources/workflow_converter/'
+    test_resource_path_workflow = "/tests/resources/workflows"
 
 
     def setUp(self) -> None:
@@ -158,7 +159,7 @@ class TestWorkflowRepository(unittest.TestCase):
         """
         owner_id = "owner123"
         workflow_id="workflow123"
-        mock_response_path = "/tests/resources/workflows/get_data_studio_workflows_response.json"
+        mock_response_path = self.test_resource_path_workflow + "/get_data_studio_workflows_response.json"
         mock_response_items = TestUtils.get_file_content(mock_response_path)
         
         self.workflow_repository.workflow_table.query = MagicMock(return_value={"Items": mock_response_items})
@@ -171,7 +172,7 @@ class TestWorkflowRepository(unittest.TestCase):
         )
 
     
-    def test_get_data_format_with_none_for_non_existing_data(self):
+    def test_get_workflow_with_none_for_non_existing_data(self):
         """
         Test get workflow for the povided owner & workflow id which is not present in database should return None.
         """
@@ -187,7 +188,7 @@ class TestWorkflowRepository(unittest.TestCase):
         )
 
 
-    def test_get_data_format_should_throw_client_exception(self):
+    def test_get_workflow_should_throw_client_exception(self):
         """Test that a ServiceException is raised when a ClientError occurs while calling get workflow."""
         owner_id = "owner123"
         workflow_id="workflow123"
