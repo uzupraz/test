@@ -3,6 +3,8 @@ from repository import WorkflowRepository
 from controller import common_controller as common_ctrl
 from utils import Singleton
 
+from typing import Optional, Tuple
+
 
 log = common_ctrl.log
 
@@ -43,3 +45,16 @@ class WorkflowService(metaclass=Singleton):
             for workflow_response in workflows_response
         ]
         return workflows
+    
+
+    def get_workflow(self, owner_id:str, workflow_id: str) -> Optional[Workflow]:
+        """
+        Returns a workflow for the given owner and workflow id.
+        Args:
+            owner_id (str): The owner ID for which the workflows are to be returned.
+            workflow_id (str): The ID for the workflow.
+        Returns:
+            Optional[Workflow]: Workflow or None for the given owner & workflow id.
+        """
+        return self.workflow_repository.get_workflow(owner_id, workflow_id)
+    

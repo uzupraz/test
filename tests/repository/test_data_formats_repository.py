@@ -1,12 +1,15 @@
 import unittest
 from unittest.mock import Mock, patch, MagicMock
 from botocore.exceptions import ClientError
+from boto3.dynamodb.conditions import Key
 
+from dacite import from_dict
 from repository import DataFormatsRepository
 from tests import TestUtils
 from enums import ServiceStatus
 from exception import ServiceException
 from utils import Singleton
+from model import DataFormat
 
 
 class TestDataFormatsRepository(unittest.TestCase):
@@ -78,4 +81,60 @@ class TestDataFormatsRepository(unittest.TestCase):
         self.assertEqual(context.exception.status_code, 500)
         self.assertEqual(str(context.exception.message), 'Error while retrieving data formats')
         self.data_formats_repository.table.scan.assert_called_once()
+
+
+    def test_get_data_format_success(self):
+        """Test that data format is retrieved successfully."""
+        format_name="CSV"
+        mock_response_path = self.test_resource_path + 'get_data_format_response.json'
+        mock_response_items = TestUtils.get_file_content(mock_response_path)
+        
+        self.data_formats_repository.table.query = MagicMock(return_value={"Items": [mock_response_items]})
+
+        actual_result = self.data_formats_repository.get_data_format(format_name)
+
+        self.assertEqual(from_dict(DataFormat, mock_response_items), actual_result)
+        self.assertEqual(actual_result.format_name, format_name)
+        self.data_formats_repository.table.query.assert_called_once_with(
+            KeyConditionExpression=Key('format_name').eq(format_name)
+        )
+
+    
+    def test_get_data_format_with_none_for_non_existing_data(self):
+        """Test that None is returned when there are no data format in the table."""
+        format_name="CSV"
+        self.data_formats_repository.table.query = MagicMock(return_value={"Items": []})
+
+        actual_result = self.data_formats_repository.get_data_format(format_name)
+
+        self.assertIsNone(actual_result)
+        self.data_formats_repository.table.query.assert_called_once_with(
+            KeyConditionExpression=Key('format_name').eq(format_name)
+        )
+
+
+    def test_get_data_format_should_throw_client_exception(self):
+        """Test that a ServiceException is raised when a ClientError occurs during data format retrieval."""
+        format_name="CSV"
+        error_response = {
+            'Error': {
+                'Code': 'InternalServerError',
+                'Message': 'An internal server error occurred'
+            },
+            'ResponseMetadata': {
+                'HTTPStatusCode': 500
+            }
+        }
+        self.data_formats_repository.table.query = MagicMock()
+        self.data_formats_repository.table.query.side_effect = ClientError(error_response, 'query')
+
+        with self.assertRaises(ServiceException) as context:
+            self.data_formats_repository.get_data_format(format_name)
+
+        self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(str(context.exception.message), 'Error while retrieving data format')
+        self.data_formats_repository.table.query.assert_called_once_with(
+            KeyConditionExpression=Key('format_name').eq(format_name)
+        )
     

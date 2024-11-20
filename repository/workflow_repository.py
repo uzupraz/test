@@ -3,6 +3,7 @@ import dataclasses
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
+from typing import Optional
 
 from model import Workflow
 from configuration import AWSConfig, AppConfig
@@ -38,14 +39,12 @@ class WorkflowRepository(metaclass=Singleton):
         """
         log.info('Saving workflow. workflowId: %s, organizationId:%s', workflow.workflow_id, workflow.owner_id)
         try:
-            # Convert the Workflow object to a dictionary
-            workflow_dict = dataclasses.asdict(workflow)
             # Save the dictionary to DynamoDB
-            self.workflow_table.put_item(Item=workflow_dict)
-            log.info('Successfully saved workflow. workflowId: %s, organizationId:%s', workflow.workflow_id, workflow.owner_id)
+            self.workflow_table.put_item(Item=workflow.as_dict())
+            log.info('Successfully saved workflow. workflow_id: %s, owner_id: %s', workflow.workflow_id, workflow.owner_id)
             return workflow
         except ClientError as e:
-            log.exception('Failed to save workflow. workflowId: %s, organizationId:%s', workflow.workflow_id, workflow.owner_id)
+            log.exception('Failed to save workflow. workflow_id: %s, owner_id: %s', workflow.workflow_id, workflow.owner_id)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t save the workflow')
 
 
@@ -68,6 +67,33 @@ class WorkflowRepository(metaclass=Singleton):
         except ClientError as e:
             log.exception('Failed to list data studio workflows. owner_id: %s', owner_id)
             raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Coulnd\'t list data studio workflows')
+
+
+    def get_workflow(self, owner_id:str, workflow_id:str) -> Optional[Workflow]:
+        """Returns a workflow for the given owner & workflow id.
+
+        Args:
+            owner_id (str): The owner ID for which the workflows are to be returned.
+            workflow_id (str): The workflow ID for which the workflows are to be returned.
+
+        Returns:
+            Optional[Workflow]: Datastudio workflow for the given owner & workflow id.
+        """
+        log.info('Getting workflow. owner_id: %s, workflow_id: %s', owner_id, workflow_id)
+        try:
+            response = self.workflow_table.query(
+                KeyConditionExpression=Key("ownerId").eq(owner_id) & Key("workflowId").eq(workflow_id),
+            )
+            workflows = response.get("Items", [])
+
+            if not workflows:
+                log.error('Unable to find workflow. owner_id: %s, workflow_id: %s', owner_id, workflow_id)
+                return None
+            
+            return Workflow.from_dict(workflows[0])
+        except ClientError as e:
+            log.exception('Failed to retrieve workflow. owner_id: %s, workflow_id: %s', owner_id, workflow_id)
+            raise ServiceException(e.response['ResponseMetadata']['HTTPStatusCode'], ServiceStatus.FAILURE, 'Failed to retrieve workflow')
 
 
     def count_active_workflows(self, owner_id: str) -> int:

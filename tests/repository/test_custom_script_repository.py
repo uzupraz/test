@@ -1,8 +1,7 @@
 import unittest
 from unittest.mock import Mock, patch
 from botocore.exceptions import ClientError
-from unittest.mock import MagicMock
-from boto3.dynamodb.conditions import Key, Attr
+from boto3.dynamodb.conditions import Key
 
 from model import CustomScript
 from repository.custom_script_repository import CustomScriptRepository
