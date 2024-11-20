@@ -66,12 +66,6 @@ chat_request_dto = api.model('Chat Request', {
     'model_id': fields.String(required=True, description='Chat Model id to process prompt messages'),
 })
 
-chat_message_request_dto = api.model('Chat Request', {
-    'chat_id': fields.String(required=False, description='ID of chat the chat'),
-    'model_id': fields.String(required=False, description='Model id of the chat'),
-    'prompt': fields.String(required=True, description='Prompt message to send to the model'),
-    }) 
-
 prompt_request_dto = api.model('Prompt Request', {
     'prompt': fields.String(required=True)
 })
@@ -99,32 +93,6 @@ class ChatResource(Resource):
         return ServerResponse.success(payload=response_payload), 200
     
 
-    @api.doc('Create new chat for user and converse with the model')
-    @api.expect(chat_request_dto, validate=True)
-    @api.marshal_with(chat_response_dto, skip_none=True)
-    def post(self):
-        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
-
-        user = from_dict(User, g.get('user'))
-
-        # if not user.has_permission(ServicePermissions.CHATBOT_CREATE_CHAT.value):
-        #     log.warning('User has no permission to create chat. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
-        #     raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create chat')
-
-        model_id = api.payload['model_id']
-
-        if not user.has_permission(ServicePermissions.CHATBOT_MODEL_ACCESS.value):
-            log.warning('User has no permission to access model. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
-            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to access model')
-
-        response_payload = chat_service.save_chat_session(
-            user_id=user.sub,
-            owner_id=user.organization_id,
-            model_id=model_id
-        )
-        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
-    
-
     @api.doc('Create new chat for user')
     @api.expect(chat_request_dto, validate=True)
     @api.marshal_with(chat_response_dto, skip_none=True)
@@ -133,15 +101,11 @@ class ChatResource(Resource):
 
         user = from_dict(User, g.get('user'))
 
-        # if not user.has_permission(ServicePermissions.CHATBOT_CREATE_CHAT.value):
-        #     log.warning('User has no permission to create chat. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
-        #     raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create chat')
+        if not user.has_permission(ServicePermissions.CHATBOT_CREATE_CHAT.value):
+            log.warning('User has no permission to create chat. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create chat')
 
         model_id = api.payload['model_id']
-
-        if not user.has_permission(ServicePermissions.CHATBOT_MODEL_ACCESS.value):
-            log.warning('User has no permission to access model. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
-            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to access model')
 
         response_payload = chat_service.save_chat_session(
             user_id=user.sub,
