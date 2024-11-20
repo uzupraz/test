@@ -39,7 +39,9 @@ class Chat:
     timestamp: int = field(default=0)
 
     def __post_init__(self):
-        self.chat_id = nanoid.generate()
+        current_timestamp = int(time.time())  
+        id = nanoid.generate()
+        self.chat_id = f"{current_timestamp}.{id}"
 
 
 @dataclass

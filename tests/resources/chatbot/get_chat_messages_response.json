@@ -1,0 +1,7 @@
+[
+    {
+        "timestamp": 12345,
+        "prompt": "Prompt message",
+        "response": "Prompt response"
+    }
+]

@@ -1,7 +1,7 @@
 import json
 
 from dacite import from_dict
-from typing import List, Generator
+from typing import List
 
 from controller import common_controller as common_ctrl
 from repository import ChatRepository
@@ -45,15 +45,7 @@ class ChatService(metaclass=Singleton):
         response = self.chat_repository.get_user_chats(user_id)
         chat_response = []
         for chat in response:
-            chat_id = chat.chat_id
-            timestamp = chat.timestamp
-            title = self._get_chat_title(chat_id, timestamp)
-
-            chat_data = {
-                'chat_id': chat_id,
-                'title': title
-            }
-            chat_response.append(from_dict(ChatResponse, chat_data))
+            chat_response.append(from_dict(ChatResponse, {'chat_id': chat.chat_id,  'title': self._get_chat_title(chat.chat_id, chat.timestamp)}))
 
         return chat_response
     
@@ -82,17 +74,10 @@ class ChatService(metaclass=Singleton):
             limit=size,
             exclusive_start_key=last_evaluated_key
         )
-        messages = chat_messages_response.messages
         last_evaluated_key = chat_messages_response.last_evaluated_key
 
         # Convert each retrieved item to a ChatMessage object if it has both a prompt and response
-        chat_messages = []
-        for item in messages:
-            prompt = item.prompt
-            response = item.response
-            timestamp = item.timestamp
-            if prompt is not None and response is not None:
-                chat_messages.append(ChatMessage(prompt=prompt, response=response, timestamp=timestamp))
+        chat_messages = [ChatMessage(prompt=item.prompt, response=item.response, timestamp=item.timestamp) for item in chat_messages_response.messages if item.prompt is not None and item.response is not None]
 
         # Encode the last evaluated key for the next client request
         encoded_last_evaluated_key = None
@@ -155,7 +140,7 @@ class ChatService(metaclass=Singleton):
             if not parent_info.title:
                 # Generate the title if it's missing
                 log.info("Title not found for parent chat. Generating new title.")
-                title = self.bedrock_service.generate_title(message=prompt)
+                title = self.bedrock_service.generate_title(prompt=prompt)
                 self.chat_repository.update_parent_chat_title(chat_id, title)
             else:
                 log.info("Title exists for parent chat. Skipping title generation.")
@@ -218,37 +203,25 @@ class ChatService(metaclass=Singleton):
             List[Message]: A list of Message objects representing the chat context.
         """
         log.info('Retrieving previous messages for chat. chat_id: %s', chat_id)
-
+        
         chat_message_response = self.chat_repository.get_chat_messages(
             chat_id=chat_id,
             limit=size,
         )
-        chat_messages = chat_message_response.messages
-
+            
         messages = []
-        for chat_message in chat_messages:
-            if chat_message.prompt is not None and chat_message.response is not None:
-                # Add user message
+        for chat_message in chat_message_response.messages:
+            if chat_message.prompt is not None:
                 messages.append(Message(
                     role='user',
                     content=chat_message.prompt
                 ))
-                # Add assistant message
+            if chat_message.response is not None:
                 messages.append(Message(
                     role='assistant',
                     content=chat_message.response
                 ))
-            elif chat_message.prompt:
-                messages.append(Message(
-                    role='user',
-                    content=chat_message.prompt
-                ))
-            elif chat_message.response:
-                messages.append(Message(
-                    role='assistant',
-                    content=chat_message.response
-                ))
-
+        
         return messages
 
 
