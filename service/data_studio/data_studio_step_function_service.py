@@ -101,7 +101,6 @@ class DataStudioStepFunctionService(StepFunctionService):
         json_transformer_parameters = {"mappingSchema": mapping.mapping}
 
         # Parameters Override
-        parser_parameters["wrapOutputIn"] = "input"
         json_transformer_parameters["wrapOutputIn"] = "output"
         writer_parameters["unwrapInputFrom"] = "output"
         

@@ -97,6 +97,8 @@ class TestDataStudioStepFunctionService(unittest.TestCase):
             )
         )
         self.data_studio_step_function_service.aws_cloudwatch_service.get_log_group_arn.assert_called_once_with("/test/log-group/owner123-mapping123-Logs")
+        self.data_studio_step_function_service.aws_cloudwatch_service.create_log_group.assert_not_called()
+        self.data_studio_step_function_service.aws_cloudwatch_service.update_retention_policy.assert_not_called()
 
 
     def test_create_workflow_state_machine_without_mapping(self):
