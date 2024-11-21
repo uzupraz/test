@@ -1,3 +1,4 @@
+import json
 import boto3
 
 from typing import List
@@ -56,7 +57,10 @@ class BedrockService:
 
     def send_prompt_to_model(self, model_id: str, prompt: str, messages: List[Message]):
         """
-        Sends a prompt to the specified model and streams the response back using converse_stream.
+        Sends a prompt to the specified model and streams the response back.
+
+        This method formats the provided messages and prompt into a request body, sends it to the Bedrock model,
+        and streams the response in chunks, yielding content as it becomes available.
 
         Args:
             model_id (str): The ID of the model to send the prompt to.
@@ -71,94 +75,83 @@ class BedrockService:
         """
         log.info('Sending prompt to model. model_id: %s', model_id)
         try:
-            # Convert Message objects to dictionaries with content as a list
+            # Convert Message objects to dictionaries
             formatted_messages = [
-                {"role": msg.role, "content": [{"text": msg.content}]}
+                {"role": msg.role, "content": msg.content}
                 for msg in messages
             ]
             
-            # Add the current prompt as a new message with content as a list
-            formatted_messages.append({
-                "role": "user", 
-                "content": [{"text": prompt}]
-            })
+            # Add the current prompt
+            formatted_messages.append({"role": "user", "content": prompt})
             
-            # Use converse_stream method
-            response = self.bedrock_client.converse_stream(
+            # Create the request body with the formatted messages
+            request_body = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 1000,
+                "messages": formatted_messages
+            }
+
+            response = self.bedrock_client.invoke_model_with_response_stream(
                 modelId=model_id,
-                messages=formatted_messages,
-                inferenceConfig={
-                    "maxTokens": 1000,
-                    "temperature": 0.7  # Optional: adjust temperature as needed
-                }
+                body=json.dumps(request_body),
+                contentType="application/json",
+                accept="application/json"
             )
 
-            # Iterate through the response stream
-            for event in response['stream']:
-                if 'contentBlockDelta' in event:
-                    content = event['contentBlockDelta'].get('delta', {}).get('text', '')
+            for event in response['body']:
+                chunk = json.loads(event['chunk']['bytes'].decode())
+                if chunk.get('type') == 'content_block_delta':
+                    content = chunk.get('delta', {}).get('text', '')
                     if content:
                         yield content
 
-        except Exception as e:
-            log.exception('Failed to stream response. model_id: %s', model_id)
-            raise ServiceException(400, ServiceStatus.FAILURE, 'Failed to stream response.')
+        except Exception:
+            log.exception('Failed to stream response. model_id:', model_id)
+            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to stream response.')
 
 
-    def generate_title(self, prompt: str) -> str:
+    def generate_title(self, message: str) -> str:
         """
-        Generates a structured title analysis for the provided prompt using tool configuration.
-
+        Generates a concise title for the provided message.
+        This method sends a prompt to the Bedrock service asking it to generate a short, concise title
+        based on the content of the provided message.
         Args:
-            prompt (str): The prompt for which the title should be generated.
-
+            message (str): The message content for which the title should be generated.
         Returns:
-            str: The generated title for the prompt, or "Untitled" if no title could be generated.
-
+            str: The generated title for the message, or "Untitled" if no title could be generated.
         Raises:
             ServiceException: If there is any failure in generating the title using the Bedrock model.
         """
         log.info('Generating title for message')
-        message = {
-            "role": "user",
-            "content": [
-                {"text": f"<content>{prompt}</content>"},
-                {
-                    "text": "Please use the generate_title tool to generate the title JSON based on the content within the <content> tags."
-                },
-            ],
-        }
         try:
-            response = self.bedrock_client.converse(
-                modelId=self.bedrock_config.default_model_id,
-                messages=[message],
-                inferenceConfig={
-                    "maxTokens": 2000,
-                    "temperature": 0
-                },
-                toolConfig={
-                    "tools": tool_list,
-                    "toolChoice": {
-                        "tool": {
-                            "name": "generate_title"
-                        }
+            request_body = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 1000,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": f"Generate a short, concise title for the following message that captures its essence: "
+                        f"'{message}'. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"
                     }
-                }
+                ]
+            }
+
+            response = self.bedrock_client.invoke_model(
+                modelId='anthropic.claude-3-haiku-20240307-v1:0',
+                body=json.dumps(request_body),
+                contentType="application/json",
+                accept="application/json"
             )
 
-            # Extract the title from the response structure
-            output = response.get("output", {})
-            message_content = output.get("message", {}).get("content", [])
-            
-            # Locate the "toolUse" section in the content array
-            for content_item in message_content:
-                if "toolUse" in content_item:
-                    title = content_item["toolUse"]["input"].get("title", "").strip()
-                    return title if title else "Untitled"
+            # Read and decode the response body content
+            response_body = json.loads(response['body'].read().decode('utf-8'))
 
-            log.error("No title found in the response.")
-            return "Untitled"
-            
-        except Exception as e:
+            # Extract the title from the content array
+            title = response_body.get("content", [{}])[0].get("text", "Untitled")
+
+            # Return the generated title or a default if the title is missing
+            return title if title else "Untitled"
+
+        except Exception:
             log.exception('Failed to generate title.')
             raise ServiceException(400, ServiceStatus.FAILURE, 'Failed to generate title.')

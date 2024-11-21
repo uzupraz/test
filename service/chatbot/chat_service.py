@@ -141,7 +141,7 @@ class ChatService(metaclass=Singleton):
             if not parent_info.title:
                 # Generate the title if it's missing
                 log.info("Title not found for parent chat. Generating new title.")
-                title = self.bedrock_service.generate_title(prompt=prompt)
+                title = self.bedrock_service.generate_title(message=prompt)
                 self.chat_repository.update_parent_chat_title(chat_id, chat_timestamp.timestamp, title)
             else:
                 log.info("Title exists for parent chat. Skipping title generation.")
