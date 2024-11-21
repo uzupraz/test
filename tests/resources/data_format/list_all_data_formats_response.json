@@ -1,14 +1,18 @@
 [
   {
-    "format_id": "CSV",
-    "name": "FORMAT1",
-    "parser": { "parameters": { "name": "DUMMY1" } },
-    "writer": {}
+    "format_name": "CSV",
+    "parser": {
+      "lambda_arn": "arn:lambda",
+      "parameters": { "name": "DUMMY1" }
+    },
+    "writer": { "lambda_arn": "arn:lambda", "parameters": { "name": "DUMMY1" } }
   },
   {
-    "format_id": "JSON",
-    "name": "FORMAT2",
-    "parser": { "parameters": { "name": "DUMMY2" } },
-    "writer": {}
+    "format_name": "JSON",
+    "parser": {
+      "lambda_arn": "arn:lambda",
+      "parameters": { "name": "DUMMY2" }
+    },
+    "writer": { "lambda_arn": "arn:lambda", "parameters": { "name": "DUMMY1" } }
   }
 ]

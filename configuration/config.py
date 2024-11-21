@@ -32,6 +32,12 @@ class AWSConfig(metaclass=Singleton):
     is_local: bool = os.getenv('AWS_IS_LOCAL', 'False').lower() == 'true'
     dynamodb_aws_region: str = os.getenv('AWS_DYNAMODB_REGION')
 
+    stepfunction_execution_role_arn: str = os.getenv('AWS_STEP_FUNCTION_EXECUTION_ROLE_ARN')
+    sqs_workflow_billing_arn: str = os.getenv('AWS_SQS_WORKFLOW_BILLING_ARN')
+    cloudwatch_log_group_base: str = os.getenv('AWS_CLOUD_WATCH_LOG_GROUP_BASE')
+    cloudwatch_retention_in_days = os.getenv('AWS_CLOUD_WATCH_RETENTION_IN_DAYS')
+    json_transformer_processor_arn = os.getenv('AWS_JSON_TRANSFORMER_PROCESSOR_ARN')
+
 
 @dataclasses.dataclass(init=False)
 class AsyncFileDeliveryS3Config(metaclass=Singleton):

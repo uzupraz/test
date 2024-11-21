@@ -6,7 +6,7 @@ from configuration import AWSConfig, AppConfig
 from repository import WorkflowRepository, DataStudioMappingRepository, DataFormatsRepository
 from .server_response import ServerResponse
 from .common_controller import server_response
-from service import WorkflowService, DataStudioMappingService, DataFormatsService
+from service import WorkflowService, DataStudioMappingService, DataFormatsService, AWSCloudWatchService, DataStudioStepFunctionService
 from model import User, DataStudioSaveMapping
 from enums import APIStatus
 
@@ -17,13 +17,27 @@ log = api.logger
 
 app_config = AppConfig()
 aws_config = AWSConfig()
+
 workflow_repository = WorkflowRepository(app_config, aws_config)
 data_studio_mapping_repository = DataStudioMappingRepository(app_config, aws_config)
 data_formats_repository = DataFormatsRepository(app_config, aws_config)
 
-data_studio_mapping_service = DataStudioMappingService(data_studio_mapping_repository=data_studio_mapping_repository)
-workflow_service = WorkflowService(workflow_repository=workflow_repository)
+aws_cloudwatch_service = AWSCloudWatchService()
 data_formats_service = DataFormatsService(data_formats_repository=data_formats_repository)
+
+workflow_service = WorkflowService(
+    workflow_repository=workflow_repository, 
+)
+data_studio_step_function_service = DataStudioStepFunctionService(
+    aws_config=aws_config, 
+    aws_cloudwatch_service=aws_cloudwatch_service,
+    data_formats_service=data_formats_service
+)
+data_studio_mapping_service = DataStudioMappingService(
+    data_studio_mapping_repository=data_studio_mapping_repository,
+    workflow_service=workflow_service,
+    data_studio_step_function_service=data_studio_step_function_service
+)
 
 
 # Model
@@ -75,10 +89,15 @@ data_studio_workflows_response_dto = api.inherit("Get workflows list", server_re
 
 data_studio_data_formats_response_dto = api.inherit("Get data format list", server_response, {
     "payload": fields.List(fields.Nested(api.model("DataFormat", {
-        "format_id": fields.String(description="The unique identifier for the data format"),
-        "name": fields.String(description="The name of the data format"),
-        "parser": fields.Raw(description="Parser configuration as a dictionary with nested dictionaries"),
-        "writer": fields.Raw(description="Writer configuration as a dictionary with nested dictionaries"),
+        "format_name": fields.String(description="The name for the data format"),
+        "parser": fields.Nested(api.model("DataFormatProperties", {
+            "lambda_arn": fields.String(description="The arn of the lambda function"),
+            "parameters": fields.Raw(description="The parameter schema of the format", required=True)
+        })),
+        "writer": fields.Nested(api.model("DataFormatProperties", {
+            "lambda_arn": fields.String(description="The arn of the lambda function"),
+            "parameters": fields.Raw(description="The parameter schema of the format", required=True)
+        }))
     })))
 })
 

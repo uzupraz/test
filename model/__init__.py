@@ -8,3 +8,4 @@ from .data_studio import OutputSchemaField, OutputSchema, InputSchema, Mapping, 
 from .custom_script import CustomScriptUnpublishedChange, CustomScript, CustomScriptRelease, CustomScriptMetadata, CustomScriptRequestDTO, UnpublishedChangeResponseDTO, CustomScriptContentResponse
 from .data_format import DataFormat
 from .chatbot.chatbot import Chat, Message, ParentInfo, Messages, SaveChatResponse, ChatSession, ChatMessageResponse, ChatMessage, ChildChat, MessageHistoryPagination, ChatResponse, MessageHistoryResponse, ModelRequest, ChatCreationDate
+from .step_function import StateMachineCreatePayload, StateMachineUpdatePayload

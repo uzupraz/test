@@ -5,10 +5,12 @@ import nanoid
 from typing import List, Optional
 from dacite import from_dict
 
+from service import WorkflowService
+from .data_studio_step_function_service import DataStudioStepFunctionService
 from controller import common_controller as common_ctrl
 from repository import DataStudioMappingRepository
 from utils import Singleton
-from model import User, DataStudioMapping, DataStudioMappingResponse, DataStudioSaveMapping
+from model import User, DataStudioMapping, DataStudioMappingResponse, DataStudioSaveMapping, Workflow
 from exception import ServiceException
 from enums import ServiceStatus, DataStudioMappingStatus
 
@@ -18,8 +20,10 @@ log = common_ctrl.log
 class DataStudioMappingService(metaclass=Singleton):
 
 
-    def __init__(self, data_studio_mapping_repository: DataStudioMappingRepository) -> None:
+    def __init__(self, data_studio_mapping_repository: DataStudioMappingRepository, workflow_service: WorkflowService, data_studio_step_function_service: DataStudioStepFunctionService) -> None:
         self.data_studio_mapping_repository = data_studio_mapping_repository
+        self.workflow_service = workflow_service
+        self.data_studio_step_function_service = data_studio_step_function_service
 
 
     def get_active_mappings(self, owner_id:str) -> List[DataStudioMapping]:
@@ -30,7 +34,6 @@ class DataStudioMappingService(metaclass=Singleton):
         Returns:
             list[DataStudioMapping]: List of active mappings for the given owner.
         """
-        print(owner_id)
         return self.data_studio_mapping_repository.get_active_mappings(owner_id)
 
 
@@ -140,13 +143,46 @@ class DataStudioMappingService(metaclass=Singleton):
         if current_active_mapping:
             current_active_mapping.active = False
 
+        self._create_or_update_workflow(published_mapping)
         self.data_studio_mapping_repository.publish_mapping(
             new_mapping=published_mapping,
             current_active_mapping=current_active_mapping,
             draft_mapping=draft_mapping
         )
-
         return published_mapping
+
+
+    def _create_or_update_workflow(self, mapping: DataStudioMapping):
+        """
+        Creates or updates a Data Studio workflow based on the provided mapping.
+
+        Assumptions:
+            - Mapping id is used as workflow id while creating workflow
+            - Gets Workflow, If found it updates state machine else it creates state machine.
+
+        Args:
+            mapping (DataStudioMapping): Mapping configuration with workflow details.
+        """
+        workflow = self.workflow_service.get_workflow(mapping.owner_id, mapping.id)
+        if workflow:
+            self.data_studio_step_function_service.update_workflow_state_machine(mapping, workflow)
+        else:
+            state_machine_arn = self.data_studio_step_function_service.create_workflow_state_machine(mapping)
+            workflow = Workflow(
+                owner_id=mapping.owner_id,
+                workflow_id=mapping.id,
+                name=mapping.name,
+                event_name=f"es:workflow:{mapping.owner_id}:{mapping.id}",
+                created_by=mapping.created_by,
+                created_by_name="DataStudio",
+                group_name="DataStudio",
+                state="ACTIVE",
+                version=1,
+                is_sync_execution=True,
+                state_machine_arn=state_machine_arn,
+                is_binary_event=False,
+            )
+            self.workflow_service.save_workflow(workflow)
 
 
     def _create_published_mapping(self, draft_mapping: DataStudioMapping, user_id: str, next_revision: str) -> DataStudioMapping:
