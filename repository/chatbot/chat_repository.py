@@ -84,7 +84,8 @@ class ChatRepository(metaclass=Singleton):
         try:
             params = {
                 'KeyConditionExpression': Key('chat_id').eq(chat_id),
-                'Limit': limit
+                'Limit': limit,
+                'ScanIndexForward': False
             }
             
             if exclusive_start_key:

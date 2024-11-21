@@ -90,7 +90,7 @@ class TestChatRepository(unittest.TestCase):
 
         self.mock_dynamodb_table.query.return_value = {
             'Items': mock_items,
-            'LastEvaluatedKey': mock_last_evaluated_key
+            'LastEvaluatedKey': mock_last_evaluated_key,
         }
 
         # Call the method under test
@@ -108,6 +108,7 @@ class TestChatRepository(unittest.TestCase):
         self.mock_dynamodb_table.query.assert_called_once_with(
             KeyConditionExpression=Key('chat_id').eq(chat_id),
             Limit=limit,
+            ScanIndexForward=False
         )
 
 
@@ -141,7 +142,8 @@ class TestChatRepository(unittest.TestCase):
         self.mock_dynamodb_table.query.assert_called_once_with(
             KeyConditionExpression=Key('chat_id').eq(chat_id),
             Limit=limit,
-            ExclusiveStartKey=exclusive_start_key
+            ExclusiveStartKey=exclusive_start_key,
+            ScanIndexForward=False
         )
 
 
@@ -170,7 +172,9 @@ class TestChatRepository(unittest.TestCase):
         self.assertEqual(type(items[0]), ChatMessage)  
 
         self.mock_dynamodb_table.query.assert_called_once_with(
-            KeyConditionExpression=Key('chat_id').eq(chat_id),Limit=limit
+            KeyConditionExpression=Key('chat_id').eq(chat_id),
+            Limit=limit,
+            ScanIndexForward=False
         )
 
 
@@ -191,7 +195,8 @@ class TestChatRepository(unittest.TestCase):
         # Assertions
         self.mock_dynamodb_table.query.assert_called_once_with(
             KeyConditionExpression=Key('chat_id').eq(chat_id),  
-            Limit=limit  
+            Limit=limit,
+            ScanIndexForward=False  
         )
         self.assertEqual(e.exception.status_code, 400)
 
