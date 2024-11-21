@@ -46,6 +46,7 @@ class TestDataStudioStepFunctionService(unittest.TestCase):
         mapping.id = "mapping123"
         mapping.description = "Test Workflow"
         mapping.name = "dummy"
+        mapping.mapping = {"data":"dummy"}
 
         self.data_studio_step_function_service.aws_cloudwatch_service.get_log_group_arn = MagicMock(return_value=None)
         self.data_studio_step_function_service.aws_cloudwatch_service.create_log_group = MagicMock(return_value="arn:aws:logs:region:account-id:log-group:test")
@@ -78,6 +79,7 @@ class TestDataStudioStepFunctionService(unittest.TestCase):
         mapping.id = "mapping123"
         mapping.description = "Test Workflow"
         mapping.name = "dummy"
+        mapping.mapping = {"data":"dummy"}
 
         self.data_studio_step_function_service.aws_cloudwatch_service.get_log_group_arn = MagicMock(return_value="arn:aws:logs:region:account-id:log-group:test")
         self.data_studio_step_function_service.get_logging_configuration = MagicMock(return_value={})
@@ -158,6 +160,7 @@ class TestDataStudioStepFunctionService(unittest.TestCase):
         mapping = MagicMock()
         mapping.owner_id = "owner123"
         mapping.id = "mapping123"
+        mapping.mapping = {"data":"dummy"}
 
         self.data_studio_step_function_service.create_state_machine = MagicMock(side_effect=ServiceException(400, ServiceStatus.FAILURE, "Error"))
 
@@ -170,6 +173,8 @@ class TestDataStudioStepFunctionService(unittest.TestCase):
     def test_update_workflow_state_machine_success(self):
         """Test that an existing workflow state machine is updated successfully."""
         mapping = MagicMock()
+        mapping.mapping = {"data":"dummy"}
+
         workflow = MagicMock()
         workflow.state_machine_arn = "arn:aws:states:region:account-id:stateMachine:TestWorkflow"
 
@@ -187,6 +192,8 @@ class TestDataStudioStepFunctionService(unittest.TestCase):
     def test_update_workflow_state_machine_failure(self):
         """Test that a ServiceException is raised when workflow update fails."""
         mapping = MagicMock()
+        mapping.mapping = {"data":"dummy"}
+        
         workflow = MagicMock()
         workflow.state_machine_arn = "arn:aws:states:region:account-id:stateMachine:TestWorkflow"
 

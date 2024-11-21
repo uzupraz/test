@@ -1,3 +1,5 @@
+import json
+
 from service import AWSCloudWatchService, DataFormatsService, StepFunctionService
 from model import StateMachineCreatePayload, StateMachineUpdatePayload, Workflow, DataStudioMapping
 from  configuration import AWSConfig
@@ -98,7 +100,7 @@ class DataStudioStepFunctionService(StepFunctionService):
         # Parameters
         parser_parameters = mapping.sources.get("input", {}).get("parameters", {})
         writer_parameters = mapping.output.get("parameters", {})
-        json_transformer_parameters = {"mappingSchema": mapping.mapping}
+        json_transformer_parameters = {"mappingSchema": json.dumps(mapping.mapping)}
 
         # Parameters Override
         json_transformer_parameters["wrapOutputIn"] = "output"
