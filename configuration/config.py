@@ -68,8 +68,8 @@ class OpensearchConfig(metaclass=Singleton):
 
 
 @dataclasses.dataclass(init=False)
-class BedrockConfig(metaclass=Singleton):
+class AwsBedrockConfig(metaclass=Singleton):
     """
-    Configuration related to the Bedrock are loaded here.
+    Configuration related to the Aws Bedrock are loaded here.
     """
     default_model_id:str = os.getenv('BEDROCK_DEFAULT_MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')

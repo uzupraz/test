@@ -5,7 +5,7 @@ from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
 from model import Message
-from configuration import BedrockConfig
+from configuration import AwsBedrockConfig
 
 log = common_ctrl.log
 
@@ -44,7 +44,7 @@ tool_list = [
 class BedrockService:
 
     
-    def __init__(self, bedrock_config: BedrockConfig) -> None:
+    def __init__(self, bedrock_config: AwsBedrockConfig) -> None:
         """
         Initializes the BedrockService with the provided configuration.
         """
@@ -101,8 +101,8 @@ class BedrockService:
                         yield content
 
         except Exception as e:
-            log.exception(f'Failed to stream response. model_id: {model_id}, Error: {str(e)}')
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to stream response.')
+            log.exception('Failed to stream response. model_id: %s', model_id)
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Failed to stream response.')
 
 
     def generate_title(self, prompt: str) -> str:
@@ -159,6 +159,6 @@ class BedrockService:
             log.error("No title found in the response.")
             return "Untitled"
             
-        except Exception:
+        except Exception as e:
             log.exception('Failed to generate title.')
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to generate title.')
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Failed to generate title.')

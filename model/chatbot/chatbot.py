@@ -21,6 +21,7 @@ class MessageHistoryPagination:
 @dataclass
 class ChatResponse:
     chat_id: str
+    created_at: int
     title: str
 
 
@@ -36,19 +37,18 @@ class Chat:
     owner_id: str
     model_id: str
     chat_id: str = field(init=False)
-    timestamp: int = field(default=0)
+    timestamp: int = field(init=False)
 
     def __post_init__(self):
-        current_timestamp = int(time.time())  
-        id = nanoid.generate()
-        self.chat_id = f"{current_timestamp}.{id}"
+        self.chat_id = nanoid.generate()
+        self.timestamp = int(time.time())
 
 
 @dataclass
 class ChatSession:
     chat_id: str
     timestamp: int 
-    title: str = ""
+    title: str = "" 
 
 
 @dataclass
@@ -94,5 +94,11 @@ class ParentInfo:
 
 @dataclass
 class ModelRequest:
+    user_id: str
     chat_id: str
     prompt: str
+
+
+@dataclass
+class ChatCreationDate:
+    timestamp: int

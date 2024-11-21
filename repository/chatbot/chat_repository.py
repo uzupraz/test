@@ -6,7 +6,7 @@ from dataclasses import asdict
 from dacite import from_dict
 from typing import List
 
-from model import Chat, ChatMessage, ChatSession, ParentInfo, ChatMessageResponse, ChildChat
+from model import Chat, ChatMessage, ChatSession, ParentInfo, ChatMessageResponse, ChildChat, ChatCreationDate
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
 from exception import ServiceException
@@ -149,7 +149,7 @@ class ChatRepository(metaclass=Singleton):
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to save chat message')
         
 
-    def update_parent_chat_title(self, chat_id: str, title: str) -> None:
+    def update_parent_chat_title(self, chat_id: str, timestamp: int, title: str) -> None:
         """
         Updates the title of a parent chat session.
 
@@ -163,7 +163,7 @@ class ChatRepository(metaclass=Singleton):
         log.info('Updating parent chat title. chat_id: %s', chat_id)
         try:
             self.table.update_item(
-                Key={"chat_id": chat_id, "timestamp": 0},
+                Key={"chat_id": chat_id, "timestamp": timestamp},
                 UpdateExpression="SET #title = if_not_exists(#title, :title)",
                 ExpressionAttributeNames={"#title": "title"},
                 ExpressionAttributeValues={":title": title}
@@ -209,6 +209,37 @@ class ChatRepository(metaclass=Singleton):
             log.exception('Failed to retrieve parent info for chat. chat_id: %s', chat_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Could not retrieve parent info')
+        
+
+    def get_chat_timestamp(self, user_id: str, chat_id: str) -> ChatCreationDate:
+        """
+        Retrieves chat timesatmp for a specific chat.
+
+        Args:
+            chat_id (str): The ID of the chat session.
+            user_id (str): The ID of the user.
+
+        Returns:
+            ChatCreationDate: The ChatCreationDate object.
+
+        Raises:
+            ServiceException: If there's an error while retrieving timestamp.
+        """
+        log.info('Getting chat creation timestamp. user_id: %s, chat_id: %s', user_id, chat_id)
+        try:
+            response = self.table.query(
+                IndexName=self.app_config.chatbot_messages_gsi_name,  
+                KeyConditionExpression=Key('user_id').eq(user_id) & Key('chat_id').eq(chat_id)  
+            )
+            items = response.get('Items', [])
+            for item in items:
+                item = DataTypeUtils.convert_decimals_to_float_or_int(item)
+                return from_dict(ChatCreationDate, item)
+        
+        except ClientError as e:
+            log.exception('Failed to retrieve chat creation timestamp. user_id: %s, chat_id: %s', user_id, chat_id)
+            code = e.response['ResponseMetadata']['HTTPStatusCode']
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Cound not retrive chat creation timestamp')
 
 
     def __configure_dynamodb(self):

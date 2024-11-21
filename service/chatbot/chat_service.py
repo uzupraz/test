@@ -1,5 +1,3 @@
-import json
-
 from dacite import from_dict
 from typing import List
 
@@ -45,7 +43,8 @@ class ChatService(metaclass=Singleton):
         response = self.chat_repository.get_user_chats(user_id)
         chat_response = []
         for chat in response:
-            chat_response.append(from_dict(ChatResponse, {'chat_id': chat.chat_id,  'title': self._get_chat_title(chat.chat_id, chat.timestamp)}))
+            created_at = chat.timestamp
+            chat_response.append(from_dict(ChatResponse, {'chat_id': chat.chat_id, 'created_at': created_at, 'title': self._get_chat_title(chat.chat_id, chat.timestamp)}))
 
         return chat_response
     
@@ -116,7 +115,7 @@ class ChatService(metaclass=Singleton):
         return SaveChatResponse(chat_id=chat.chat_id)
 
     
-    def save_chat_message(self, chat_id: str, prompt: str):
+    def save_chat_message(self, user_id, chat_id: str, prompt: str):
         """
         Saves a chat message and streams the response.
 
@@ -135,41 +134,36 @@ class ChatService(metaclass=Singleton):
             prompt=prompt,
             response=""
         )
+        
         try:
-            parent_info = self.chat_repository.get_parent_info(chat_id, timestamp=0)
+            chat_timestamp = self.chat_repository.get_chat_timestamp(user_id, chat_id)
+            parent_info = self.chat_repository.get_parent_info(chat_id, chat_timestamp.timestamp)
             if not parent_info.title:
                 # Generate the title if it's missing
                 log.info("Title not found for parent chat. Generating new title.")
                 title = self.bedrock_service.generate_title(prompt=prompt)
-                self.chat_repository.update_parent_chat_title(chat_id, title)
+                self.chat_repository.update_parent_chat_title(chat_id, chat_timestamp.timestamp, title)
             else:
                 log.info("Title exists for parent chat. Skipping title generation.")
 
             # Stream and collect response
             response_chunks = []
-            error_occurred = False
             
-            for chunk in self._stream_chat_message(chat_id, prompt):
+            for chunk in self._stream_chat_message(chat_id, prompt, chat_timestamp.timestamp):
                 if chunk.startswith('Error:'):
-                    error_occurred = True
-                    child_chat.response = chunk
-                    yield json.dumps({"error": chunk})
-                    break
+                    raise ServiceException(500, ServiceStatus.FAILURE, chunk)
                 response_chunks.append(chunk)
                 yield chunk
             
-            if not error_occurred:
-                # After streaming is complete, save the full message
-                child_chat.response = ''.join(response_chunks)
-            
+            child_chat.response = ''.join(response_chunks)
             self.chat_repository.save_message(item=child_chat)
             
         except Exception:
             log.exception('Failed to save chat message. chat_id: %s', chat_id)
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Could not save chat message')
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Could not save chat message')
 
 
-    def _stream_chat_message(self, chat_id: str, prompt: str):
+    def _stream_chat_message(self, chat_id: str, prompt: str, timestamp: int):
         """
         Streams the chat message response from the model.
 
@@ -180,7 +174,7 @@ class ChatService(metaclass=Singleton):
         Yields:
             str: Response chunks from the model.
         """
-        model_id = self._get_chat_model_id(chat_id=chat_id, timestamp=0)   
+        model_id = self._get_chat_model_id(chat_id=chat_id, timestamp=timestamp)   
         messages = self._get_chat_context(chat_id)
         try:
             for response_part in self.bedrock_service.send_prompt_to_model(model_id=model_id, prompt=prompt, messages=messages):

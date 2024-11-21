@@ -1,3 +1,5 @@
+import json
+
 from dataclasses import dataclass
 from typing import Generator
 from flask import Response, stream_with_context
@@ -41,18 +43,22 @@ class ServerStreamResponse:
         def response_generator():
             # Send initial metadata if needed
             if self.code != ServiceStatus.SUCCESS.value:
-                yield f"Error: {self.message}\n"
+                yield json.dumps({"error": self.message})
+                return
             
             # Stream the actual content
             try:
                 for chunk in self.stream_generator:
                     yield chunk
             except Exception as e:
-                yield f"Stream Error: {str(e)}\n"
+                yield json.dumps({"error": f"Stream Error: {str(e)}"})
+
+        http_status = 200 if self.code == ServiceStatus.SUCCESS.value else 500
 
         return Response(
             stream_with_context(response_generator()),
-            headers=headers
+            headers=headers,
+            status=http_status,
         )
 
 

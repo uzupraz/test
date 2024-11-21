@@ -5,7 +5,7 @@ from dacite import from_dict
 from controller.server_response import ServerResponse
 from controller.server_stream_response import ServerStreamResponse
 from controller.common_controller import server_response
-from configuration import AWSConfig, AppConfig, BedrockConfig
+from configuration import AWSConfig, AppConfig, AwsBedrockConfig
 from service import ChatService, BedrockService
 from repository import ChatRepository
 from enums import ServicePermissions, ServiceStatus, APIStatus
@@ -18,7 +18,7 @@ log = api.logger
 
 aws_config = AWSConfig()
 app_config = AppConfig()
-bedrock_config = BedrockConfig()
+bedrock_config = AwsBedrockConfig()
 bedrock_service = BedrockService(bedrock_config)
 chat_repository = ChatRepository(app_config, aws_config)
 chat_service = ChatService(chat_repository, bedrock_service)
@@ -27,6 +27,7 @@ chat_service = ChatService(chat_repository, bedrock_service)
 # Models
 user_chat = api.model('User chat', {
     'chat_id': fields.String(required=True),
+    'timestamp': fields.Integer(required=True),
     'title': fields.String(required=True)
 })
 
@@ -101,11 +102,12 @@ class ChatResource(Resource):
 
         user = from_dict(User, g.get('user'))
 
-        if not user.has_permission(ServicePermissions.CHATBOT_CREATE_CHAT.value):
-            log.warning('User has no permission to create chat. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
-            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create chat')
-
         model_id = api.payload['model_id']
+
+        if not (user.has_permission(ServicePermissions.CHATBOT_CREATE_CHAT.value) and 
+            user.has_permission(model_id)):
+            log.warning('User has no permission to create chat for this model. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create chat for this model.')
 
         response_payload = chat_service.save_chat_session(
             user_id=user.sub,
@@ -147,8 +149,10 @@ class ChatMessagesResource(Resource):
     def post(self, chat_id):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
-        request_data = from_dict(ModelRequest, {'chat_id': chat_id, 'prompt': api.payload['prompt']})
+        user = from_dict(User, g.get('user'))
 
-        response_generator = chat_service.save_chat_message(request_data.chat_id, request_data.prompt)
+        request_data = from_dict(ModelRequest, {'user_id': user.sub, 'chat_id': chat_id, 'prompt': api.payload['prompt']})
+
+        response_generator = chat_service.save_chat_message(request_data.user_id, request_data.chat_id, request_data.prompt)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerStreamResponse.success(response_generator)
