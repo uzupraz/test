@@ -11,7 +11,7 @@ from .aws_cloudwatch_service import AWSCloudWatchService
 from .step_function_service import StepFunctionService
 from .data_studio.mapping_service import DataStudioMappingService
 from .chatbot.chat_service import ChatService
-from .bedrock_service import BedrockService
+from .bedrock.bedrock_service import BedrockService
 
 from .data_studio.data_studio_step_function_service import DataStudioStepFunctionService
 from .s3_service.s3_assets_service import S3AssetsService

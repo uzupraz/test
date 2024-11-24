@@ -7,3 +7,11 @@ class ServicePermissions(Enum):
     CUSTOM_SCRIPT_SAVE_ITEM='CUSTOM_SCRIPT_SAVE_ITEM'
     CUSTOM_SCRIPT_RELEASE_ITEM='CUSTOM_SCRIPT_RELEASE_ITEM'
     CHATBOT_CREATE_CHAT='CHATBOT_CREATE_CHAT'
+
+
+class ModelPermissions(Enum):
+    """
+    Enum defining model permissions with their model IDs
+    """
+    CLAUDE_HAIKU_ACCESS = 'anthropic.claude-3-haiku-20240307-v1:0'
+    CLAUDE_SONNET_3_ACCESS = 'anthropic.claude-3-sonnet-20240229-v1:0'

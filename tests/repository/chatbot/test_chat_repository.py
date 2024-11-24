@@ -8,7 +8,7 @@ from repository import ChatRepository
 from tests.test_utils import TestUtils
 from exception import ServiceException
 from utils import Singleton
-from model import ChatSession, ChatMessage, Chat, ChildChat, ParentInfo, ChatCreationDate
+from model import ChatSession, ChatMessage, Chat, ChildChaInfo, ParentChatInfo, ChatCreationDate
 
 
 class TestChatRepository(unittest.TestCase):
@@ -35,11 +35,11 @@ class TestChatRepository(unittest.TestCase):
         self.mock_configure_resource = None
 
 
-    def test_get_user_chats_success_case(self):
+    def test_get_user_chat_sessions_success_case(self):
         user_id = "TEST_USER_ID"
 
         # Mock response from DynamoDB query
-        mock_table_items_path = self.test_resource_path + "get_user_chats_response.json"
+        mock_table_items_path = self.test_resource_path + "get_user_chat_sessions_response.json"
         mock_items = TestUtils.get_file_content(mock_table_items_path)
 
         self.mock_dynamodb_table.query.return_value = {
@@ -47,7 +47,7 @@ class TestChatRepository(unittest.TestCase):
         }
 
         # Call the method under test
-        chats = self.chat_repository.get_user_chats(user_id)
+        chats = self.chat_repository.get_user_chat_sessions(user_id)
 
         # Assertions
         self.mock_dynamodb_table.query.assert_called_once_with(
@@ -59,7 +59,7 @@ class TestChatRepository(unittest.TestCase):
         self.assertEqual(type(chats[0]), ChatSession)
 
 
-    def test_get_user_chats_throws_client_exception(self):
+    def test_get_user_chat_sessions_throws_client_exception(self):
         user_id = "TEST_USER_ID"
 
         self.mock_dynamodb_table.query.side_effect = ClientError(
@@ -68,7 +68,7 @@ class TestChatRepository(unittest.TestCase):
         
         # Call the method under test
         with self.assertRaises(ServiceException) as e:
-            self.chat_repository.get_user_chats(user_id)
+            self.chat_repository.get_user_chat_sessions(user_id)
 
         # Assertions
         self.mock_dynamodb_table.query.assert_called_once_with(
@@ -240,7 +240,7 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_save_message_success(self):
-        item = ChildChat(
+        item = ChildChaInfo(
             chat_id= 'test_chat_id',
             prompt= 'prompt message',
             response= 'message response',
@@ -257,7 +257,7 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_save_message_throws_client_exception(self):
-        item = ChildChat(
+        item = ChildChaInfo(
             chat_id= 'test_chat_id',
             prompt= 'prompt message',
             response= 'message response',
@@ -312,23 +312,22 @@ class TestChatRepository(unittest.TestCase):
         self.mock_dynamodb_table.update_item.assert_called_once()
 
 
-    def test_get_parent_info_success(self):
+    def test_get_parent_chat_info_success(self):
         # Mock DynamoDB response
-        item = TestUtils.get_file_content(self.test_resource_path + 'get_parent_info_response.json')
+        item = TestUtils.get_file_content(self.test_resource_path + 'get_parent_chat_info_response.json')
         self.mock_dynamodb_table.get_item.return_value = {"Item": item} 
 
         # Call method
-        parent_info = self.chat_repository.get_parent_info(chat_id='chat123', timestamp=12345)
+        parent_chat_info = self.chat_repository.get_parent_chat_info(chat_id='chat123', timestamp=12345)
 
         # Assertions
-        self.assertIsInstance(parent_info, ParentInfo)
-        self.assertEqual(parent_info.chat_id, 'chat123')
-        self.assertEqual(parent_info.model_id, 'model123')
-        self.assertEqual(parent_info.title, 'chat_title')
+        self.assertIsInstance(parent_chat_info, ParentChatInfo)
+        self.assertEqual(parent_chat_info.model_id, 'model123')
+        self.assertEqual(parent_chat_info.title, 'chat_title')
         self.mock_dynamodb_table.get_item.assert_called_once_with(Key={'chat_id': 'chat123', 'timestamp': 12345})
 
 
-    def test_get_parent_info_throws_client_exception(self):
+    def test_get_parent_chat_info_throws_client_exception(self):
         # Mock DynamoDB ClientError
         self.mock_dynamodb_table.get_item.side_effect = ClientError(
             {"Error": {"Message": "Test Error"}, "ResponseMetadata": {"HTTPStatusCode": 400}},
@@ -337,7 +336,7 @@ class TestChatRepository(unittest.TestCase):
 
         # Call the method under test
         with self.assertRaises(ServiceException) as e:
-            self.chat_repository.get_parent_info(chat_id='chat123', timestamp=12345)
+            self.chat_repository.get_parent_chat_info(chat_id='chat123', timestamp=12345)
 
         # Assertion    
         self.assertEqual(e.exception.status_code, 400)

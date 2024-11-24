@@ -5,9 +5,9 @@ from controller import common_controller as common_ctrl
 from repository import ChatRepository
 from exception import ServiceException
 from enums import ServiceStatus
-from model import Chat, ChatMessage, SaveChatResponse, ChatResponse, MessageHistoryResponse, MessageHistoryPagination, ChildChat, Message
+from model import Chat, ChatMessage, SaveChatResponse, ChatResponse, MessageHistoryResponse, MessageHistoryPagination, ChildChaInfo, Message, ParentChatInfo
 from utils import Singleton, Base64ConversionUtils
-from service.bedrock_service import BedrockService
+from service.bedrock.bedrock_service import BedrockService
 
 log = common_ctrl.log
 ENCODING_FORMAT = 'utf-8'
@@ -38,13 +38,14 @@ class ChatService(metaclass=Singleton):
             List[ChatResponse]: A list of ChatResponse objects containing the chat ID, title,
                                 and creation timestamp for each chat.
         """
-        log.info("Retriving chats for user %s", user_id)
+        log.info("Retriving chats for user. user_id: %s", user_id)
 
-        response = self.chat_repository.get_user_chats(user_id)
+        response = self.chat_repository.get_user_chat_sessions(user_id)
         chat_response = []
         for chat in response:
             created_at = chat.timestamp
-            chat_response.append(from_dict(ChatResponse, {'chat_id': chat.chat_id, 'created_at': created_at, 'title': self._get_chat_title(chat.chat_id, chat.timestamp)}))
+            parent_info = self.chat_repository.get_parent_chat_info(chat.chat_id, created_at)
+            chat_response.append(from_dict(ChatResponse, {'chat_id': chat.chat_id, 'created_at': created_at, 'title': parent_info.title}))
 
         return chat_response
     
@@ -73,15 +74,16 @@ class ChatService(metaclass=Singleton):
             limit=size,
             exclusive_start_key=last_evaluated_key
         )
-        last_evaluated_key = chat_messages_response.last_evaluated_key
 
         # Convert each retrieved item to a ChatMessage object if it has both a prompt and response
         chat_messages = [ChatMessage(prompt=item.prompt, response=item.response, timestamp=item.timestamp) for item in chat_messages_response.messages if item.prompt is not None and item.response is not None]
 
         # Encode the last evaluated key for the next client request
-        encoded_last_evaluated_key = None
-        if last_evaluated_key:
-            encoded_last_evaluated_key = Base64ConversionUtils.encode_dict(last_evaluated_key, ENCODING_FORMAT)
+        encoded_last_evaluated_key = (
+            Base64ConversionUtils.encode_dict(chat_messages_response.last_evaluated_key, ENCODING_FORMAT) 
+            if chat_messages_response.last_evaluated_key 
+            else None
+        )
 
         # Return a MessageHistoryResponse with messages and pagination info
         return MessageHistoryResponse(
@@ -115,71 +117,65 @@ class ChatService(metaclass=Singleton):
         return SaveChatResponse(chat_id=chat.chat_id)
 
     
-    def save_chat_message(self, user_id, chat_id: str, prompt: str):
+    def save_chat_message(self, user_id: str, chat_id: str, prompt: str):
         """
         Saves a chat message and streams the response.
 
-        This method returns a generator that yields response chunks as they are received.
-
         Args:
-            chat_id (str): The ID of the chat session to save the message for.
-            prompt (str): The user-provided prompt that is part of the chat message.
+            user_id (str): The ID of the user.
+            chat_id (str): The ID of the chat session.
+            prompt (str): The user-provided prompt.
 
         Yields:
-            str: Response chunks from the chat stream, or an error message if an error occurs.
+            str: Response chunks from the chat stream.
         """
-        # Create initial chat object with empty response
-        child_chat = ChildChat(
+        child_chat_info = ChildChaInfo(
             chat_id=chat_id,
             prompt=prompt,
             response=""
         )
         
         try:
-            chat_timestamp = self.chat_repository.get_chat_timestamp(user_id, chat_id)
-            parent_info = self.chat_repository.get_parent_info(chat_id, chat_timestamp.timestamp)
-            if not parent_info.title:
-                # Generate the title if it's missing
-                log.info("Title not found for parent chat. Generating new title.")
-                title = self.bedrock_service.generate_title(message=prompt)
-                self.chat_repository.update_parent_chat_title(chat_id, chat_timestamp.timestamp, title)
-            else:
-                log.info("Title exists for parent chat. Skipping title generation.")
+            parent_chat_info = self._ensure_chat_title(chat_id, user_id, prompt)
 
-            # Stream and collect response
             response_chunks = []
-            
-            for chunk in self._stream_chat_message(chat_id, prompt, chat_timestamp.timestamp):
-                if chunk.startswith('Error:'):
-                    raise ServiceException(500, ServiceStatus.FAILURE, chunk)
+            for chunk in self._stream_chat_message(chat_id, prompt, parent_chat_info):
                 response_chunks.append(chunk)
                 yield chunk
             
-            child_chat.response = ''.join(response_chunks)
-            self.chat_repository.save_message(item=child_chat)
+            child_chat_info.response = ''.join(response_chunks)
+            self.chat_repository.save_message(chat=child_chat_info)
             
         except Exception:
             log.exception('Failed to save chat message. chat_id: %s', chat_id)
-            raise ServiceException(400, ServiceStatus.FAILURE, 'Could not save chat message')
+            raise ServiceException(400, ServiceStatus.FAILURE, 'Failed to save chat message')
 
 
-    def _stream_chat_message(self, chat_id: str, prompt: str, timestamp: int):
+    def _stream_chat_message(self, chat_id: str, prompt: str, parent_chat_info: ParentChatInfo):
         """
         Streams the chat message response from the model.
 
         Args:
             chat_id (str): The ID of the chat session.
             prompt (str): The user-provided prompt.
+            parent_chat_info: The parent chat info object.
 
         Yields:
             str: Response chunks from the model.
         """
-        model_id = self._get_chat_model_id(chat_id=chat_id, timestamp=timestamp)   
         messages = self._get_chat_context(chat_id)
         try:
-            for response_part in self.bedrock_service.send_prompt_to_model(model_id=model_id, prompt=prompt, messages=messages):
-                if response_part:
-                    yield response_part
+            # Get response iterator from bedrock service
+            response_iterator = self.bedrock_service.send_prompt_to_model(
+                model_id=parent_chat_info.model_id,
+                prompt=prompt,
+                messages=messages
+            )
+            
+            # Store the iterator in a variable and then yield from it
+            if response_iterator:
+                yield from (chunk for chunk in response_iterator if chunk)
+                
         except Exception:
             log.exception('Failed to stream chat message. chat_id: %s', chat_id)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Could not stream chat message')
@@ -204,7 +200,7 @@ class ChatService(metaclass=Singleton):
         )
             
         messages = []
-        for chat_message in chat_message_response.messages:
+        for chat_message in reversed(chat_message_response.messages):
             if chat_message.prompt is not None:
                 messages.append(Message(
                     role='user',
@@ -217,33 +213,28 @@ class ChatService(metaclass=Singleton):
                 ))
         
         return messages
-
-
-    def _get_chat_title(self, chat_id: str, timestamp: int) -> str:
-        """
-        Retrieves the title of a chat session.
-
-        Args:
-            chat_id (str): The ID of the chat session.
-            timestamp (int): The timestamp to fetch the title for.
-
-        Returns:
-            str: The title of the chat session.
-        """
-        parent_info= self.chat_repository.get_parent_info(chat_id, timestamp)
-        return parent_info.title
     
 
-    def _get_chat_model_id(self, chat_id: str, timestamp: int) -> str:
+    def _ensure_chat_title(self, chat_id: str, user_id: str, prompt: str) -> ParentChatInfo:
         """
-        Retrieves the model ID for a given chat session.
+        Ensures that a chat has a title, generating one if missing.
 
         Args:
             chat_id (str): The ID of the chat session.
-            timestamp (int): The timestamp to fetch the model ID for.
+            user_id (str): The ID of the user.
+            prompt (str): The user's prompt to generate title from if needed.
 
         Returns:
-            str: The model ID associated with the chat session.
+            ParentChatInfo: The parent chat info with guaranteed title.
         """
-        parent_info= self.chat_repository.get_parent_info(chat_id, timestamp)
-        return parent_info.model_id
+        chat_timestamp = self.chat_repository.get_chat_timestamp(user_id, chat_id)
+        parent_chat_info = self.chat_repository.get_parent_chat_info(chat_id, chat_timestamp.timestamp)
+        
+        if not parent_chat_info.title:
+            log.info("Title not found for parent chat. Generating new title.")
+            title = self.bedrock_service.generate_title(message=prompt)
+            self.chat_repository.update_parent_chat_title(chat_id, chat_timestamp.timestamp, title)
+            # Refresh parent_chat_info to get the updated title
+            parent_chat_info = self.chat_repository.get_parent_chat_info(chat_id, chat_timestamp.timestamp)
+        
+        return parent_chat_info

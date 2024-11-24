@@ -1,1 +1,1 @@
-from .chat_resource import ChatResource, ChatMessagesResource
+from .chat_resource import ChatListResource, ChatMessagesResource

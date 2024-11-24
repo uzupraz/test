@@ -1,50 +1,25 @@
 import json
 import boto3
+from botocore.exceptions import ClientError
+from dacite import from_dict
+from dataclasses import asdict
 
 from typing import List
 from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
-from model import Message
+from model import Message, GenerateModelRequest
 from configuration import AwsBedrockConfig
 
 log = common_ctrl.log
 
-tool_list = [
-    {
-        "toolSpec": {
-            "name": "generate_title",
-            "description": "Generate a concise title for the given content.",
-            "inputSchema": {
-                "json": {
-                    "type": "object",
-                    "properties": {
-                        "title": {
-                            "type": "string",
-                            "description": "A concise title (maximum 6 words) that captures the main topic."
-                        },
-                        "keywords": {
-                            "type": "array",
-                            "description": "Key terms or phrases that represent the main topics",
-                            "items": {"type": "string"},
-                            "maxItems": 3
-                        },
-                        "content_type": {
-                            "type": "string",
-                            "description": "The type of content being titled",
-                            "enum": ["Question", "Discussion", "Statement", "Request"]
-                        },
-                    },
-                    "required": ["title", "keywords", "content_type"]
-                }
-            }
-        }
-    },
-]
 
 class BedrockService:
 
-    
+
+    content_type = 'application/json'
+
+
     def __init__(self, bedrock_config: AwsBedrockConfig) -> None:
         """
         Initializes the BedrockService with the provided configuration.
@@ -75,27 +50,23 @@ class BedrockService:
         """
         log.info('Sending prompt to model. model_id: %s', model_id)
         try:
-            # Convert Message objects to dictionaries
-            formatted_messages = [
-                {"role": msg.role, "content": msg.content}
-                for msg in messages
-            ]
+            chats= []
+            for message in messages:
+                chats.append(from_dict(Message, {"role": message.role, "content": message.content}))
+                
+            chats.append(from_dict(Message, {"role": "user", "content": prompt}))
             
-            # Add the current prompt
-            formatted_messages.append({"role": "user", "content": prompt})
-            
-            # Create the request body with the formatted messages
-            request_body = {
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 1000,
-                "messages": formatted_messages
-            }
+            request_body = GenerateModelRequest(
+                anthropic_version=self.bedrock_config.version,
+                max_tokens=self.bedrock_config.max_tokens,
+                messages=chats
+            )
 
             response = self.bedrock_client.invoke_model_with_response_stream(
                 modelId=model_id,
-                body=json.dumps(request_body),
-                contentType="application/json",
-                accept="application/json"
+                body=json.dumps(asdict(request_body)).encode('utf-8'),
+                contentType=self.content_type,
+                accept=self.content_type,
             )
 
             for event in response['body']:
@@ -105,9 +76,10 @@ class BedrockService:
                     if content:
                         yield content
 
-        except Exception:
+        except ClientError as e:
             log.exception('Failed to stream response. model_id:', model_id)
-            raise ServiceException(500, ServiceStatus.FAILURE, 'Failed to stream response.')
+            code = e.response['ResponseMetadata']['HTTPStatusCode']
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to stream response.')
 
 
     def generate_title(self, message: str) -> str:
@@ -122,25 +94,28 @@ class BedrockService:
         Raises:
             ServiceException: If there is any failure in generating the title using the Bedrock model.
         """
-        log.info('Generating title for message')
         try:
-            request_body = {
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 1000,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": f"Generate a short, concise title for the following message that captures its essence: "
-                        f"'{message}'. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"
-                    }
-                ]
-            }
+            request_body = GenerateModelRequest(
+                anthropic_version=self.bedrock_config.version,
+                max_tokens=self.bedrock_config.max_tokens,
+                messages=[
+                    Message(
+                        role="user",
+                        content=(
+                            "Generate a short, concise title for the following message that captures its essence: "
+                            f"'{message}'. Only include the essential keywords or phrase, without quotations and "
+                            "adding prefixes like Title"
+                        )
+                    )
+                ],
+            )
 
+            # Send the request to the Bedrock service
             response = self.bedrock_client.invoke_model(
-                modelId='anthropic.claude-3-haiku-20240307-v1:0',
-                body=json.dumps(request_body),
-                contentType="application/json",
-                accept="application/json"
+                modelId=self.bedrock_config.model_id,
+                body=json.dumps(asdict(request_body)).encode('utf-8'),  
+                contentType=self.content_type,
+                accept=self.content_type,
             )
 
             # Read and decode the response body content
@@ -152,6 +127,7 @@ class BedrockService:
             # Return the generated title or a default if the title is missing
             return title if title else "Untitled"
 
-        except Exception:
+        except ClientError as e:
             log.exception('Failed to generate title.')
-            raise ServiceException(400, ServiceStatus.FAILURE, 'Failed to generate title.')
+            code = e.response['ResponseMetadata']['HTTPStatusCode']
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to generate title.')

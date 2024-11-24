@@ -63,7 +63,7 @@ class ChatMessageResponse:
 
 
 @dataclass
-class ChildChat:
+class ChildChaInfo:
     chat_id: str
     prompt: str
     response: str
@@ -86,14 +86,13 @@ class Messages:
 
 
 @dataclass
-class ParentInfo:
-    chat_id: str
+class ParentChatInfo:
     model_id: str
     title: str = ""
 
 
 @dataclass
-class ModelRequest:
+class GenerateModelResponse:
     user_id: str
     chat_id: str
     prompt: str
@@ -102,3 +101,10 @@ class ModelRequest:
 @dataclass
 class ChatCreationDate:
     timestamp: int
+
+
+@dataclass
+class GenerateModelRequest:
+    anthropic_version: str
+    max_tokens: int
+    messages: List[Message]

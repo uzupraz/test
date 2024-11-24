@@ -1,1 +1,1 @@
-from .chatbot import Chat, Message, ParentInfo, Messages, ChatSession, SaveChatResponse, ChatMessage, ChatMessageResponse, MessageHistoryPagination, ChatResponse, MessageHistoryResponse, ChildChat, ModelRequest, ChatCreationDate
+from .chatbot import Chat, Message, ParentChatInfo, Messages, ChatSession, SaveChatResponse, ChatMessage, ChatMessageResponse, MessageHistoryPagination, ChatResponse, MessageHistoryResponse, ChildChaInfo, GenerateModelResponse, ChatCreationDate, GenerateModelRequest

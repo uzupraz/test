@@ -1,109 +1,78 @@
 import json
-
 from dataclasses import dataclass
 from typing import Generator
 from flask import Response, stream_with_context
-import datetime
-
 from enums import ServiceStatus
-from context import RequestContext
+from .server_response import ServerResponse
 
 
 @dataclass
 class ServerStreamResponse:
     """
     A class to handle streaming responses in a standardized way across the application.
-    Similar to ServerResponse but specifically designed for streaming data.
+    It is designed to handle streaming data and to generate responses with appropriate headers
+    for streaming, such as 'Transfer-Encoding' and 'Cache-Control'.
     """
-    code: str
-    message: str
-    stream_generator: Generator
-    content_type: str = 'text/plain'
-    request_id: str = None
-    timestamp: str = datetime.datetime.now().isoformat()
-
+    stream_generator: Generator  
+    content_type: str = 'text/plain' 
+    code: str = None  
 
     def __post_init__(self):
+        """
+        Initializes default headers to control caching and streaming.
+        """
         self.default_headers = {
-            'Cache-Control': 'no-cache',
-            'Transfer-Encoding': 'chunked',
-            'X-Accel-Buffering': 'no',
-            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'no-cache',  # Prevents caching of the response.
+            'Transfer-Encoding': 'chunked',  # Specifies that the response will be streamed in chunks.
+            'X-Accel-Buffering': 'no',  # Disables buffering to ensure immediate delivery of data.
+            'Access-Control-Allow-Origin': '*',  # Allows cross-origin requests (CORS).
         }
-
 
     def create_response(self) -> Response:
         """
-        Creates a Flask Response object with the streaming content and appropriate headers
+        Creates a Flask Response object that streams the content via the provided generator.
+
+        The response includes appropriate headers for streaming and handles exceptions
+        by yielding an error message if something goes wrong during streaming.
+
+        Returns:
+            Response: A Flask Response object containing the streaming data or error message.
         """
         headers = self.default_headers.copy()
         headers['Content-Type'] = self.content_type
-        headers['X-Request-ID'] = self.request_id
 
         def response_generator():
-            # Send initial metadata if needed
-            if self.code != ServiceStatus.SUCCESS.value:
-                yield json.dumps({"error": self.message})
-                return
-            
-            # Stream the actual content
+            """
+            A generator that yields chunks of data from the stream_generator, 
+            or an error response in case of an exception.
+            """
             try:
                 for chunk in self.stream_generator:
-                    yield chunk
-            except Exception as e:
-                yield json.dumps({"error": f"Stream Error: {str(e)}"})
-
-        http_status = 200 if self.code == ServiceStatus.SUCCESS.value else 500
+                    yield chunk  # Yield each chunk from the stream generator.
+            except Exception:
+                error_response = ServerResponse.error(
+                    code=ServiceStatus.FAILURE,
+                    message='Could not generate stream response'
+                )
+                yield json.dumps(error_response.__dict__)  
 
         return Response(
-            stream_with_context(response_generator()),
-            headers=headers,
-            status=http_status,
+            stream_with_context(response_generator()),  
+            headers=headers,  
         )
 
-
     @classmethod
-    def success(cls, stream_generator: Generator, content_type: str = 'text/plain') -> Response:
+    def success(cls, stream_generator: Generator) -> Response:
         """
-        Creates a successful streaming response
+        Creates a successful streaming response using the provided stream generator.
+
+        Args:
+            stream_generator (Generator): The generator that yields data chunks to be streamed.
+
+        Returns:
+            Response: A Flask Response object containing the streamed data.
         """
         response = cls(
-            code=ServiceStatus.SUCCESS.value,
-            message='Successfully initiated stream.',
             stream_generator=stream_generator,
-            content_type=content_type,
-            request_id=RequestContext.get_request_id()
-        )
-        return response.create_response()
-
-
-    @classmethod
-    def error(cls, code: ServiceStatus, message: str = 'Could not perform streaming operation', stream_generator: Generator = None) -> Response:
-        """
-        Creates an error streaming response
-        """
-        if stream_generator is None:
-            stream_generator = (x for x in [])  
-            
-        response = cls(
-            code=code.value,
-            message=message,
-            stream_generator=stream_generator,
-            request_id=RequestContext.get_request_id()
-        )
-        return response.create_response()
-
-
-    @classmethod
-    def response(cls, code: ServiceStatus, message: str, stream_generator: Generator, content_type: str = 'text/plain') -> Response:
-        """
-        Creates a custom streaming response with specified code and message
-        """
-        response = cls(
-            code=code.value,
-            message=message,
-            stream_generator=stream_generator,
-            content_type=content_type,
-            request_id=RequestContext.get_request_id()
         )
         return response.create_response()

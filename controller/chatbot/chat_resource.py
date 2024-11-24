@@ -8,12 +8,12 @@ from controller.common_controller import server_response
 from configuration import AWSConfig, AppConfig, AwsBedrockConfig
 from service import ChatService, BedrockService
 from repository import ChatRepository
-from enums import ServicePermissions, ServiceStatus, APIStatus
-from model import User, ModelRequest
 from exception import ServiceException
+from enums import APIStatus, ServicePermissions, ServiceStatus
+from model import User, GenerateModelResponse
 
 
-api = Namespace("Chatbot API", description="API for the chatbot that lists all the chat per user, get message history, create chat session and interract with the model", path="/interconnecthub/chatbot")
+api = Namespace("Chatbot API", description="API for the chatbot that lists all the chat per user, get message history, create chat session and interact with the model", path="/interconnecthub/chatbot")
 log = api.logger
 
 aws_config = AWSConfig()
@@ -37,43 +37,43 @@ chat_message = api.model('Chat message', {
     'timestamp': fields.Integer(required=True)
 })
 
-chat = api.model('Chat id', {
+chat = api.model('User chat id', {
     'chat_id': fields.String(required=True)
 })
 
-response = api.model('AI model response', {
+response = api.model('Response for prompt', {
     'response': fields.String(required=True)
 })
 
 # Response
-chats_response_dto = api.inherit('Get chats response', server_response, {
+chats_response_dto = api.inherit('The response DTO used when chats per user is requested', server_response, {
     'payload': fields.List(fields.Nested(user_chat))
 })
 
-chat_message_history_response_dto = api.inherit('Get messages for chat response', server_response, {
+chat_message_history_response_dto = api.inherit('The response DTO used when messaegs per chat is requested', server_response, {
     'payload': fields.List(fields.Nested(chat_message))
 })
 
-chat_response_dto = api.inherit('Chat Response', server_response, {
+chat_response_dto = api.inherit('The response DTO used when a new chat is created', server_response, {
     'payload': fields.Nested(chat)
 })
 
-model_response_dto = api.inherit('Model Response', server_response, {
+model_response_dto = api.inherit('The response DTO used when response for prompt is generated', server_response, {
     'payload': fields.Nested(response)
 })
 
 # Request
-chat_request_dto = api.model('Chat Request', {
+chat_request_dto = api.model('Save chat request payload', {
     'model_id': fields.String(required=True, description='Chat Model id to process prompt messages'),
 })
 
-prompt_request_dto = api.model('Prompt Request', {
+prompt_request_dto = api.model('Save message request payload', {
     'prompt': fields.String(required=True)
 })
 
 
 @api.route('/chats')
-class ChatResource(Resource):
+class ChatListResource(Resource):
 
 
     def __init__(self, api=None, *args, **kwargs):
@@ -115,7 +115,7 @@ class ChatResource(Resource):
             model_id=model_id
         )
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
-        return ServerResponse.success(payload=response_payload), 200
+        return ServerResponse.success(payload=response_payload), 201
     
 
 @api.route('/chats/<string:chat_id>/messages')
@@ -145,13 +145,13 @@ class ChatMessagesResource(Resource):
     
 
     @api.doc('Send prompt to model and save prompt and response')
-    @api.expect(prompt_request_dto, skip_none=True)
+    @api.expect(prompt_request_dto, validate=True)
     def post(self, chat_id):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
         user = from_dict(User, g.get('user'))
 
-        request_data = from_dict(ModelRequest, {'user_id': user.sub, 'chat_id': chat_id, 'prompt': api.payload['prompt']})
+        request_data = from_dict(GenerateModelResponse, {'user_id': user.sub, 'chat_id': chat_id, 'prompt': api.payload['prompt']})
 
         response_generator = chat_service.save_chat_message(request_data.user_id, request_data.chat_id, request_data.prompt)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
