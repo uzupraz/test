@@ -48,7 +48,6 @@ class Chat:
 class ChatSession:
     chat_id: str
     timestamp: int 
-    title: str = "" 
 
 
 @dataclass

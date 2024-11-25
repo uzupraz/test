@@ -3,5 +3,15 @@
         "timestamp": 12345,
         "prompt": "Prompt message",
         "response": "Prompt response"
+    },
+    {
+        "timestamp": 67890,
+        "prompt": "Another prompt message",
+        "response": "Another prompt response"
+    },
+    {
+        "timestamp": 123456,
+        "prompt": "Last prompt message",
+        "response": "Last prompt response"
     }
 ]

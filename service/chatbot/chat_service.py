@@ -64,28 +64,23 @@ class ChatService(metaclass=Singleton):
         """
         log.info('Retrieving message history for chat. chat_id: %s', chat_id)
         
-        # Decode the last evaluated key if provided
         if last_evaluated_key:
             last_evaluated_key = Base64ConversionUtils.decode_to_dict(last_evaluated_key, ENCODING_FORMAT)
 
-        # Fetch a page of messages from the repository
         chat_messages_response= self.chat_repository.get_chat_messages(
             chat_id=chat_id,
             limit=size,
             exclusive_start_key=last_evaluated_key
         )
 
-        # Convert each retrieved item to a ChatMessage object if it has both a prompt and response
         chat_messages = [ChatMessage(prompt=item.prompt, response=item.response, timestamp=item.timestamp) for item in chat_messages_response.messages if item.prompt is not None and item.response is not None]
 
-        # Encode the last evaluated key for the next client request
         encoded_last_evaluated_key = (
             Base64ConversionUtils.encode_dict(chat_messages_response.last_evaluated_key, ENCODING_FORMAT) 
             if chat_messages_response.last_evaluated_key 
             else None
         )
 
-        # Return a MessageHistoryResponse with messages and pagination info
         return MessageHistoryResponse(
             messages=chat_messages,
             pagination=MessageHistoryPagination(

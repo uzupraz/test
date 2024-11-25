@@ -36,6 +36,11 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_get_user_chat_sessions_success_case(self):
+        """
+        Test case for successfully retrieving user chat sessions.
+
+        Expected result: The method returns a list of user chat sessions.
+        """
         user_id = "TEST_USER_ID"
 
         # Mock response from DynamoDB query
@@ -60,6 +65,11 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_get_user_chat_sessions_throws_client_exception(self):
+        """
+        Test case for handling failure while retrieving user chats due to a ClientError.
+
+        Expected Result: The method raises a ServiceException.
+        """
         user_id = "TEST_USER_ID"
 
         self.mock_dynamodb_table.query.side_effect = ClientError(
@@ -79,6 +89,11 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_get_chat_messages_success_case(self):
+        """
+        Test case for successfully retrieving chat messages.
+
+        Expected result: The method returns a list of messager for chat.
+        """
         chat_id = "TEST_CHAT_ID"
         limit = 10
         exclusive_start_key = None
@@ -113,6 +128,11 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_get_chat_messages_with_using_last_evaluated_key(self):
+        """
+        Test case for successfully retrieving chat messages with last evaluated key and limit.
+
+        Expected result: The method returns a list of messager for chat and a last evaluated key.
+        """
         chat_id = "TEST_CHAT_ID"
         limit = 10
         exclusive_start_key = {"some_key": "some_value"}  
@@ -149,6 +169,11 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_get_chat_messages_without_using_last_evaluated_key(self):
+        """
+        Test case for successfully retrieving chat messages without last evaluated key.
+
+        Expected result: The method returns a list of messager for chat and a last evaluated key.
+        """
         chat_id = "TEST_CHAT_ID"
         limit = 10
         exclusive_start_key = None
@@ -179,6 +204,11 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_get_chat_messages_throws_client_exception(self):
+        """
+        Test case for handling ClientError while fetching chat message.
+
+        Expected Result: The method raises a ServiceException.
+        """
         chat_id = "TEST_CHAT_ID"
         limit = 10
         exclusive_start_key = None
@@ -202,6 +232,11 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_create_new_chat_success(self):
+        """
+        Test case for successfully inserting an item into the DynamoDB table.
+
+        Expected result: The method should successfully add a new chat item to DynamoDB.
+        """
         item =Chat(
             user_id= 'test_user_id',
             owner_id= 'test_owner_id',
@@ -219,6 +254,11 @@ class TestChatRepository(unittest.TestCase):
         
 
     def test_create_new_chat_throws_client_exception(self):
+        """
+        Test case for handling ClientError while creating an item into the DynamoDB table.
+
+        Expected result: The method should raise a ServiceException if DynamoDB put_item fails.
+        """
         item = Chat(
             user_id= 'test_user_id',
             owner_id= 'test_owner_id',
@@ -240,6 +280,11 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_save_message_success(self):
+        """
+        Test case for successfully inserting an item into the DynamoDB table.
+
+        Expected result: The method should successfully add a new chat item to DynamoDB.
+        """
         item = ChildChaInfo(
             chat_id= 'test_chat_id',
             prompt= 'prompt message',
@@ -257,6 +302,11 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_save_message_throws_client_exception(self):
+        """
+        Test case for handling ClientError while creating an item into the DynamoDB table.
+
+        Expected result: The method should raise a ServiceException if DynamoDB put_item fails.
+        """
         item = ChildChaInfo(
             chat_id= 'test_chat_id',
             prompt= 'prompt message',
@@ -278,6 +328,9 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_update_parent_chat_title_success(self):
+        """
+        Test case for successfully updating item in DynamoDB.
+        """
         chat_id = 'chat123'
         timestamp = 12345
         title = 'test title'
@@ -298,6 +351,9 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_update_parent_chat_title_throws_client_exception(self):
+        """
+        Test case for handling DynamoDB ClientError when updating item.
+        """
         # Mock DynamoDB ClientError
         self.mock_dynamodb_table.update_item.side_effect = ClientError(
             {"Error": {"Message": "Test Error"}, "ResponseMetadata": {"HTTPStatusCode": 400}},
@@ -313,6 +369,9 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_get_parent_chat_info_success(self):
+        """
+        Test case for successfully retrieving parent chat information from DynamoDB.
+        """
         # Mock DynamoDB response
         item = TestUtils.get_file_content(self.test_resource_path + 'get_parent_chat_info_response.json')
         self.mock_dynamodb_table.get_item.return_value = {"Item": item} 
@@ -328,6 +387,9 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_get_parent_chat_info_throws_client_exception(self):
+        """
+        Test case for handling DynamoDB ClientError when retrieving parent chat information.
+        """
         # Mock DynamoDB ClientError
         self.mock_dynamodb_table.get_item.side_effect = ClientError(
             {"Error": {"Message": "Test Error"}, "ResponseMetadata": {"HTTPStatusCode": 400}},
@@ -344,6 +406,9 @@ class TestChatRepository(unittest.TestCase):
 
 
     def test_get_timestamp_success_case(self):
+        """
+        Test case for successfully retrieving the timestamp of a chat from DynamoDB.
+        """
         user_id = 'user123'
         chat_id = 'chat123'
 
@@ -368,7 +433,9 @@ class TestChatRepository(unittest.TestCase):
 
     
     def test_get_timestamp_throws_client_exception(self):
-
+        """
+         Test case for handling DynamoDB ClientError when retrieving the chat timestamp.
+        """
         self.mock_dynamodb_table.query.side_effect = ClientError(
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'query'
         )

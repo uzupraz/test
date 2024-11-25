@@ -62,7 +62,7 @@ class ChatRepository(metaclass=Singleton):
         except ClientError as e:
             log.exception('Failed to retrieve chats. user_id: %s', user_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
-            raise ServiceException(code, ServiceStatus.FAILURE, 'Could not retrieve chats')
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve chats')
 
 
     def get_chat_messages(self, chat_id: str, limit: int, exclusive_start_key: dict = None) -> ChatMessageResponse:
@@ -107,7 +107,7 @@ class ChatRepository(metaclass=Singleton):
         except ClientError as e:
             log.exception('Failed to retrieve messages. chat_id: %s', chat_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
-        raise ServiceException(code, ServiceStatus.FAILURE, 'Could not retrieve messages')
+        raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve messages')
     
 
     def create_new_chat(self, item: Chat) -> None:
