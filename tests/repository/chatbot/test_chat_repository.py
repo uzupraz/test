@@ -8,7 +8,7 @@ from repository import ChatRepository
 from tests.test_utils import TestUtils
 from exception import ServiceException
 from utils import Singleton
-from model import ChatSession, ChatMessage, Chat, ChildChaInfo, ParentChatInfo, ChatCreationDate
+from model import ChatSession, ChatMessage, Chat, ChatInteraction, ChatContext, ChatCreationDate
 
 
 class TestChatRepository(unittest.TestCase):
@@ -279,13 +279,13 @@ class TestChatRepository(unittest.TestCase):
         self.assertEqual(e.exception.status_code, 400)
 
 
-    def test_save_message_success(self):
+    def test_save_chat_interaction_success(self):
         """
         Test case for successfully inserting an item into the DynamoDB table.
 
         Expected result: The method should successfully add a new chat item to DynamoDB.
         """
-        item = ChildChaInfo(
+        chat_interaction = ChatInteraction(
             chat_id= 'test_chat_id',
             prompt= 'prompt message',
             response= 'message response',
@@ -295,19 +295,19 @@ class TestChatRepository(unittest.TestCase):
         self.mock_dynamodb_table.put_item.return_value = {}
 
          # Call the method under test
-        self.chat_repository.save_message(item)
+        self.chat_repository.save_chat_interaction(chat_interaction)
 
         # Assertions
-        self.mock_dynamodb_table.put_item.assert_called_once_with(Item=asdict(item))
+        self.mock_dynamodb_table.put_item.assert_called_once_with(Item=asdict(chat_interaction))
 
 
-    def test_save_message_throws_client_exception(self):
+    def test_save_chat_interaction_throws_client_exception(self):
         """
         Test case for handling ClientError while creating an item into the DynamoDB table.
 
         Expected result: The method should raise a ServiceException if DynamoDB put_item fails.
         """
-        item = ChildChaInfo(
+        item = ChatInteraction(
             chat_id= 'test_chat_id',
             prompt= 'prompt message',
             response= 'message response',
@@ -320,14 +320,46 @@ class TestChatRepository(unittest.TestCase):
         
         # Call the method under test
         with self.assertRaises(ServiceException) as e:
-            self.chat_repository.save_message(item)
+            self.chat_repository.save_chat_interaction(item)
 
         # Assertions
         self.mock_dynamodb_table.put_item.assert_called_once_with(Item=asdict(item))
         self.assertEqual(e.exception.status_code, 400)
 
 
-    def test_update_parent_chat_title_success(self):
+    def test_update_title_in_chat_context_success(self):
+        """
+        Test case for successfully updating item in DynamoDB.
+        """
+        chat_id = 'chat123'
+        timestamp = 12345
+        title = 'test title'
+        model_id = 'test_model_id'
+        updated_item = {
+            'model_id': 'test_model_id',
+            'title': 'test title',
+        }
+        
+        # Mock successful update
+        self.mock_dynamodb_table.update_item.return_value = {"Attributes": updated_item}
+
+        # Call the method under test
+        result = self.chat_repository.update_title_in_chat_context(chat_id=chat_id, timestamp=timestamp, title=title, return_updated_item=True)
+
+        # Assertions
+        self.mock_dynamodb_table.update_item.assert_called_once_with(
+            Key={'chat_id': chat_id, 'timestamp': timestamp},
+            UpdateExpression="SET title = :title",
+            ExpressionAttributeValues={":title": title},
+            ReturnValues="ALL_NEW"                           
+        )
+        self.assertIsInstance(result, ChatContext)
+        self.mock_dynamodb_table.update_item.assert_called_once()
+        self.assertEqual(result.model_id, model_id)
+        self.assertEqual(result.title, title)
+
+
+    def test_update_title_in_chat_context_return_value_false(self):
         """
         Test case for successfully updating item in DynamoDB.
         """
@@ -338,19 +370,19 @@ class TestChatRepository(unittest.TestCase):
         self.mock_dynamodb_table.update_item.return_value = {}
 
         # Call the method under test
-        self.chat_repository.update_parent_chat_title(chat_id=chat_id, timestamp=timestamp, title=title)
+        self.chat_repository.update_title_in_chat_context(chat_id=chat_id, timestamp=timestamp, title=title, return_updated_item=False)
 
         # Assertions
         self.mock_dynamodb_table.update_item.assert_called_once_with(
             Key={'chat_id': chat_id, 'timestamp': timestamp},
-            UpdateExpression="SET #title = if_not_exists(#title, :title)",
-            ExpressionAttributeNames={"#title": "title"},
-            ExpressionAttributeValues={":title": title}
+            UpdateExpression="SET title = :title",
+            ExpressionAttributeValues={":title": title},
+            ReturnValues="NONE"
         )
         self.mock_dynamodb_table.update_item.assert_called_once()
 
 
-    def test_update_parent_chat_title_throws_client_exception(self):
+    def test_update_title_in_chat_context_throws_client_exception(self):
         """
         Test case for handling DynamoDB ClientError when updating item.
         """
@@ -362,33 +394,33 @@ class TestChatRepository(unittest.TestCase):
 
         # Test exception handling
         with self.assertRaises(ServiceException) as e:
-            self.chat_repository.update_parent_chat_title(chat_id='chat123', timestamp=12345, title='chat_title')
+            self.chat_repository.update_title_in_chat_context(chat_id='chat123', timestamp=12345, title='chat_title', return_updated_item=False)
 
         self.assertEqual(e.exception.status_code, 400)
         self.mock_dynamodb_table.update_item.assert_called_once()
 
 
-    def test_get_parent_chat_info_success(self):
+    def test_get_chat_context_success(self):
         """
-        Test case for successfully retrieving parent chat information from DynamoDB.
+        Test case for successfully retrieving chat context from DynamoDB.
         """
         # Mock DynamoDB response
-        item = TestUtils.get_file_content(self.test_resource_path + 'get_parent_chat_info_response.json')
+        item = TestUtils.get_file_content(self.test_resource_path + 'get_chat_context_response.json')
         self.mock_dynamodb_table.get_item.return_value = {"Item": item} 
 
         # Call method
-        parent_chat_info = self.chat_repository.get_parent_chat_info(chat_id='chat123', timestamp=12345)
+        chat_context = self.chat_repository.get_chat_context(chat_id='chat123', timestamp=12345)
 
         # Assertions
-        self.assertIsInstance(parent_chat_info, ParentChatInfo)
-        self.assertEqual(parent_chat_info.model_id, 'model123')
-        self.assertEqual(parent_chat_info.title, 'chat_title')
+        self.assertIsInstance(chat_context, ChatContext)
+        self.assertEqual(chat_context.model_id, 'model123')
+        self.assertEqual(chat_context.title, 'chat_title')
         self.mock_dynamodb_table.get_item.assert_called_once_with(Key={'chat_id': 'chat123', 'timestamp': 12345})
 
 
-    def test_get_parent_chat_info_throws_client_exception(self):
+    def test_get_chat_context_throws_client_exception(self):
         """
-        Test case for handling DynamoDB ClientError when retrieving parent chat information.
+        Test case for handling DynamoDB ClientError when retrieving chat context.
         """
         # Mock DynamoDB ClientError
         self.mock_dynamodb_table.get_item.side_effect = ClientError(
@@ -398,7 +430,7 @@ class TestChatRepository(unittest.TestCase):
 
         # Call the method under test
         with self.assertRaises(ServiceException) as e:
-            self.chat_repository.get_parent_chat_info(chat_id='chat123', timestamp=12345)
+            self.chat_repository.get_chat_context(chat_id='chat123', timestamp=12345)
 
         # Assertion    
         self.assertEqual(e.exception.status_code, 400)

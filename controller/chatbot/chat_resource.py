@@ -10,7 +10,7 @@ from service import ChatService, BedrockService
 from repository import ChatRepository
 from exception import ServiceException
 from enums import APIStatus, ServicePermissions, ServiceStatus
-from model import User, GenerateModelResponse
+from model import User, UserPromptRequestDTO
 
 
 api = Namespace("Chatbot API", description="API for the chatbot that lists all the chat per user, get message history, create chat session and interact with the model", path="/interconnecthub/chatbot")
@@ -151,8 +151,8 @@ class ChatMessagesResource(Resource):
 
         user = from_dict(User, g.get('user'))
 
-        request_data = from_dict(GenerateModelResponse, {'user_id': user.sub, 'chat_id': chat_id, 'prompt': api.payload['prompt']})
+        request_data = from_dict(UserPromptRequestDTO, {'user_id': user.sub, 'chat_id': chat_id, 'prompt': api.payload['prompt']})
 
-        response_generator = chat_service.save_chat_message(request_data.user_id, request_data.chat_id, request_data.prompt)
+        response_generator = chat_service.save_chat_interaction(request_data.user_id, request_data.chat_id, request_data.prompt)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerStreamResponse.success(response_generator)

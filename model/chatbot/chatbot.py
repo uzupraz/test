@@ -15,7 +15,7 @@ class ChatMessage:
 @dataclass
 class MessageHistoryPagination:
     size: int
-    last_evaluated_key: str | None
+    last_evaluated_key: Optional[str] | None
 
 
 @dataclass
@@ -62,7 +62,7 @@ class ChatMessageResponse:
 
 
 @dataclass
-class ChildChaInfo:
+class ChatInteraction:
     chat_id: str
     prompt: str
     response: str
@@ -74,24 +74,13 @@ class ChildChaInfo:
 
 
 @dataclass
-class Message:
-    role: str
-    content: str
-
-
-@dataclass
-class Messages:
-    messages: List[Message]
-
-
-@dataclass
-class ParentChatInfo:
+class ChatContext:
     model_id: str
     title: str = ""
 
 
 @dataclass
-class GenerateModelResponse:
+class UserPromptRequestDTO:
     user_id: str
     chat_id: str
     prompt: str
@@ -103,7 +92,13 @@ class ChatCreationDate:
 
 
 @dataclass
-class GenerateModelRequest:
+class InteractionRecord:
+    role: str
+    content: str
+
+
+@dataclass
+class ModelInteractionRequest:
     anthropic_version: str
     max_tokens: int
-    messages: List[Message]
+    messages: List[InteractionRecord]

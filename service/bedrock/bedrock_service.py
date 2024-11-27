@@ -8,7 +8,7 @@ from typing import List
 from controller import common_controller as common_ctrl
 from exception import ServiceException
 from enums import ServiceStatus
-from model import Message, GenerateModelRequest
+from model import InteractionRecord, ModelInteractionRequest
 from configuration import AwsBedrockConfig
 
 log = common_ctrl.log
@@ -30,17 +30,17 @@ class BedrockService:
         self.bedrock_config = bedrock_config
         
 
-    def send_prompt_to_model(self, model_id: str, prompt: str, messages: List[Message]):
+    def send_prompt_to_model(self, model_id: str, prompt: str, interaction_records: List[InteractionRecord]):
         """
         Sends a prompt to the specified model and streams the response back.
 
-        This method formats the provided messages and prompt into a request body, sends it to the Bedrock model,
+        This method formats the provided interaction_record and current prompt into a request body, sends it to the Bedrock model,
         and streams the response in chunks, yielding content as it becomes available.
 
         Args:
             model_id (str): The ID of the model to send the prompt to.
             prompt (str): The prompt that will be sent to the model.
-            messages (List[Message]): A list of Message objects containing previous conversation history.
+            interaction_records (List[InteractionReord]): A list of InteractionReord objects containing previous conversation history.
 
         Yields:
             str: A chunk of content from the model's response.
@@ -51,13 +51,13 @@ class BedrockService:
         log.info('Sending prompt to model. model_id: %s', model_id)
         try:
             chats= []
-            for message in messages:
-                chats.append(from_dict(Message, {"role": message.role, "content": message.content}))
+            for message in interaction_records:
+                chats.append(from_dict(InteractionRecord, {"role": message.role, "content": message.content}))
                 
-            chats.append(from_dict(Message, {"role": "user", "content": prompt}))
+            chats.append(from_dict(InteractionRecord, {"role": "user", "content": prompt}))
             
-            request_body = GenerateModelRequest(
-                anthropic_version=self.bedrock_config.version,
+            request_body = ModelInteractionRequest(
+                anthropic_version=self.bedrock_config.anthropic_version,
                 max_tokens=self.bedrock_config.max_tokens,
                 messages=chats
             )
@@ -87,30 +87,28 @@ class BedrockService:
         Generates a concise title for the provided message.
         This method sends a prompt to the Bedrock service asking it to generate a short, concise title
         based on the content of the provided message.
+        
         Args:
             message (str): The message content for which the title should be generated.
+            
         Returns:
             str: The generated title for the message, or "Untitled" if no title could be generated.
+            
         Raises:
             ServiceException: If there is any failure in generating the title using the Bedrock model.
         """
         try:
-            request_body = GenerateModelRequest(
-                anthropic_version=self.bedrock_config.version,
+            PROMPT = "Generate a short, concise title for the following message that captures its essence: '{}'. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"
+
+            request_body = ModelInteractionRequest(
+                anthropic_version=self.bedrock_config.anthropic_version,
                 max_tokens=self.bedrock_config.max_tokens,
-                messages=[
-                    Message(
-                        role="user",
-                        content=(
-                            "Generate a short, concise title for the following message that captures its essence: "
-                            f"'{message}'. Only include the essential keywords or phrase, without quotations and "
-                            "adding prefixes like Title"
-                        )
-                    )
-                ],
+                messages=[InteractionRecord(
+                    role="user",
+                    content=PROMPT.format(message)  
+                )],
             )
 
-            # Send the request to the Bedrock service
             response = self.bedrock_client.invoke_model(
                 modelId=self.bedrock_config.model_id,
                 body=json.dumps(asdict(request_body)).encode('utf-8'),  
@@ -118,16 +116,14 @@ class BedrockService:
                 accept=self.content_type,
             )
 
-            # Read and decode the response body content
             response_body = json.loads(response['body'].read().decode('utf-8'))
 
-            # Extract the title from the content array
             title = response_body.get("content", [{}])[0].get("text", "Untitled")
 
-            # Return the generated title or a default if the title is missing
             return title if title else "Untitled"
 
         except ClientError as e:
             log.exception('Failed to generate title.')
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to generate title.')
+

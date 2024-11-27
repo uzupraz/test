@@ -4,9 +4,9 @@ from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 from dataclasses import asdict
 from dacite import from_dict
-from typing import List
+from typing import List, Optional
 
-from model import Chat, ChatMessage, ChatSession, ParentChatInfo, ChatMessageResponse, ChildChaInfo, ChatCreationDate
+from model import Chat, ChatMessage, ChatSession, ChatContext, ChatMessageResponse, ChatInteraction, ChatCreationDate
 from configuration import AWSConfig, AppConfig
 from controller import common_controller as common_ctrl
 from exception import ServiceException
@@ -112,64 +112,73 @@ class ChatRepository(metaclass=Singleton):
 
     def create_new_chat(self, item: Chat) -> None:
         """
-        Creates a new chat session in the DynamoDB table.
+        Creates a new chat in the DynamoDB table.
 
         Args:
             item (Chat): The chat item to be created.
 
         Raises:
-            ServiceException: If there's an error while creating the chat session.
+            ServiceException: If there's an error while creating the chat.
         """
         log.info('Creating new chat. user_id: %s, chat_id: %s, owner_id: %s', item.user_id, item.chat_id, item.owner_id)
         try:
             self.table.put_item(Item=asdict(item))
-            log.info('Successfully created chat session. user_id: %s, chat_id: %s, owner_id: %s', item.user_id, item.chat_id, item.owner_id)
+            log.info('Successfully created chat. user_id: %s, chat_id: %s, owner_id: %s', item.user_id, item.chat_id, item.owner_id)
         except ClientError as e:
-            log.exception('Failed to create chat session. user_id: %s, chat_id: %s, owner_id: %s', item.user_id, item.chat_id, item.owner_id)
+            log.exception('Failed to create chat. user_id: %s, chat_id: %s, owner_id: %s', item.user_id, item.chat_id, item.owner_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
-            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to create chat session')
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to create chat.')
         
 
-    def save_message(self, chat: ChildChaInfo) -> None:
+    def save_chat_interaction(self, chat_interaction: ChatInteraction) -> None:
         """
-        Saves a chat message in the DynamoDB table.
+        Saves a chat interraction in the DynamoDB table.
 
         Args:
-            chat (ChildChaInfo): The chat message to be saved.
+            chat_interaction (ChatInteraction): The chat interaction to be saved.
 
         Raises:
-            ServiceException: If there's an error while saving the chat message.
+            ServiceException: If there's an error while saving the chat interaction.
         """
-        log.info('Saving chat message. chat_id: %s, timestamp: %s', chat.chat_id, chat.timestamp)
+        log.info('Saving chat interaction. chat_id: %s, timestamp: %s', chat_interaction.chat_id, chat_interaction.timestamp)
         try: 
-            self.table.put_item(Item=asdict(chat))
-            log.info('Successfully saved chat message. chat_id: %s, timestamp: %s', chat.chat_id, chat.timestamp)
+            self.table.put_item(Item=asdict(chat_interaction))
+            log.info('Successfully saved chat interaction. chat_id: %s, timestamp: %s', chat_interaction.chat_id, chat_interaction.timestamp)
         except ClientError as e:
-            log.exception('Failed to save chat message. chat_id: %s, timestamp: %s', chat.chat_id, chat.timestamp)
+            log.exception('Failed to save chat interaction. chat_id: %s, timestamp: %s', chat_interaction.chat_id, chat_interaction.timestamp)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
-            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to save chat message')
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to save chat interaction.')
         
 
-    def update_parent_chat_title(self, chat_id: str, timestamp: int, title: str) -> None:
+    def update_title_in_chat_context(self, chat_id: str, timestamp: int, title: str, return_updated_item: bool = False) -> Optional[ChatContext]:
         """
-        Updates the title of a parent chat session with the title calculated from 1st user message in the chat.
+        Updates the title of the chat context.
 
         Args:
-            chat_id (str): The ID of the parent chat session to update.
-            timestamp (int): The timestamp of the parent chat session.
-            title (str): The new title for the parent chat session.
+            chat_id (str): The ID of the chat context to update.
+            timestamp (int): The timestamp of the chat context.
+            title (str): The new title for the chat context.
+            return_updated_item (bool): Whether to return the updated item.
+
+        Returns:
+            ChatContext: The updated ChatContext object if requested; otherwise, None.
 
         Raises:
             ServiceException: If there's an error while updating the title.
         """
-        log.info('Updating parent chat title. chat_id: %s, timestamp: %s', chat_id, timestamp)
+        log.info('Updating chat context with title. chat_id: %s, timestamp: %s', chat_id, timestamp)
         try:
-            self.table.update_item(
+            response = self.table.update_item(
                 Key={"chat_id": chat_id, "timestamp": timestamp},
-                UpdateExpression="SET #title = if_not_exists(#title, :title)",
-                ExpressionAttributeNames={"#title": "title"},
-                ExpressionAttributeValues={":title": title}
+                UpdateExpression="SET title = :title",
+                ExpressionAttributeValues={":title": title},
+                ReturnValues="ALL_NEW" if return_updated_item else "NONE"  
             )
+
+            if return_updated_item:
+                updated_item = response.get("Attributes", {})
+                return ChatContext(**updated_item)  
+
             log.info("Successfully updated chat with title. chat_id: %s, timestamp: %s", chat_id, timestamp)
         except ClientError as e:
             log.exception('Failed to update title. chat_id: %s, timestamp: %s', chat_id, timestamp)
@@ -177,21 +186,21 @@ class ChatRepository(metaclass=Singleton):
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to update title')
 
 
-    def get_parent_chat_info(self, chat_id: str, timestamp: int) -> ParentChatInfo:
+    def get_chat_context(self, chat_id: str, timestamp: int) -> ChatContext:
         """
-        Retrieves parent chat information for a specific chat session.
+        Retrieves chat context for a specific chat.
 
         Args:
-            chat_id (str): The ID of the chat session.
-            timestamp (int): The timestamp of the parent chat.
+            chat_id (str): The ID of the chat context.
+            timestamp (int): The timestamp of the chat context.
 
         Returns:
-            ParentChatInfo: The parent chat information.
+            ChatContext: The context of the chat e.g, model_id, title.
 
         Raises:
-            ServiceException: If there's an error while retrieving the parent info.
+            ServiceException: If there's an error while retrieving the chat context.
         """
-        log.info('Retriving parent info for chat. chat_id: %s, timestamp: %s', chat_id, timestamp)
+        log.info('Retriving chat context for chat. chat_id: %s, timestamp: %s', chat_id, timestamp)
         try:
             response = self.table.get_item(
                 Key={
@@ -201,16 +210,16 @@ class ChatRepository(metaclass=Singleton):
             )
             item = response.get('Item', {})
             if not item:
-                log.error('Parent info does not exist. chat_id: %s, timestamp: %s', chat_id, timestamp)
-                raise ServiceException(400, ServiceStatus.FAILURE, 'Chat does not exists')
+                log.error('Chat context does not exist. chat_id: %s, timestamp: %s', chat_id, timestamp)
+                raise ServiceException(400, ServiceStatus.FAILURE, 'Chat context does not exists')
             
             log.info('Successfully retrieved chat info. chat_id: %s', chat_id)
-            return from_dict(ParentChatInfo, item)
+            return from_dict(ChatContext, item)
 
         except ClientError as e:
-            log.exception('Failed to retrieve parent chat info for chat. chat_id: %s, timestamp: %s ', chat_id, timestamp)
+            log.exception('Failed to retrieve chat context. chat_id: %s, timestamp: %s ', chat_id, timestamp)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
-            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve parent chat info for chat')
+            raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to retrieve chat context')
         
 
     def get_chat_timestamp(self, user_id: str, chat_id: str) -> ChatCreationDate:

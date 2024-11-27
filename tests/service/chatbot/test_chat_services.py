@@ -5,7 +5,7 @@ from dacite import from_dict
 
 from tests.test_utils import TestUtils
 from exception import ServiceException
-from model import Chat, ChatMessage, SaveChatResponse, ChatResponse, MessageHistoryResponse, ChildChaInfo, ParentChatInfo, ChatSession
+from model import Chat, ChatMessage, SaveChatResponse, ChatResponse, MessageHistoryResponse, ChatInteraction, ChatContext, ChatSession
 from service import ChatService
 from enums import ServiceStatus
 
@@ -48,12 +48,12 @@ class TestChatService(unittest.TestCase):
 
         self.chat_service.chat_repository.get_user_chat_sessions = MagicMock(return_value=mock_chats)
 
-        mock_parent_info = from_dict(ParentChatInfo, {
+        mock_chat_context = from_dict(ChatContext, {
             'model_id': 'test_model',
             'title': 'ChatTitle'
         })
 
-        self.chat_service.chat_repository.get_parent_chat_info = MagicMock(return_value=mock_parent_info)
+        self.chat_service.chat_repository.get_chat_context = MagicMock(return_value=mock_chat_context)
 
         result = self.chat_service.get_chats(self.TEST_USER_ID)
         expected_result = [
@@ -278,9 +278,9 @@ class TestChatService(unittest.TestCase):
             self.chat_service.chat_repository.create_new_chat.assert_called_once_with(item=expected_chat)
 
 
-    def test_save_chat_message_success_case(self):
+    def test_save_chat_interaction_success_case(self):
         """
-        Test case for successfully saving a chat message and streaming the response.
+        Test case for successfully saving a chat interaction and streaming the response.
         """
         # Test data
         test_prompt = "Hello, how are you?"
@@ -292,8 +292,8 @@ class TestChatService(unittest.TestCase):
         mock_timestamp_response = MagicMock()
         mock_timestamp_response.timestamp = test_timestamp
         
-        # Mock parent chat info
-        mock_parent_info = from_dict(ParentChatInfo, {
+        # Mock cjat context
+        mock_chat_context = from_dict(ChatContext, {
             'model_id': self.TEST_MODEL_ID,
             'title': 'Test Chat'
         })
@@ -302,10 +302,10 @@ class TestChatService(unittest.TestCase):
         self.chat_service.chat_repository.get_chat_timestamp = MagicMock(
             return_value=mock_timestamp_response
         )
-        self.chat_service.chat_repository.get_parent_chat_info = MagicMock(
-            return_value=mock_parent_info
+        self.chat_service.chat_repository.get_chat_context = MagicMock(
+            return_value=mock_chat_context
         )
-        self.chat_service.chat_repository.save_message = MagicMock()
+        self.chat_service.chat_repository.save_chat_interaction = MagicMock()
 
         # Mock _get_chat_context
         self.chat_service._get_chat_context = MagicMock(return_value=[])
@@ -317,7 +317,7 @@ class TestChatService(unittest.TestCase):
 
         # Call the method and collect streamed responses
         response_chunks = []
-        for chunk in self.chat_service.save_chat_message(
+        for chunk in self.chat_service.save_chat_interaction(
             user_id=self.TEST_USER_ID,
             chat_id=self.TEST_CHAT_ID,
             prompt=test_prompt
@@ -332,25 +332,25 @@ class TestChatService(unittest.TestCase):
             self.TEST_USER_ID, 
             self.TEST_CHAT_ID
         )
-        self.chat_service.chat_repository.get_parent_chat_info.assert_called_once_with(
+        self.chat_service.chat_repository.get_chat_context.assert_called_once_with(
             self.TEST_CHAT_ID, 
             test_timestamp
         )
 
         # Verify message was saved with complete response
-        expected_chat_info = ChildChaInfo(
+        expected_chat_info = ChatInteraction(
             chat_id=self.TEST_CHAT_ID,
             prompt=test_prompt,
             response=test_full_response
         )
-        self.chat_service.chat_repository.save_message.assert_called_once_with(
+        self.chat_service.chat_repository.save_chat_interaction.assert_called_once_with(
             chat=expected_chat_info
         )
 
 
-    def test_save_chat_message_failure(self):
+    def test_save_chat_interaction_failure(self):
         """
-        Test case for handling failure when saving a chat message.
+        Test case for handling failure when saving a chat interaction.
         Expected Result: ServiceException is raised.
         """
         test_prompt = "Hello, how are you?"
@@ -359,8 +359,8 @@ class TestChatService(unittest.TestCase):
         mock_timestamp_response = MagicMock()
         mock_timestamp_response.timestamp = self.TEST_TIMESTAMP
 
-        # Mock parent chat info
-        mock_parent_info = from_dict(ParentChatInfo, {
+        # Mock chat context
+        mock_chat_context = from_dict(ChatContext, {
             'model_id': self.TEST_MODEL_ID,
             'title': 'Test Chat'
         })
@@ -369,8 +369,8 @@ class TestChatService(unittest.TestCase):
         self.chat_service.chat_repository.get_chat_timestamp = MagicMock(
             return_value=mock_timestamp_response
         )
-        self.chat_service.chat_repository.get_parent_chat_info = MagicMock(
-            return_value=mock_parent_info
+        self.chat_service.chat_repository.get_chat_context = MagicMock(
+            return_value=mock_chat_context
         )
 
         # Mock bedrock service to raise an exception
@@ -383,12 +383,12 @@ class TestChatService(unittest.TestCase):
 
         # Verify the exception is raised
         with self.assertRaises(ServiceException) as context:
-            list(self.chat_service.save_chat_message(
+            list(self.chat_service.save_chat_interaction(
                 user_id=self.TEST_USER_ID,
                 chat_id=self.TEST_CHAT_ID,
                 prompt=test_prompt
             ))
 
-        self.assertEqual(context.exception.message, 'Failed to save chat message')
+        self.assertEqual(context.exception.message, 'Failed to save chat interaction.')
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)

@@ -79,5 +79,5 @@ class AwsBedrockConfig(metaclass=Singleton):
     Configuration related to the Aws Bedrock are loaded here.
     """
     model_id:str = os.getenv('BEDROCK_MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')
-    version:str = os.getenv('BEDROCK_VERSION', 'bedrock-2023-05-31')
+    anthropic_version:str = os.getenv('BEDROCK_ANTHROPIC_VERSION', 'bedrock-2023-05-31')
     max_tokens:int = int(os.getenv('BEDROCK_MAX_TOKENS', 1000))
