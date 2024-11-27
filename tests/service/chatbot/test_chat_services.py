@@ -277,7 +277,7 @@ class TestChatService(unittest.TestCase):
 
             self.chat_service.chat_repository.create_new_chat.assert_called_once_with(item=expected_chat)
 
-
+    
     def test_save_chat_interaction_success_case(self):
         """
         Test case for successfully saving a chat interaction and streaming the response.
@@ -307,8 +307,8 @@ class TestChatService(unittest.TestCase):
         )
         self.chat_service.chat_repository.save_chat_interaction = MagicMock()
 
-        # Mock _get_chat_context
-        self.chat_service._get_chat_context = MagicMock(return_value=[])
+        # Mock _get_chat_interaction_records
+        self.chat_service._get_chat_interaction_records = MagicMock(return_value=[])
 
         # Mock bedrock service response
         self.chat_service.bedrock_service.send_prompt_to_model = MagicMock(
@@ -344,7 +344,7 @@ class TestChatService(unittest.TestCase):
             response=test_full_response
         )
         self.chat_service.chat_repository.save_chat_interaction.assert_called_once_with(
-            chat=expected_chat_info
+            chat_interaction=expected_chat_info
         )
 
 
@@ -378,8 +378,8 @@ class TestChatService(unittest.TestCase):
             side_effect=Exception("Failed to stream response")
         )
 
-        # Mock _get_chat_context
-        self.chat_service._get_chat_context = MagicMock(return_value=[])
+        # Mock _get_chat_interaction_records
+        self.chat_service._get_chat_interaction_records = MagicMock(return_value=[])
 
         # Verify the exception is raised
         with self.assertRaises(ServiceException) as context:
