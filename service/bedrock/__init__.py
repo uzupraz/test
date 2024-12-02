@@ -1,0 +1,1 @@
+from .bedrock_service import BedrockService

@@ -7,3 +7,4 @@ from .csa.csa_module_versions_repository import CsaModuleVersionsRepository
 from .custom_script_repository import CustomScriptRepository
 from .data_studio.mapping_repository import DataStudioMappingRepository
 from .data_formats_repository import DataFormatsRepository
+from .chatbot.chat_repository import ChatRepository

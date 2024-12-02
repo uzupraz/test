@@ -20,6 +20,8 @@ class AppConfig(metaclass=Singleton):
     csa_module_versions_table_name: str = os.getenv('CSA_MODULE_VERSIONS_TABLENAME')
     csa_machines_table_name: str = os.getenv('CSA_MACHINES_TABLENAME')
     data_studio_mappings_gsi_name:str = os.getenv('APP_DATA_STUDIO_MAPPINGS_GSI_NAME')
+    chatbot_messages_table_name: str = os.getenv('CHATBOT_MESSAGES_TABLENAME')
+    chatbot_messages_gsi_name:str = os.getenv('CHATBOT_MESSAGES_GSI_NAME')
 
 
 @dataclasses.dataclass(init=False)
@@ -69,3 +71,13 @@ class OpensearchConfig(metaclass=Singleton):
     pool_maxsize:int = int(os.getenv('OPENSEARCH_POOL_MAXSIZE', 20))
     index:str = os.getenv('OPENSEARCH_INDEX')
     timeout:int = int(os.getenv('OPENSEARCH_TIMEOUT_IN_SECONDS', 30))
+
+
+@dataclasses.dataclass(init=False)
+class AwsBedrockConfig(metaclass=Singleton):
+    """
+    Configuration related to the Aws Bedrock are loaded here.
+    """
+    model_id:str = os.getenv('BEDROCK_MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')
+    anthropic_version:str = os.getenv('BEDROCK_ANTHROPIC_VERSION', 'bedrock-2023-05-31')
+    max_tokens:int = int(os.getenv('BEDROCK_MAX_TOKENS', 1000))
