@@ -21,7 +21,7 @@ class TestChatRepository(unittest.TestCase):
     TEST_MODEL_ID = 'test_model_id'
     TEST_TITLE = 'test_title'
     TEST_TIMESTAMP = 12345
-    LIMIT = 10
+    CHAT_MESSAGES_LIMIT = 10
 
     
     def setUp(self) -> None:
@@ -130,7 +130,7 @@ class TestChatRepository(unittest.TestCase):
         }
 
         # Call the method under test
-        chat_response = self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.LIMIT, exclusive_start_key)
+        chat_response = self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.CHAT_MESSAGES_LIMIT, exclusive_start_key)
 
         items = chat_response.messages
         last_evaluated_key = chat_response.last_evaluated_key
@@ -143,7 +143,7 @@ class TestChatRepository(unittest.TestCase):
 
         self.mock_dynamodb_table.query.assert_called_once_with(
             KeyConditionExpression=Key('chat_id').eq(self.TEST_CHAT_ID),
-            Limit=self.LIMIT,
+            Limit=self.CHAT_MESSAGES_LIMIT,
             ScanIndexForward=False
         )
 
@@ -167,7 +167,7 @@ class TestChatRepository(unittest.TestCase):
         }
 
         # Call the method under test
-        chat_response = self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.LIMIT, exclusive_start_key)
+        chat_response = self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.CHAT_MESSAGES_LIMIT, exclusive_start_key)
 
         items = chat_response.messages
         last_evaluated_key = chat_response.last_evaluated_key
@@ -180,7 +180,7 @@ class TestChatRepository(unittest.TestCase):
 
         self.mock_dynamodb_table.query.assert_called_once_with(
             KeyConditionExpression=Key('chat_id').eq(self.TEST_CHAT_ID),
-            Limit=self.LIMIT,
+            Limit=self.CHAT_MESSAGES_LIMIT,
             ExclusiveStartKey=exclusive_start_key,
             ScanIndexForward=False
         )
@@ -203,7 +203,7 @@ class TestChatRepository(unittest.TestCase):
         }
 
         # Call the method under test
-        chat_response = self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.LIMIT, exclusive_start_key)
+        chat_response = self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.CHAT_MESSAGES_LIMIT, exclusive_start_key)
 
         items = chat_response.messages
 
@@ -215,7 +215,7 @@ class TestChatRepository(unittest.TestCase):
 
         self.mock_dynamodb_table.query.assert_called_once_with(
             KeyConditionExpression=Key('chat_id').eq(self.TEST_CHAT_ID),
-            Limit=self.LIMIT,
+            Limit=self.CHAT_MESSAGES_LIMIT,
             ScanIndexForward=False
         )
 
@@ -235,12 +235,12 @@ class TestChatRepository(unittest.TestCase):
         
         # Call the method under test 
         with self.assertRaises(ServiceException) as e:
-            self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.LIMIT, exclusive_start_key)
+            self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.CHAT_MESSAGES_LIMIT, exclusive_start_key)
 
         # Assertions
         self.mock_dynamodb_table.query.assert_called_once_with(
             KeyConditionExpression=Key('chat_id').eq(self.TEST_CHAT_ID),  
-            Limit=self.LIMIT,
+            Limit=self.CHAT_MESSAGES_LIMIT,
             ScanIndexForward=False  
         )
         self.assertEqual(e.exception.status_code, 400)
@@ -259,11 +259,11 @@ class TestChatRepository(unittest.TestCase):
         }
         
         # Call the method under test
-        result = self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.LIMIT)
+        result = self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.CHAT_MESSAGES_LIMIT)
         
         self.mock_dynamodb_table.query.assert_called_once_with(
             KeyConditionExpression=Key('chat_id').eq(self.TEST_CHAT_ID),
-            Limit=self.LIMIT,
+            Limit=self.CHAT_MESSAGES_LIMIT,
             ScanIndexForward=False
         )
         self.assertEqual(result.messages, [])

@@ -127,7 +127,7 @@ class ChatService(metaclass=Singleton):
         chat_interaction = ChatInteraction(
             chat_id=chat_id,
             prompt=prompt,
-            response="" # Initialized as string 
+            response="" # Empty string provides safe starting point before populating it with chunks from stream.
         )
         
         try:

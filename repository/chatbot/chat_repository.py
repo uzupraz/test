@@ -241,10 +241,10 @@ class ChatRepository(metaclass=Singleton):
                 KeyConditionExpression=Key('user_id').eq(user_id) & Key('chat_id').eq(chat_id)
             )
             items = response.get('Items', [])
-            if items:  # Check if items list is non-empty
-                item = DataTypeUtils.convert_decimals_to_float_or_int(items[0])  # Process the first item
+            if items:  
+                item = DataTypeUtils.convert_decimals_to_float_or_int(items[0])  
                 return from_dict(ChatCreationDate, item)
-            log.warning("No chat timestamp found for user_id: %s, chat_id: %s", user_id, chat_id)
+            log.warning("No chat timestamp found. user_id: %s, chat_id: %s", user_id, chat_id)
             return None  
         
         except ClientError as e:

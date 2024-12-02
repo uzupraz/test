@@ -5,7 +5,9 @@ from typing import Generator
 from flask import Response, stream_with_context, make_response
 from enums import ServiceStatus
 from .server_response import ServerResponse
+from controller import common_controller as common_ctrl
 
+log = common_ctrl.log
 
 @dataclass
 class ServerStreamResponse:
@@ -31,12 +33,16 @@ class ServerStreamResponse:
                 return self._create_error_response()
 
             def safe_stream_generator():
-                """Wrapped generator with error handling."""
+                """
+                Wrapped generator with error handling.
+                """
                 try:
                     yield first_item
                     yield from iter_gen
-                except Exception:
-                    raise StopIteration
+                except Exception as e:
+                    log.exception("Failed to create streaming response: %s", e)
+                    error_response = self._create_error_response()
+                    yield error_response.get_data(as_text=True)
 
             return Response(
                 stream_with_context(safe_stream_generator()),
@@ -49,7 +55,8 @@ class ServerStreamResponse:
                     "Content-Type": self.content_type,
                 },
             )
-        except Exception:
+        except Exception as e:
+            log.exception("Failed to create streaming response: %s", e)
             return self._create_error_response()
 
 
