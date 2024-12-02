@@ -43,11 +43,6 @@ chat_message_history = api.model('ChatMessageHistory', {
     }))
 })
 
-pagination = api.model('Pagination parameters', {
-    'size': fields.Integer(required=True),
-    'last_evaluated_key': fields.String(required=False)
-})
-
 chat = api.model('User chat id', {
     'chat_id': fields.String(required=True)
 })
