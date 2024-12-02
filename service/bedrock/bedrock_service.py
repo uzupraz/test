@@ -18,6 +18,7 @@ class BedrockService:
 
 
     content_type = 'application/json'
+    PROMPT = "Generate a short, concise title for the following message that captures its essence: '{}'. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"
 
 
     def __init__(self, bedrock_config: AwsBedrockConfig) -> None:
@@ -77,7 +78,7 @@ class BedrockService:
                         yield content
 
         except ClientError as e:
-            log.exception('Failed to stream response. model_id:', model_id)
+            log.exception('Failed to stream response. model_id: %s', model_id)
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to stream response.')
 
@@ -98,14 +99,12 @@ class BedrockService:
             ServiceException: If there is any failure in generating the title using the Bedrock model.
         """
         try:
-            PROMPT = "Generate a short, concise title for the following message that captures its essence: '{}'. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"
-
             request_body = ModelInteractionRequest(
                 anthropic_version=self.bedrock_config.anthropic_version,
                 max_tokens=self.bedrock_config.max_tokens,
                 messages=[InteractionRecord(
                     role="user",
-                    content=PROMPT.format(message)  
+                    content=self.PROMPT.format(message)  
                 )],
             )
 
@@ -126,4 +125,3 @@ class BedrockService:
             log.exception('Failed to generate title.')
             code = e.response['ResponseMetadata']['HTTPStatusCode']
             raise ServiceException(code, ServiceStatus.FAILURE, 'Failed to generate title.')
-

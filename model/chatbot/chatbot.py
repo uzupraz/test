@@ -13,16 +13,16 @@ class ChatMessage:
 
 
 @dataclass
-class MessageHistoryPagination:
-    size: int
-    last_evaluated_key: Optional[str] | None
-
-
-@dataclass
 class ChatResponse:
     chat_id: str
     created_at: int
     title: str
+
+
+@dataclass
+class MessageHistoryPagination:
+    size: int
+    last_evaluated_key: Optional[str] | None
 
 
 @dataclass
@@ -51,7 +51,7 @@ class ChatSession:
 
 
 @dataclass
-class SaveChatResponse:
+class SaveChatResponseDTO:
     chat_id: str
 
 

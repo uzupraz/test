@@ -5,7 +5,7 @@ from controller import common_controller as common_ctrl
 from repository import ChatRepository
 from exception import ServiceException
 from enums import ServiceStatus
-from model import Chat, ChatMessage, SaveChatResponse, ChatResponse, MessageHistoryResponse, MessageHistoryPagination, ChatInteraction, InteractionRecord, ChatContext
+from model import Chat, ChatMessage, SaveChatResponseDTO, ChatResponse, MessageHistoryResponse, MessageHistoryPagination, ChatInteraction, InteractionRecord, ChatContext
 from utils import Singleton, Base64ConversionUtils
 from service.bedrock.bedrock_service import BedrockService
 
@@ -90,7 +90,7 @@ class ChatService(metaclass=Singleton):
         )
     
 
-    def save_chat_session(self, user_id: str, owner_id: str, model_id: str) -> SaveChatResponse:
+    def save_chat_session(self, user_id: str, owner_id: str, model_id: str) -> SaveChatResponseDTO:
         """
         Creates a new chat session for a user and stores it in the repository.
 
@@ -109,7 +109,7 @@ class ChatService(metaclass=Singleton):
         )
         self.chat_repository.create_new_chat(item=chat)
 
-        return SaveChatResponse(chat_id=chat.chat_id)
+        return SaveChatResponseDTO(chat_id=chat.chat_id)
 
     
     def save_chat_interaction(self, user_id: str, chat_id: str, prompt: str):
@@ -127,7 +127,7 @@ class ChatService(metaclass=Singleton):
         chat_interaction = ChatInteraction(
             chat_id=chat_id,
             prompt=prompt,
-            response="" # Empty string provides safe starting point before populating it with chunks from stream.
+            response="" # Initialized as string 
         )
         
         try:
@@ -138,7 +138,7 @@ class ChatService(metaclass=Singleton):
                 response_chunks.append(chunk)
                 yield chunk
             
-            chat_interaction.response = ''.join(response_chunks)
+            chat_interaction.response = ''.join(response_chunks) # Used as separator for chunks
             self.chat_repository.save_chat_interaction(chat_interaction=chat_interaction)
             
         except Exception:
@@ -158,13 +158,13 @@ class ChatService(metaclass=Singleton):
         Yields:
             str: Response chunks from the model.
         """
-        interraction_records = self._get_chat_interaction_records(chat_id)
+        interaction_records = self._get_chat_interaction_records(chat_id)
         try:
             # Get response iterator from bedrock service
             response_iterator = self.bedrock_service.send_prompt_to_model(
                 model_id=chat_context.model_id,
                 prompt=prompt,
-                interaction_records=interraction_records
+                interaction_records=interaction_records
             )
             
             # Store the iterator in a variable and then yield from it
@@ -231,8 +231,7 @@ class ChatService(metaclass=Singleton):
             updated_chat_context = self.chat_repository.update_title_in_chat_context(
                 chat_id=chat_id, 
                 timestamp=chat_timestamp.timestamp, 
-                title=title,
-                return_updated_item=True
+                title=title
             )
 
             return updated_chat_context

@@ -5,7 +5,7 @@ from dacite import from_dict
 
 from tests.test_utils import TestUtils
 from exception import ServiceException
-from model import Chat, ChatMessage, SaveChatResponse, ChatResponse, MessageHistoryResponse, ChatInteraction, ChatContext, ChatSession
+from model import Chat, ChatMessage, SaveChatResponseDTO, ChatResponse, MessageHistoryResponse, ChatInteraction, ChatContext, ChatSession
 from service import ChatService
 from enums import ServiceStatus
 
@@ -121,14 +121,8 @@ class TestChatService(unittest.TestCase):
 
         result = self.chat_service.get_message_history(
             chat_id=self.TEST_CHAT_ID,
-            size=3,
+            size=size,
             last_evaluated_key=last_evaluated_key
-        )
-
-        self.chat_service.chat_repository.get_chat_messages.assert_called_with(
-            chat_id=self.TEST_CHAT_ID,
-            limit=3,
-            exclusive_start_key=last_evaluated_key
         )
 
         self.assertIsInstance(result, MessageHistoryResponse)
@@ -215,44 +209,85 @@ class TestChatService(unittest.TestCase):
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
 
 
-    def test_save_chat_session_success_case(self):
+    def test_get_messages_history_empty_case(self):
+        """
+        Test case for handling empty or invalid messages in the response.
+        Expected Result: The service returns an empty list of messages.
+        """
+        size = 3
+        last_evaluated_key = None
+
+        # Mock repository response with no messages
+        mock_repo_response = MagicMock()
+        mock_repo_response.messages = []  
+        mock_repo_response.last_evaluated_key = None
+
+        # Mock the repository's `get_chat_messages` method
+        self.chat_service.chat_repository.get_chat_messages = MagicMock(
+            return_value=mock_repo_response
+        )
+
+        result = self.chat_service.get_message_history(
+            chat_id=self.TEST_CHAT_ID,
+            size=size,
+            last_evaluated_key=last_evaluated_key
+        )
+
+        # Assertions
+        self.assertIsInstance(result, MessageHistoryResponse)
+        self.assertEqual(len(result.messages), 0)  # No valid messages
+        self.assertEqual(result.pagination.size, size)
+        self.assertIsNone(result.pagination.last_evaluated_key)
+
+        # Verify repository method was called with the correct parameters
+        self.chat_service.chat_repository.get_chat_messages.assert_called_with(
+            chat_id=self.TEST_CHAT_ID,
+            limit=size,
+            exclusive_start_key=last_evaluated_key
+        )
+
+
+    @patch('nanoid.generate')
+    def test_save_chat_session_success_case(self, mock_nanoid):
         """
         Test case for saving a new chat session.
         """
+        mock_nanoid.return_value = self.TEST_CHAT_ID
         # Mock the repository method
         self.chat_service.chat_repository.create_new_chat = MagicMock()
 
         chat_id = self.TEST_CHAT_ID
 
-        with patch('nanoid.generate', return_value=chat_id):
-            expected_chat = Chat(
-                user_id=self.TEST_USER_ID,
-                owner_id=self.TEST_OWNER_ID,
-                model_id=self.TEST_MODEL_ID,
-            )
-            expected_chat.chat_id = chat_id  
+        expected_chat = Chat(
+            user_id=self.TEST_USER_ID,
+            owner_id=self.TEST_OWNER_ID,
+            model_id=self.TEST_MODEL_ID,
+        )
+        expected_chat.chat_id = chat_id  
 
-            expected_response = SaveChatResponse(chat_id=chat_id)
+        expected_response = SaveChatResponseDTO(chat_id=chat_id)
 
-            # Call the method under test
-            result = self.chat_service.save_chat_session(
-                user_id=self.TEST_USER_ID,
-                owner_id=self.TEST_OWNER_ID,
-                model_id=self.TEST_MODEL_ID,
-            )
+        # Call the method under test
+        result = self.chat_service.save_chat_session(
+            user_id=self.TEST_USER_ID,
+            owner_id=self.TEST_OWNER_ID,
+            model_id=self.TEST_MODEL_ID,
+        )
 
-            # Assertions for the response
-            self.assertIsInstance(result, SaveChatResponse)
-            self.assertEqual(result.chat_id, expected_response.chat_id)
+        # Assertions for the response
+        self.assertIsInstance(result, SaveChatResponseDTO)
+        self.assertEqual(result.chat_id, expected_response.chat_id)
 
-            self.chat_service.chat_repository.create_new_chat.assert_called_with(item=expected_chat) 
+        self.chat_service.chat_repository.create_new_chat.assert_called_with(item=expected_chat) 
 
 
-    def test_save_chat_session_should_raise_exception_when_repository_call_fails(self): 
+    @patch('nanoid.generate')
+    def test_save_chat_session_should_raise_exception_when_repository_call_fails(self, mock_nanoid): 
         """
         Test case for handling failure in the repository layer.
         Expected Result: ServiceException is raised.
         """
+        mock_nanoid.return_value = self.TEST_CHAT_ID
         chat_id = self.TEST_CHAT_ID
         mock_create_new_chat = self.chat_service.chat_repository.create_new_chat = MagicMock()
         mock_create_new_chat.side_effect = ServiceException(
@@ -261,21 +296,20 @@ class TestChatService(unittest.TestCase):
             message='Failed to create chat session'
         )
 
-        with patch('nanoid.generate', return_value=chat_id):
-            expected_chat = Chat(
-                user_id=self.TEST_USER_ID,
-                owner_id=self.TEST_OWNER_ID,
-                model_id=self.TEST_MODEL_ID,
-            )
-            expected_chat.chat_id = chat_id  
+        expected_chat = Chat(
+            user_id=self.TEST_USER_ID,
+            owner_id=self.TEST_OWNER_ID,
+            model_id=self.TEST_MODEL_ID,
+        )
+        expected_chat.chat_id = chat_id  
 
-            with self.assertRaises(ServiceException) as context:
-                self.chat_service.save_chat_session(self.TEST_USER_ID, self.TEST_OWNER_ID, self.TEST_MODEL_ID)
+        with self.assertRaises(ServiceException) as context:
+            self.chat_service.save_chat_session(self.TEST_USER_ID, self.TEST_OWNER_ID, self.TEST_MODEL_ID)
 
-            self.assertEqual(context.exception.message, 'Failed to create chat session')
-            self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(context.exception.message, 'Failed to create chat session')
+        self.assertEqual(context.exception.status_code, 500)
 
-            self.chat_service.chat_repository.create_new_chat.assert_called_once_with(item=expected_chat)
+        self.chat_service.chat_repository.create_new_chat.assert_called_once_with(item=expected_chat)
 
     
     def test_save_chat_interaction_success_case(self):
@@ -286,25 +320,15 @@ class TestChatService(unittest.TestCase):
         test_prompt = "Hello, how are you?"
         test_response_chunks = ["Hello", ", I'm", " doing well!"]
         test_full_response = "Hello, I'm doing well!"
-        test_timestamp = 12345
-
-        # Mock chat timestamp response
-        mock_timestamp_response = MagicMock()
-        mock_timestamp_response.timestamp = test_timestamp
-        
-        # Mock cjat context
         mock_chat_context = from_dict(ChatContext, {
             'model_id': self.TEST_MODEL_ID,
             'title': 'Test Chat'
         })
 
+        # Mock _ensure_chat_title
+        self.chat_service._ensure_chat_title = MagicMock(return_value=mock_chat_context)
+
         # Setup repository mocks
-        self.chat_service.chat_repository.get_chat_timestamp = MagicMock(
-            return_value=mock_timestamp_response
-        )
-        self.chat_service.chat_repository.get_chat_context = MagicMock(
-            return_value=mock_chat_context
-        )
         self.chat_service.chat_repository.save_chat_interaction = MagicMock()
 
         # Mock _get_chat_interaction_records
@@ -327,14 +351,11 @@ class TestChatService(unittest.TestCase):
         # Verify the responses were streamed correctly
         self.assertEqual(response_chunks, test_response_chunks)
 
-        # Verify repository calls
-        self.chat_service.chat_repository.get_chat_timestamp.assert_called_once_with(
-            self.TEST_USER_ID, 
-            self.TEST_CHAT_ID
-        )
-        self.chat_service.chat_repository.get_chat_context.assert_called_once_with(
-            self.TEST_CHAT_ID, 
-            test_timestamp
+        # Verify _ensure_chat_title was called correctly
+        self.chat_service._ensure_chat_title.assert_called_once_with(
+            self.TEST_CHAT_ID,
+            self.TEST_USER_ID,
+            test_prompt
         )
 
         # Verify message was saved with complete response
@@ -346,6 +367,7 @@ class TestChatService(unittest.TestCase):
         self.chat_service.chat_repository.save_chat_interaction.assert_called_once_with(
             chat_interaction=expected_chat_info
         )
+
 
 
     def test_save_chat_interaction_failure(self):
@@ -364,6 +386,9 @@ class TestChatService(unittest.TestCase):
             'model_id': self.TEST_MODEL_ID,
             'title': 'Test Chat'
         })
+
+        # Mock _ensure_chat_title
+        self.chat_service._ensure_chat_title = MagicMock(return_value=mock_chat_context)
 
         # Setup repository mocks
         self.chat_service.chat_repository.get_chat_timestamp = MagicMock(
@@ -392,3 +417,99 @@ class TestChatService(unittest.TestCase):
         self.assertEqual(context.exception.message, 'Failed to save chat interaction.')
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+
+
+    def test_ensure_chat_title_generates_new_title(self):
+        """
+        Test case for _ensure_chat_title when a new title needs to be generated.
+        """
+        # Test data
+        test_prompt = "Hello, how are you?"
+        generated_title = "Generated Chat Title"
+
+        # Mock responses
+        mock_timestamp_response = MagicMock()
+        mock_timestamp_response.timestamp = self.TEST_TIMESTAMP
+
+        mock_chat_context_without_title = ChatContext(model_id=self.TEST_MODEL_ID, title="")
+        
+        mock_updated_chat_context = ChatContext(model_id=self.TEST_MODEL_ID, title=generated_title)
+
+        # Mock repository calls
+        self.chat_service.chat_repository.get_chat_timestamp = MagicMock(
+            return_value=mock_timestamp_response
+        )
+        self.chat_service.chat_repository.get_chat_context = MagicMock(
+            return_value=mock_chat_context_without_title
+        )
+        self.chat_service.chat_repository.update_title_in_chat_context = MagicMock(
+            return_value=mock_updated_chat_context
+        )
+        
+        # Mock Bedrock service for title generation
+        self.chat_service.bedrock_service.generate_title = MagicMock(
+            return_value=generated_title
+        )
+
+        # Call the method
+        result = self.chat_service._ensure_chat_title(
+            chat_id=self.TEST_CHAT_ID,
+            user_id=self.TEST_USER_ID,
+            prompt=test_prompt
+        )
+
+        # Assert that the title was generated and updated correctly
+        self.assertEqual(result.title, generated_title)
+
+        # Verify repository calls
+        self.chat_service.chat_repository.get_chat_timestamp.assert_called_once_with(self.TEST_USER_ID, self.TEST_CHAT_ID)
+        self.chat_service.chat_repository.get_chat_context.assert_called_once_with(self.TEST_CHAT_ID, self.TEST_TIMESTAMP)
+        self.chat_service.bedrock_service.generate_title.assert_called_once_with(message=test_prompt)
+        self.chat_service.chat_repository.update_title_in_chat_context.assert_called_once_with(chat_id=self.TEST_CHAT_ID, timestamp=self.TEST_TIMESTAMP, title=generated_title)
+
+
+    def test_ensure_chat_title_uses_existing_title(self):
+        """
+        Test case for _ensure_chat_title when the title already exists.
+        """
+        # Test data
+        test_prompt = "Hello, how are you?"
+        test_timestamp = 12345
+
+        mock_timestamp_response = MagicMock()
+        mock_timestamp_response.timestamp = test_timestamp
+
+        mock_chat_context_with_title = ChatContext(
+            model_id=self.TEST_MODEL_ID,
+            title="Existing Chat Title"
+        )
+
+        # Create mocks for methods that might be called
+        self.chat_service.bedrock_service.generate_title = MagicMock()
+        self.chat_service.chat_repository.update_title_in_chat_context = MagicMock()
+
+        # Mock repository calls
+        self.chat_service.chat_repository.get_chat_timestamp = MagicMock(
+            return_value=mock_timestamp_response
+        )
+        self.chat_service.chat_repository.get_chat_context = MagicMock(
+            return_value=mock_chat_context_with_title
+        )
+
+        # Call the method
+        result = self.chat_service._ensure_chat_title(
+            chat_id=self.TEST_CHAT_ID,
+            user_id=self.TEST_USER_ID,
+            prompt=test_prompt
+        )
+
+        # Assert the existing title is used
+        self.assertEqual(result.title, "Existing Chat Title")
+
+        # Verify repository calls
+        self.chat_service.chat_repository.get_chat_timestamp.assert_called_once_with(self.TEST_USER_ID, self.TEST_CHAT_ID)
+        self.chat_service.chat_repository.get_chat_context.assert_called_once_with(self.TEST_CHAT_ID, test_timestamp)
+
+        # Ensure no unnecessary calls were made
+        self.chat_service.bedrock_service.generate_title.assert_not_called()
+        self.chat_service.chat_repository.update_title_in_chat_context.assert_not_called()

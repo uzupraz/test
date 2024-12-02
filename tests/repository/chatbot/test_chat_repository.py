@@ -15,6 +15,13 @@ class TestChatRepository(unittest.TestCase):
 
 
     test_resource_path = '/tests/resources/chatbot/'
+    TEST_USER_ID = 'test_user_id'
+    TEST_CHAT_ID = 'test_chat_id'
+    TEST_OWNER_ID = 'test_owner_id'
+    TEST_MODEL_ID = 'test_model_id'
+    TEST_TITLE = 'test_title'
+    TEST_TIMESTAMP = 12345
+    LIMIT = 10
 
     
     def setUp(self) -> None:
@@ -41,8 +48,6 @@ class TestChatRepository(unittest.TestCase):
 
         Expected result: The method returns a list of user chat sessions.
         """
-        user_id = "TEST_USER_ID"
-
         # Mock response from DynamoDB query
         mock_table_items_path = self.test_resource_path + "get_user_chat_sessions_response.json"
         mock_items = TestUtils.get_file_content(mock_table_items_path)
@@ -52,12 +57,12 @@ class TestChatRepository(unittest.TestCase):
         }
 
         # Call the method under test
-        chats = self.chat_repository.get_user_chat_sessions(user_id)
+        chats = self.chat_repository.get_user_chat_sessions(self.TEST_USER_ID)
 
         # Assertions
         self.mock_dynamodb_table.query.assert_called_once_with(
             IndexName=self.app_config.chatbot_messages_gsi_name,
-            KeyConditionExpression=Key('user_id').eq(user_id)
+            KeyConditionExpression=Key('user_id').eq(self.TEST_USER_ID)
         )
         self.assertEqual(type(chats), list)
         self.assertEqual(len(chats), len(mock_items))
@@ -70,22 +75,40 @@ class TestChatRepository(unittest.TestCase):
 
         Expected Result: The method raises a ServiceException.
         """
-        user_id = "TEST_USER_ID"
-
         self.mock_dynamodb_table.query.side_effect = ClientError(
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'query'
         )
         
         # Call the method under test
         with self.assertRaises(ServiceException) as e:
-            self.chat_repository.get_user_chat_sessions(user_id)
+            self.chat_repository.get_user_chat_sessions(self.TEST_USER_ID)
 
         # Assertions
         self.mock_dynamodb_table.query.assert_called_once_with(
             IndexName=self.app_config.chatbot_messages_gsi_name,
-            KeyConditionExpression=Key('user_id').eq(user_id)
+            KeyConditionExpression=Key('user_id').eq(self.TEST_USER_ID)
         )
         self.assertEqual(e.exception.status_code, 400)
+
+
+    def test_get_user_chat_returns_emptry_response(self):
+        """
+        Test case for retrieving user chats when there are no chat sessions.
+
+        Expected result: The method returns an empty list.
+        """
+        # Mock response from DynamoDB query
+        self.mock_dynamodb_table.query.return_value = {'Items': []}
+
+        # Call the method under test
+        result = self.chat_repository.get_user_chat_sessions(self.TEST_USER_ID)
+
+        # Assertions
+        self.mock_dynamodb_table.query.assert_called_once_with(
+            IndexName=self.app_config.chatbot_messages_gsi_name,
+            KeyConditionExpression=Key('user_id').eq(self.TEST_USER_ID)
+        )
+        self.assertEqual(result, [])
 
 
     def test_get_chat_messages_success_case(self):
@@ -94,8 +117,6 @@ class TestChatRepository(unittest.TestCase):
 
         Expected result: The method returns a list of messager for chat.
         """
-        chat_id = "TEST_CHAT_ID"
-        limit = 10
         exclusive_start_key = None
 
         # Mock response from DynamoDB query
@@ -109,7 +130,7 @@ class TestChatRepository(unittest.TestCase):
         }
 
         # Call the method under test
-        chat_response = self.chat_repository.get_chat_messages(chat_id, limit, exclusive_start_key)
+        chat_response = self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.LIMIT, exclusive_start_key)
 
         items = chat_response.messages
         last_evaluated_key = chat_response.last_evaluated_key
@@ -121,8 +142,8 @@ class TestChatRepository(unittest.TestCase):
         self.assertEqual(last_evaluated_key, mock_last_evaluated_key)
 
         self.mock_dynamodb_table.query.assert_called_once_with(
-            KeyConditionExpression=Key('chat_id').eq(chat_id),
-            Limit=limit,
+            KeyConditionExpression=Key('chat_id').eq(self.TEST_CHAT_ID),
+            Limit=self.LIMIT,
             ScanIndexForward=False
         )
 
@@ -133,8 +154,6 @@ class TestChatRepository(unittest.TestCase):
 
         Expected result: The method returns a list of messager for chat and a last evaluated key.
         """
-        chat_id = "TEST_CHAT_ID"
-        limit = 10
         exclusive_start_key = {"some_key": "some_value"}  
 
         # Mock response from DynamoDB query
@@ -148,7 +167,7 @@ class TestChatRepository(unittest.TestCase):
         }
 
         # Call the method under test
-        chat_response = self.chat_repository.get_chat_messages(chat_id, limit, exclusive_start_key)
+        chat_response = self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.LIMIT, exclusive_start_key)
 
         items = chat_response.messages
         last_evaluated_key = chat_response.last_evaluated_key
@@ -160,12 +179,11 @@ class TestChatRepository(unittest.TestCase):
         self.assertEqual(last_evaluated_key, mock_last_evaluated_key)
 
         self.mock_dynamodb_table.query.assert_called_once_with(
-            KeyConditionExpression=Key('chat_id').eq(chat_id),
-            Limit=limit,
+            KeyConditionExpression=Key('chat_id').eq(self.TEST_CHAT_ID),
+            Limit=self.LIMIT,
             ExclusiveStartKey=exclusive_start_key,
             ScanIndexForward=False
         )
-
 
 
     def test_get_chat_messages_without_using_last_evaluated_key(self):
@@ -174,8 +192,6 @@ class TestChatRepository(unittest.TestCase):
 
         Expected result: The method returns a list of messager for chat and a last evaluated key.
         """
-        chat_id = "TEST_CHAT_ID"
-        limit = 10
         exclusive_start_key = None
 
         # Mock response from DynamoDB query
@@ -187,18 +203,19 @@ class TestChatRepository(unittest.TestCase):
         }
 
         # Call the method under test
-        chat_response = self.chat_repository.get_chat_messages(chat_id, limit, exclusive_start_key)
+        chat_response = self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.LIMIT, exclusive_start_key)
 
         items = chat_response.messages
 
         # Assertions
         self.assertEqual(type(items), list)
         self.assertEqual(len(items), len(mock_items))
+        self.assertIsNone(chat_response.last_evaluated_key)
         self.assertEqual(type(items[0]), ChatMessage)  
 
         self.mock_dynamodb_table.query.assert_called_once_with(
-            KeyConditionExpression=Key('chat_id').eq(chat_id),
-            Limit=limit,
+            KeyConditionExpression=Key('chat_id').eq(self.TEST_CHAT_ID),
+            Limit=self.LIMIT,
             ScanIndexForward=False
         )
 
@@ -209,8 +226,6 @@ class TestChatRepository(unittest.TestCase):
 
         Expected Result: The method raises a ServiceException.
         """
-        chat_id = "TEST_CHAT_ID"
-        limit = 10
         exclusive_start_key = None
 
         # Mocking the ClientError exception from DynamoDB query
@@ -220,15 +235,39 @@ class TestChatRepository(unittest.TestCase):
         
         # Call the method under test 
         with self.assertRaises(ServiceException) as e:
-            self.chat_repository.get_chat_messages(chat_id, limit, exclusive_start_key)
+            self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.LIMIT, exclusive_start_key)
 
         # Assertions
         self.mock_dynamodb_table.query.assert_called_once_with(
-            KeyConditionExpression=Key('chat_id').eq(chat_id),  
-            Limit=limit,
+            KeyConditionExpression=Key('chat_id').eq(self.TEST_CHAT_ID),  
+            Limit=self.LIMIT,
             ScanIndexForward=False  
         )
         self.assertEqual(e.exception.status_code, 400)
+
+
+    def test_get_chat_messages_returns_empty_response(self):
+        """
+        Test case for retrieving chat messages when there are no messages in chat.
+
+        Expected result: The method returns an empty list.
+        """
+        # Mock response from DynamoDB query
+        self.mock_dynamodb_table.query.return_value = {
+            'Items': [],
+            'LastEvaluatedKey': None,
+        }
+        
+        # Call the method under test
+        result = self.chat_repository.get_chat_messages(self.TEST_CHAT_ID, self.LIMIT)
+        
+        self.mock_dynamodb_table.query.assert_called_once_with(
+            KeyConditionExpression=Key('chat_id').eq(self.TEST_CHAT_ID),
+            Limit=self.LIMIT,
+            ScanIndexForward=False
+        )
+        self.assertEqual(result.messages, [])
+        self.assertEqual(result.last_evaluated_key, None)
 
 
     def test_create_new_chat_success(self):
@@ -237,10 +276,10 @@ class TestChatRepository(unittest.TestCase):
 
         Expected result: The method should successfully add a new chat item to DynamoDB.
         """
-        item =Chat(
-            user_id= 'test_user_id',
-            owner_id= 'test_owner_id',
-            model_id= 'test_model_id',
+        item = Chat(
+            user_id= self.TEST_USER_ID,
+            owner_id= self.TEST_OWNER_ID,
+            model_id= self.TEST_MODEL_ID,
         )
         
         # Mock response from DynamoDB put_item
@@ -260,9 +299,9 @@ class TestChatRepository(unittest.TestCase):
         Expected result: The method should raise a ServiceException if DynamoDB put_item fails.
         """
         item = Chat(
-            user_id= 'test_user_id',
-            owner_id= 'test_owner_id',
-            model_id= 'test_model_id',
+            user_id= self.TEST_USER_ID,
+            owner_id= self.TEST_OWNER_ID,
+            model_id= self.TEST_MODEL_ID,
         )
         
         # Mocking the ClientError exception from DynamoDB put_item
@@ -286,7 +325,7 @@ class TestChatRepository(unittest.TestCase):
         Expected result: The method should successfully add a new chat item to DynamoDB.
         """
         chat_interaction = ChatInteraction(
-            chat_id= 'test_chat_id',
+            chat_id= self.TEST_CHAT_ID,
             prompt= 'prompt message',
             response= 'message response',
         )
@@ -308,7 +347,7 @@ class TestChatRepository(unittest.TestCase):
         Expected result: The method should raise a ServiceException if DynamoDB put_item fails.
         """
         item = ChatInteraction(
-            chat_id= 'test_chat_id',
+            chat_id= self.TEST_CHAT_ID,
             prompt= 'prompt message',
             response= 'message response',
         )
@@ -331,55 +370,27 @@ class TestChatRepository(unittest.TestCase):
         """
         Test case for successfully updating item in DynamoDB.
         """
-        chat_id = 'chat123'
-        timestamp = 12345
-        title = 'test title'
-        model_id = 'test_model_id'
         updated_item = {
-            'model_id': 'test_model_id',
-            'title': 'test title',
+            'model_id': self.TEST_MODEL_ID,
+            'title': self.TEST_TITLE,
         }
         
         # Mock successful update
         self.mock_dynamodb_table.update_item.return_value = {"Attributes": updated_item}
 
         # Call the method under test
-        result = self.chat_repository.update_title_in_chat_context(chat_id=chat_id, timestamp=timestamp, title=title, return_updated_item=True)
+        result = self.chat_repository.update_title_in_chat_context(chat_id=self.TEST_CHAT_ID, timestamp=self.TEST_TIMESTAMP, title=self.TEST_TITLE)
 
         # Assertions
         self.mock_dynamodb_table.update_item.assert_called_once_with(
-            Key={'chat_id': chat_id, 'timestamp': timestamp},
+            Key={'chat_id': self.TEST_CHAT_ID, 'timestamp': self.TEST_TIMESTAMP},
             UpdateExpression="SET title = :title",
-            ExpressionAttributeValues={":title": title},
+            ExpressionAttributeValues={":title": self.TEST_TITLE},
             ReturnValues="ALL_NEW"                           
         )
         self.assertIsInstance(result, ChatContext)
-        self.mock_dynamodb_table.update_item.assert_called_once()
-        self.assertEqual(result.model_id, model_id)
-        self.assertEqual(result.title, title)
-
-
-    def test_update_title_in_chat_context_return_value_false(self):
-        """
-        Test case for successfully updating item in DynamoDB.
-        """
-        chat_id = 'chat123'
-        timestamp = 12345
-        title = 'test title'
-        # Mock successful update
-        self.mock_dynamodb_table.update_item.return_value = {}
-
-        # Call the method under test
-        self.chat_repository.update_title_in_chat_context(chat_id=chat_id, timestamp=timestamp, title=title, return_updated_item=False)
-
-        # Assertions
-        self.mock_dynamodb_table.update_item.assert_called_once_with(
-            Key={'chat_id': chat_id, 'timestamp': timestamp},
-            UpdateExpression="SET title = :title",
-            ExpressionAttributeValues={":title": title},
-            ReturnValues="NONE"
-        )
-        self.mock_dynamodb_table.update_item.assert_called_once()
+        self.assertEqual(result.model_id, self.TEST_MODEL_ID)
+        self.assertEqual(result.title, self.TEST_TITLE)
 
 
     def test_update_title_in_chat_context_throws_client_exception(self):
@@ -394,7 +405,7 @@ class TestChatRepository(unittest.TestCase):
 
         # Test exception handling
         with self.assertRaises(ServiceException) as e:
-            self.chat_repository.update_title_in_chat_context(chat_id='chat123', timestamp=12345, title='chat_title', return_updated_item=False)
+            self.chat_repository.update_title_in_chat_context(chat_id=self.TEST_CHAT_ID, timestamp=self.TEST_TIMESTAMP, title=self.TEST_TITLE)
 
         self.assertEqual(e.exception.status_code, 400)
         self.mock_dynamodb_table.update_item.assert_called_once()
@@ -409,13 +420,13 @@ class TestChatRepository(unittest.TestCase):
         self.mock_dynamodb_table.get_item.return_value = {"Item": item} 
 
         # Call method
-        chat_context = self.chat_repository.get_chat_context(chat_id='chat123', timestamp=12345)
+        chat_context = self.chat_repository.get_chat_context(chat_id=self.TEST_CHAT_ID, timestamp=self.TEST_TIMESTAMP)
 
         # Assertions
         self.assertIsInstance(chat_context, ChatContext)
         self.assertEqual(chat_context.model_id, 'model123')
         self.assertEqual(chat_context.title, 'chat_title')
-        self.mock_dynamodb_table.get_item.assert_called_once_with(Key={'chat_id': 'chat123', 'timestamp': 12345})
+        self.mock_dynamodb_table.get_item.assert_called_once_with(Key={'chat_id': self.TEST_CHAT_ID, 'timestamp': self.TEST_TIMESTAMP})
 
 
     def test_get_chat_context_throws_client_exception(self):
@@ -430,20 +441,38 @@ class TestChatRepository(unittest.TestCase):
 
         # Call the method under test
         with self.assertRaises(ServiceException) as e:
-            self.chat_repository.get_chat_context(chat_id='chat123', timestamp=12345)
+            self.chat_repository.get_chat_context(chat_id=self.TEST_CHAT_ID, timestamp=self.TEST_TIMESTAMP)
 
         # Assertion    
         self.assertEqual(e.exception.status_code, 400)
+        self.assertEqual(e.exception.message, "Failed to retrieve chat context")
         self.mock_dynamodb_table.get_item.assert_called_once()
 
 
-    def test_get_timestamp_success_case(self):
+    def test_get_chat_context_returns_empty_response(self):
+        """
+        Test case for retrieving chats context when there are no chat available.
+
+        Expected Result: The method raises a ServiceException indicating that chat context does not exist.
+        """
+        # Mock response from Dynamodb get_item
+        self.mock_dynamodb_table.get_item.return_value = {"Item": {}}
+
+        # Call the method under test
+        with self.assertRaises(ServiceException) as e:
+            self.chat_repository.get_chat_context(chat_id=self.TEST_CHAT_ID, timestamp=self.TEST_TIMESTAMP)
+
+        # Assertion
+        self.assertEqual(e.exception.status_code, 400)
+        self.assertEqual(e.exception.message, "Chat context does not exists")
+
+
+    def test_get_timestamp(self):
         """
         Test case for successfully retrieving the timestamp of a chat from DynamoDB.
-        """
-        user_id = 'user123'
-        chat_id = 'chat123'
 
+        Expected result: The method returns timestamp for chat.
+        """
         # Mock DynamoDB response
         mock_table_items_path = self.test_resource_path + "get_timestamp_response.json"
         mock_items = TestUtils.get_file_content(mock_table_items_path)
@@ -453,20 +482,22 @@ class TestChatRepository(unittest.TestCase):
         }
 
         # Call method
-        chat_timestamp = self.chat_repository.get_chat_timestamp(user_id=user_id, chat_id=chat_id)
+        chat_timestamp = self.chat_repository.get_chat_timestamp(user_id=self.TEST_USER_ID, chat_id=self.TEST_CHAT_ID)
 
         # Assertions
         self.assertIsInstance(chat_timestamp, ChatCreationDate)
-        self.assertEqual(chat_timestamp.timestamp, 12345)
+        self.assertEqual(chat_timestamp.timestamp, self.TEST_TIMESTAMP)
         self.mock_dynamodb_table.query.assert_called_once_with(
             IndexName=self.app_config.chatbot_messages_gsi_name,
-            KeyConditionExpression=Key('user_id').eq(user_id) & Key('chat_id').eq(chat_id)
+            KeyConditionExpression=Key('user_id').eq(self.TEST_USER_ID) & Key('chat_id').eq(self.TEST_CHAT_ID)
         )
 
     
     def test_get_timestamp_throws_client_exception(self):
         """
          Test case for handling DynamoDB ClientError when retrieving the chat timestamp.
+
+         Expected Result: The method raises a ServiceException.
         """
         self.mock_dynamodb_table.query.side_effect = ClientError(
             {'Error': {'Message': 'Test Error'}, 'ResponseMetadata': {'HTTPStatusCode': 400}}, 'query'
@@ -474,11 +505,31 @@ class TestChatRepository(unittest.TestCase):
 
         # Call the method under test
         with self.assertRaises(ServiceException) as e:
-            self.chat_repository.get_chat_timestamp(user_id='user123', chat_id='chat123')
+            self.chat_repository.get_chat_timestamp(user_id=self.TEST_USER_ID, chat_id=self.TEST_CHAT_ID)
 
         # Assertions
         self.mock_dynamodb_table.query.assert_called_once_with(
             IndexName=self.app_config.chatbot_messages_gsi_name,  
-            KeyConditionExpression=Key('user_id').eq('user123') & Key('chat_id').eq('chat123')
+            KeyConditionExpression=Key('user_id').eq(self.TEST_USER_ID) & Key('chat_id').eq(self.TEST_CHAT_ID)
         )
         self.assertEqual(e.exception.status_code, 400)
+
+
+    def test_get_timestamp_returns_empty_response(self):
+        """
+        Test case for retrieving chat timestamp when there are no chat available.
+
+        Expected result: The method returns None.
+        """
+        # Mock response from DynamoDB query
+        self.mock_dynamodb_table.query.return_value = {'Items': []}
+
+        # Call the method under test
+        result = self.chat_repository.get_chat_timestamp(user_id=self.TEST_USER_ID, chat_id=self.TEST_CHAT_ID)
+
+        # Assertions
+        self.mock_dynamodb_table.query.assert_called_once_with(
+            IndexName=self.app_config.chatbot_messages_gsi_name,
+            KeyConditionExpression=Key('user_id').eq(self.TEST_USER_ID) & Key('chat_id').eq(self.TEST_CHAT_ID)
+        )
+        self.assertIsNone(result)

@@ -31,10 +31,21 @@ user_chat = api.model('User chat', {
     'title': fields.String(required=True)
 })
 
-chat_message = api.model('Chat message', {
-    'prompt': fields.String(required=True),
-    'response': fields.String(required=True),
-    'timestamp': fields.Integer(required=True)
+chat_message_history = api.model('ChatMessageHistory', {
+    'messages': fields.List(fields.Nested(api.model('ChatMessage', {
+        'timestamp': fields.Integer(required=True, description='Timestamp of the message'),
+        'prompt': fields.String(required=True, description='User input for the chat'),
+        'response': fields.String(required=True, description='Chatbot response')
+    }))),
+    'pagination': fields.Nested(api.model('Pagination', {
+        'size': fields.Integer(required=True, description='Number of items in the current page'),
+        'last_evaluated_key': fields.String(required=False, description='Pagination key for the next set of items')
+    }))
+})
+
+pagination = api.model('Pagination parameters', {
+    'size': fields.Integer(required=True),
+    'last_evaluated_key': fields.String(required=False)
 })
 
 chat = api.model('User chat id', {
@@ -51,7 +62,7 @@ chats_response_dto = api.inherit('The response DTO used when chats per user is r
 })
 
 chat_message_history_response_dto = api.inherit('The response DTO used when messaegs per chat is requested', server_response, {
-    'payload': fields.List(fields.Nested(chat_message))
+    'payload': fields.List(fields.Nested(chat_message_history))
 })
 
 chat_response_dto = api.inherit('The response DTO used when a new chat is created', server_response, {
@@ -87,6 +98,12 @@ class ChatListResource(Resource):
 
         user = from_dict(User, g.get('user'))
 
+        if not user.has_permission(ServicePermissions.CHATBOT_ACCESS.value):
+            log.warning('User has no permission to access chatbot: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to access chatbot.')
+
+        user = from_dict(User, g.get('user'))
+
         response_payload = chat_service.get_chats(
             user_id=user.sub,
         )
@@ -104,7 +121,7 @@ class ChatListResource(Resource):
 
         model_id = api.payload['model_id']
 
-        if not (user.has_permission(ServicePermissions.CHATBOT_CREATE_CHAT.value) and 
+        if not (user.has_permission(ServicePermissions.CHATBOT_ACCESS.value) and 
             user.has_permission(model_id)):
             log.warning('User has no permission to create chat for this model. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
             raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create chat for this model.')
@@ -132,6 +149,12 @@ class ChatMessagesResource(Resource):
     def get(self, chat_id):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
+        user = from_dict(User, g.get('user'))
+
+        if not user.has_permission(ServicePermissions.CHATBOT_ACCESS.value):
+            log.warning('User has no permission to access chat messages: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to access chat messages.')
+
         size = request.args.get('size', default=20, type=int) 
         last_evaluated_key = request.args.get('last_evaluated_key', default=None, type=str)
         
@@ -155,4 +178,4 @@ class ChatMessagesResource(Resource):
 
         response_generator = chat_service.save_chat_interaction(request_data.user_id, request_data.chat_id, request_data.prompt)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
-        return ServerStreamResponse.success(response_generator)
+        return ServerStreamResponse.generate(response_generator)

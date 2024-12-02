@@ -124,7 +124,7 @@ class DataStudioMappingRepository(metaclass=Singleton):
         Returns:
             Optional[DataStudioMapping]: The draft mapping entry if found, or None.
 
-        Raises:
+        Raises:`
             ServiceException: If an error occurs while retrieving the draft.
         """
         log.info('Retrieving user draft. owner_id: %s, mapping_id: %s, user_id: %s', owner_id, mapping_id, user_id)
