@@ -93,8 +93,8 @@ class ChatListResource(Resource):
 
         user = from_dict(User, g.get('user'))
 
-        if not user.has_permission(ServicePermissions.CHATBOT_ACCESS.value):
-            log.warning('User has no permission to access chatbot: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+        if not user.has_permission(ServicePermissions.CHATBOT_LIMITED_ACCESS.value):
+            log.warning('User has no permission to access chatbot. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
             raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to access chatbot.')
 
         user = from_dict(User, g.get('user'))
@@ -114,11 +114,14 @@ class ChatListResource(Resource):
 
         user = from_dict(User, g.get('user'))
 
+        if not user.has_permission(ServicePermissions.CHATBOT_LIMITED_ACCESS.value):
+            log.warning('User has no permission to create chat. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create chat.')
+
         model_id = api.payload['model_id']
 
-        if not (user.has_permission(ServicePermissions.CHATBOT_ACCESS.value) and 
-            user.has_permission(model_id)):
-            log.warning('User has no permission to create chat for this model. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+        if not user.has_permission(ServicePermissions.CHATBOT_FULL_ACCESS.value) and model_id != bedrock_config.model_id:
+            log.warning('User has no permission to access this model. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
             raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to create chat for this model.')
 
         response_payload = chat_service.save_chat_session(
@@ -146,8 +149,8 @@ class ChatMessagesResource(Resource):
 
         user = from_dict(User, g.get('user'))
 
-        if not user.has_permission(ServicePermissions.CHATBOT_ACCESS.value):
-            log.warning('User has no permission to access chat messages: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+        if not user.has_permission(ServicePermissions.CHATBOT_LIMITED_ACCESS.value):
+            log.warning('User has no permission to access chat messages. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
             raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to access chat messages.')
 
         size = request.args.get('size', default=20, type=int) 
@@ -168,6 +171,10 @@ class ChatMessagesResource(Resource):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
 
         user = from_dict(User, g.get('user'))
+
+        if not user.has_permission(ServicePermissions.CHATBOT_LIMITED_ACCESS.value):
+            log.warning('User has no permission to send message. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
+            raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to send message.')
 
         request_data = from_dict(UserPromptRequestDTO, {'user_id': user.sub, 'chat_id': chat_id, 'prompt': api.payload['prompt']})
 
