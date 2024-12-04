@@ -58,3 +58,26 @@ class User:
             return True
             
         return False
+    
+
+    def can_access_model(self, model_id: str = None, default_model_id: str = None) -> bool:
+        """
+        Checks if user can access a specific model based on permissions.
+        
+        Args:
+            model_id (str): The model identifier to check.
+            default_model_id (str): The default model identifier.
+        
+        Returns:
+            bool: True if user can access the model, False otherwise.
+        """
+        if self.has_permission(ServicePermissions.CHATBOT_FULL_ACCESS.value):
+            return True
+        
+        if self.has_permission(ServicePermissions.CHATBOT_LIMITED_ACCESS.value):
+            if model_id is None:
+                return True
+            
+            return model_id == default_model_id
+        
+        return False
