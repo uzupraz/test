@@ -106,7 +106,7 @@ class DataStudioStepFunctionService(StepFunctionService):
         json_transformer_parameters["wrapOutputIn"] = "output"
         writer_parameters["unwrapInputFrom"] = "output"
         
-        defination = {
+        definition = {
             "StartAt": parser_name,
             "States": {
                 parser_name: self.get_lambda_task_definition(
@@ -135,9 +135,9 @@ class DataStudioStepFunctionService(StepFunctionService):
         }
 
         if mapping.description:
-            defination['Comment'] = mapping.description
+            definition['Comment'] = mapping.description
 
-        return defination
+        return definition
 
 
     def __get_processor_payload(self, parameters: dict):
