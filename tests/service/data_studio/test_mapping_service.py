@@ -189,7 +189,8 @@ class TestDataStudioMappingService(unittest.TestCase):
             created_by=self.TEST_USER_ID,
             owner_id=self.TEST_OWNER_ID,
             status=DataStudioMappingStatus.DRAFT.value,
-            active=True
+            active=True,
+            name="Untitled"
         )
 
         result = self.data_studio_mapping_service.create_mapping(self.TEST_USER_ID, self.TEST_OWNER_ID)
@@ -221,7 +222,8 @@ class TestDataStudioMappingService(unittest.TestCase):
             created_by=self.TEST_USER_ID,
             owner_id=self.TEST_OWNER_ID,
             status=DataStudioMappingStatus.DRAFT.value,
-            active=True
+            active=True,
+            name="Untitled"
         )
 
         with self.assertRaises(ServiceException) as context:
