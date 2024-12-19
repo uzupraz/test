@@ -74,7 +74,9 @@ chat_request_dto = api.model('Save chat request payload', {
 })
 
 prompt_request_dto = api.model('Save message request payload', {
-    'prompt': fields.String(required=True)
+    'prompt': fields.String(required=True),
+    'system_prompt': fields.String(required=False),
+    'use_history': fields.Boolean(required=False)
 })
 
 
@@ -172,8 +174,8 @@ class ChatMessagesResource(Resource):
             log.warning('User has no permission to send message. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
             raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to send message.')
 
-        request_data = from_dict(UserPromptRequestDTO, {'user_id': user.sub, 'chat_id': chat_id, 'prompt': api.payload['prompt']})
+        request_data = from_dict(UserPromptRequestDTO, {'user_id': user.sub, 'chat_id': chat_id, 'prompt': api.payload['prompt'], 'system_prompt': api.payload['system_prompt'], 'use_history': api.payload['use_history']})
 
-        response_generator = chat_service.save_chat_interaction(request_data.user_id, request_data.chat_id, request_data.prompt)
+        response_generator = chat_service.save_chat_interaction(request_data.user_id, request_data.chat_id, request_data.prompt, request_data.system_prompt, request_data.use_history)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerStreamResponse.generate(response_generator)

@@ -84,6 +84,8 @@ class UserPromptRequestDTO:
     user_id: str
     chat_id: str
     prompt: str
+    system_prompt: str = None
+    use_history: bool = True
 
 
 @dataclass

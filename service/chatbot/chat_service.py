@@ -112,7 +112,7 @@ class ChatService(metaclass=Singleton):
         return SaveChatResponseDTO(chat_id=chat.chat_id)
 
     
-    def save_chat_interaction(self, user_id: str, chat_id: str, prompt: str):
+    def save_chat_interaction(self, user_id: str, chat_id: str, prompt: str, system_prompt: str, use_history: bool):
         """
         Saves a chat interaction and streams the response.
 
@@ -120,6 +120,7 @@ class ChatService(metaclass=Singleton):
             user_id (str): The ID of the user.
             chat_id (str): The ID of the chat session.
             prompt (str): The user-provided prompt.
+            use_history (bool): Determines if interaction history should be included.
 
         Yields:
             str: Response chunks from the chat stream.
@@ -134,7 +135,7 @@ class ChatService(metaclass=Singleton):
             chat_context = self._ensure_chat_title(chat_id, user_id, prompt)
 
             response_chunks = []
-            for chunk in self._stream_chat_message(chat_id, prompt, chat_context):
+            for chunk in self._stream_chat_message(chat_id, prompt, chat_context, system_prompt, use_history):
                 response_chunks.append(chunk)
                 yield chunk
             
@@ -146,7 +147,7 @@ class ChatService(metaclass=Singleton):
             raise ServiceException(400, ServiceStatus.FAILURE, 'Failed to save chat interaction.')
 
 
-    def _stream_chat_message(self, chat_id: str, prompt: str, chat_context: ChatContext):
+    def _stream_chat_message(self, chat_id: str, prompt: str, chat_context: ChatContext, system_prompt: str = None, use_history: bool = True):
         """
         Streams the chat message response from the model.
 
@@ -154,17 +155,22 @@ class ChatService(metaclass=Singleton):
             chat_id (str): The ID of the chat session.
             prompt (str): The user-provided prompt.
             chat_context: The ChatContext object.
+            system_prompt (str, optional): A system-level instruction to set context for the conversation.
+            use_history (bool): Determines if interaction history should be included. Defaults to True.
 
         Yields:
             str: Response chunks from the model.
         """
-        interaction_records = self._get_chat_interaction_records(chat_id)
+        # Fetch interaction records based on the use_history flag
+        interaction_records = self._get_chat_interaction_records(chat_id) if use_history else []
+
         try:
             # Get response iterator from bedrock service
             response_iterator = self.bedrock_service.send_prompt_to_model(
                 model_id=chat_context.model_id,
                 prompt=prompt,
-                interaction_records=interaction_records
+                interaction_records=interaction_records,
+                system_prompt=system_prompt
             )
             
             # Store the iterator in a variable and then yield from it
@@ -174,6 +180,7 @@ class ChatService(metaclass=Singleton):
         except Exception:
             log.exception('Failed to stream chat message. chat_id: %s', chat_id)
             raise ServiceException(500, ServiceStatus.FAILURE, 'Could not stream chat message')
+
 
 
     def _get_chat_interaction_records(self, chat_id: str, size: int = 4) -> List[InteractionRecord]:
