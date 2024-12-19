@@ -47,7 +47,7 @@ class TestBedrockService(unittest.TestCase):
         ]
 
         # Execute
-        result = list(self.bedrock_service.send_prompt_to_model("test_model_id", "How are you?", interaction_records))
+        result = list(self.bedrock_service.send_prompt_to_model("test_model_id", "How are you?", interaction_records, "This is system prompt"))
 
         # Assert
         self.assertEqual(result, ["Hello", "World"])
@@ -62,7 +62,8 @@ class TestBedrockService(unittest.TestCase):
                     {'role': 'user', 'content': 'Hi!'},
                     {'role': 'assistant', 'content': 'Hello!'},
                     {'role': 'user', 'content': 'How are you?'}
-                ]
+                ],
+                'system': "This is system prompt"
             }).encode('utf-8'),
             contentType='application/json',
             accept='application/json'
@@ -81,7 +82,7 @@ class TestBedrockService(unittest.TestCase):
 
         # Execute & Assert
         with self.assertRaises(ServiceException) as context:
-            list(self.bedrock_service.send_prompt_to_model("test_model_id", "Prompt", interaction_records))
+            list(self.bedrock_service.send_prompt_to_model("test_model_id", "Prompt", interaction_records , "System Prompt"))
         self.assertEqual(context.exception.status_code, 500)
 
         # Verify the correct call was made to invoke_model_with_response_stream
@@ -93,7 +94,8 @@ class TestBedrockService(unittest.TestCase):
                 'messages': [
                     {'role': 'user', 'content': 'Test'},
                     {'role': 'user', 'content': 'Prompt'}
-                ]
+                ],
+                'system': "System Prompt"
             }).encode('utf-8'),
             contentType='application/json',
             accept='application/json'
@@ -123,8 +125,9 @@ class TestBedrockService(unittest.TestCase):
                 'anthropic_version': 'anthropic_version',
                 'max_tokens': 1000,
                 'messages': [
-                    {'role': 'user', 'content': "Generate a short, concise title for the following message that captures its essence: 'Test message'. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"}
-                ]
+                    {'role': 'user', 'content': 'Test message'}
+                ],
+                'system': "Generate a short, concise title for the following message that captures its essence. Only include the essential keywords or phrase, without quotations and adding prefixes like Title",
             }).encode('utf-8'),
             contentType='application/json',
             accept='application/json'
@@ -151,8 +154,9 @@ class TestBedrockService(unittest.TestCase):
                 'anthropic_version': 'anthropic_version',
                 'max_tokens': 1000,
                 'messages': [
-                    {'role': 'user', 'content': "Generate a short, concise title for the following message that captures its essence: 'Test message'. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"}
-                ]
+                    {'role': 'user', 'content': "Test message"}
+                ],
+                'system': "Generate a short, concise title for the following message that captures its essence. Only include the essential keywords or phrase, without quotations and adding prefixes like Title",
             }).encode('utf-8'),
             contentType='application/json',
             accept='application/json'
@@ -182,8 +186,9 @@ class TestBedrockService(unittest.TestCase):
                 'anthropic_version': 'anthropic_version',
                 'max_tokens': 1000,
                 'messages': [
-                    {'role': 'user', 'content': "Generate a short, concise title for the following message that captures its essence: 'Test message'. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"}
-                ]
+                    {'role': 'user', 'content': 'Test message'}
+                ],
+                'system': "Generate a short, concise title for the following message that captures its essence. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"
             }).encode('utf-8'),
             contentType='application/json',
             accept='application/json'

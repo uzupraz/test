@@ -18,7 +18,7 @@ class BedrockService:
 
 
     content_type = 'application/json'
-    PROMPT = "Generate a short, concise title for the following message that captures its essence: '{}'. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"
+    SYSTEM_PROMPT = "Generate a short, concise title for the following message that captures its essence. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"
 
 
     def __init__(self, bedrock_config: AwsBedrockConfig) -> None:
@@ -107,8 +107,9 @@ class BedrockService:
                 max_tokens=self.bedrock_config.max_tokens,
                 messages=[InteractionRecord(
                     role="user",
-                    content=self.PROMPT.format(message)  
+                    content=message
                 )],
+                system=self.SYSTEM_PROMPT
             )
 
             response = self.bedrock_client.invoke_model(
