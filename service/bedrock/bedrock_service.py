@@ -31,7 +31,7 @@ class BedrockService:
         self.bedrock_config = bedrock_config
         
 
-    def send_prompt_to_model(self, model_id: str, prompt: str, interaction_records: List[InteractionRecord], system_prompt: str = None):
+    def send_prompt_to_model(self, model_id: str, prompt: str, interaction_records: List[InteractionRecord], system_prompt: str):
         """
         Sends a prompt to the specified model and streams the response back.
 
@@ -54,10 +54,6 @@ class BedrockService:
         try:
             chats = []
 
-            # Add system prompt if provided
-            if system_prompt:
-                chats.append(from_dict(InteractionRecord, {"role": "system", "content": system_prompt}))
-
             # Add interaction records (previous conversation history)
             for message in interaction_records:
                 chats.append(from_dict(InteractionRecord, {"role": message.role, "content": message.content}))
@@ -68,7 +64,8 @@ class BedrockService:
             request_body = ModelInteractionRequest(
                 anthropic_version=self.bedrock_config.anthropic_version,
                 max_tokens=self.bedrock_config.max_tokens,
-                messages=chats
+                messages=chats,
+                system=system_prompt
             )
 
             response = self.bedrock_client.invoke_model_with_response_stream(
