@@ -42,7 +42,7 @@ class BedrockService:
             model_id (str): The ID of the model to send the prompt to.
             prompt (str): The prompt that will be sent to the model.
             interaction_records (List[InteractionReord]): A list of InteractionReord objects containing previous conversation history.
-            system_prompt (str, optional): A system-level instruction to set context for the conversation.
+            system_prompt (str): A system-level instruction to set context for the conversation.
 
         Yields:
             str: A chunk of content from the model's response.
@@ -54,11 +54,9 @@ class BedrockService:
         try:
             chats = []
 
-            # Add interaction records (previous conversation history)
             for message in interaction_records:
                 chats.append(from_dict(InteractionRecord, {"role": message.role, "content": message.content}))
 
-            # Add user's current prompt
             chats.append(from_dict(InteractionRecord, {"role": "user", "content": prompt}))
 
             request_body = ModelInteractionRequest(

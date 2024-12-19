@@ -372,7 +372,6 @@ class TestChatService(unittest.TestCase):
         )
 
 
-
     def test_save_chat_interaction_failure(self):
         """
         Test case for handling failure when saving a chat interaction.

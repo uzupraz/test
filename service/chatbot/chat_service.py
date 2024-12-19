@@ -147,7 +147,7 @@ class ChatService(metaclass=Singleton):
             raise ServiceException(400, ServiceStatus.FAILURE, 'Failed to save chat interaction.')
 
 
-    def _stream_chat_message(self, chat_id: str, prompt: str, chat_context: ChatContext, system_prompt: str = None, use_history: bool = True):
+    def _stream_chat_message(self, chat_id: str, prompt: str, chat_context: ChatContext, system_prompt: str, use_history: bool):
         """
         Streams the chat message response from the model.
 
@@ -155,8 +155,8 @@ class ChatService(metaclass=Singleton):
             chat_id (str): The ID of the chat session.
             prompt (str): The user-provided prompt.
             chat_context: The ChatContext object.
-            system_prompt (str, optional): A system-level instruction to set context for the conversation.
-            use_history (bool): Determines if interaction history should be included. Defaults to True.
+            system_prompt (str): A system-level instruction to set context for the conversation.
+            use_history (bool): Determines if interaction history should be included. 
 
         Yields:
             str: Response chunks from the model.
