@@ -5,7 +5,7 @@ from controller import common_controller as common_ctrl
 from repository import ChatRepository
 from exception import ServiceException
 from enums import ServiceStatus
-from model import Chat, ChatMessage, SaveChatResponseDTO, ChatResponse, MessageHistoryResponse, MessageHistoryPagination, ChatInteraction, InteractionRecord, ChatContext
+from model import Chat, ChatMessage, SaveChatResponseDTO, ChatResponse, MessageHistoryResponse, MessageHistoryPagination, ChatInteraction, InteractionRecord, ChatContext, UserPromptRequestDTO
 from utils import Singleton, Base64ConversionUtils
 from service.bedrock.bedrock_service import BedrockService
 
@@ -112,30 +112,27 @@ class ChatService(metaclass=Singleton):
         return SaveChatResponseDTO(chat_id=chat.chat_id)
 
     
-    def save_chat_interaction(self, user_id: str, chat_id: str, prompt: str, system_prompt: str, use_history: bool):
+    def save_chat_interaction(self, request_data: UserPromptRequestDTO):
         """
         Saves a chat interaction and streams the response.
 
         Args:
-            user_id (str): The ID of the user.
-            chat_id (str): The ID of the chat session.
-            prompt (str): The user-provided prompt.
-            use_history (bool): Determines if interaction history should be included.
+            request_data (UserPromptRequestDTO): The request data containing the chat ID, user_id, prompt, system_chat and use_history.
 
         Yields:
             str: Response chunks from the chat stream.
         """
         chat_interaction = ChatInteraction(
-            chat_id=chat_id,
-            prompt=prompt,
+            chat_id=request_data.chat_id,
+            prompt=request_data.prompt,
             response="" # Empty string provides safe starting point before populating it with chunks from stream.
         )
         
         try:
-            chat_context = self._ensure_chat_title(chat_id, user_id, prompt)
+            chat_context = self._ensure_chat_title(request_data.chat_id, request_data.user_id, request_data.prompt)
 
             response_chunks = []
-            for chunk in self._stream_chat_message(chat_id, prompt, chat_context, system_prompt, use_history):
+            for chunk in self._stream_chat_message(request_data.chat_id, request_data.prompt, chat_context, request_data.system_prompt, request_data.use_history):
                 response_chunks.append(chunk)
                 yield chunk
             
@@ -143,7 +140,7 @@ class ChatService(metaclass=Singleton):
             self.chat_repository.save_chat_interaction(chat_interaction=chat_interaction)
             
         except Exception:
-            log.exception('Failed to save chat interaction. chat_id: %s', chat_id)
+            log.exception('Failed to save chat interaction. chat_id: %s', request_data.chat_id)
             raise ServiceException(400, ServiceStatus.FAILURE, 'Failed to save chat interaction.')
 
 
