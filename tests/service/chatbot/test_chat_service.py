@@ -318,6 +318,7 @@ class TestChatService(unittest.TestCase):
         """
         # Test data
         test_prompt = "Hello, how are you?"
+        test_system_prompt = "This is system prompt",
         test_response_chunks = ["Hello", ", I'm", " doing well!"]
         test_full_response = "Hello, I'm doing well!"
         mock_chat_context = from_dict(ChatContext, {
@@ -344,7 +345,9 @@ class TestChatService(unittest.TestCase):
         for chunk in self.chat_service.save_chat_interaction(
             user_id=self.TEST_USER_ID,
             chat_id=self.TEST_CHAT_ID,
-            prompt=test_prompt
+            prompt=test_prompt,
+            system_prompt=test_system_prompt,
+            use_history=True
         ):
             response_chunks.append(chunk)
 
@@ -362,7 +365,7 @@ class TestChatService(unittest.TestCase):
         expected_chat_info = ChatInteraction(
             chat_id=self.TEST_CHAT_ID,
             prompt=test_prompt,
-            response=test_full_response
+            response=test_full_response,
         )
         self.chat_service.chat_repository.save_chat_interaction.assert_called_once_with(
             chat_interaction=expected_chat_info
@@ -376,6 +379,7 @@ class TestChatService(unittest.TestCase):
         Expected Result: ServiceException is raised.
         """
         test_prompt = "Hello, how are you?"
+        test_system_prompt = "This is system prompt."
         
         # Mock chat timestamp response
         mock_timestamp_response = MagicMock()
@@ -411,7 +415,9 @@ class TestChatService(unittest.TestCase):
             list(self.chat_service.save_chat_interaction(
                 user_id=self.TEST_USER_ID,
                 chat_id=self.TEST_CHAT_ID,
-                prompt=test_prompt
+                prompt=test_prompt,
+                system_prompt=test_system_prompt,
+                use_history=True
             ))
 
         self.assertEqual(context.exception.message, 'Failed to save chat interaction.')
