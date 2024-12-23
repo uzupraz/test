@@ -352,6 +352,9 @@ class TestChatService(unittest.TestCase):
         for chunk in self.chat_service.save_chat_interaction(request_data):
             response_chunks.append(chunk)
 
+        # Convert bytes to string 
+        response_chunks = [chunk.decode('utf-8') for chunk in response_chunks]
+
         # Verify the responses were streamed correctly
         self.assertEqual(response_chunks, test_response_chunks)
 
@@ -467,6 +470,9 @@ class TestChatService(unittest.TestCase):
         for chunk in self.chat_service.save_chat_interaction(request_data):
             response_chunks.append(chunk)
 
+        # Convert bytes to string 
+        response_chunks = [chunk.decode('utf-8') for chunk in response_chunks]
+
         # Verify the responses were streamed correctly
         self.assertEqual(response_chunks, test_response_chunks)
 
@@ -482,6 +488,13 @@ class TestChatService(unittest.TestCase):
             chat_id=self.TEST_CHAT_ID,
             prompt=test_prompt,
             response=test_full_response,
+        )
+        # Verify send_prompt_to_model is called with interaction_records=[]
+        self.chat_service.bedrock_service.send_prompt_to_model.assert_called_once_with(
+            model_id=mock_chat_context.model_id,
+            prompt=test_prompt,
+            interaction_records=[],
+            system_prompt=test_system_prompt
         )
         self.chat_service._get_chat_interaction_records.assert_not_called()
         self.chat_service.chat_repository.save_chat_interaction.assert_called_once_with(

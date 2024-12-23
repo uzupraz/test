@@ -44,7 +44,7 @@ class ServerStreamResponse:
                     error_response = self._create_error_response()
                     yield error_response.get_data(as_text=True)
 
-            return Response(
+            response = Response(
                 stream_with_context(safe_stream_generator()),
                 status=200,
                 headers={
@@ -53,8 +53,14 @@ class ServerStreamResponse:
                     "X-Accel-Buffering": "no",
                     "Access-Control-Allow-Origin": "*",
                     "Content-Type": self.content_type,
+                    "Connection": "keep-alive",
+                    "X-Content-Type-Options": "nosniff",
                 },
             )
+
+            response.direct_passthrough = True
+            return response
+        
         except Exception as e:
             log.exception("Failed to create streaming response: %s", e)
             return self._create_error_response()

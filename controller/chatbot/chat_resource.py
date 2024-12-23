@@ -163,7 +163,7 @@ class ChatMessagesResource(Resource):
         return ServerResponse.success(payload=response_payload), 200
     
 
-    @api.doc('Send prompt to model and save prompt and response')
+    @api.doc('Send prompt to model with previous messages as context or without and save prompt and response')
     @api.expect(prompt_request_dto, validate=True)
     def post(self, chat_id):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
@@ -180,7 +180,7 @@ class ChatMessagesResource(Resource):
             {
                 'user_id': user.sub,
                 'chat_id': chat_id,
-                'prompt': payload.get('prompt'),  
+                'prompt': api.payload['prompt'],  
                 'system_prompt': payload.get('system_prompt', ''),  
                 'use_history': payload.get('use_history', True),  
             }

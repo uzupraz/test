@@ -134,7 +134,7 @@ class ChatService(metaclass=Singleton):
             response_chunks = []
             for chunk in self._stream_chat_message(request_data.chat_id, request_data.prompt, chat_context, request_data.system_prompt, request_data.use_history):
                 response_chunks.append(chunk)
-                yield chunk
+                yield chunk.encode('utf-8')
             
             chat_interaction.response = ''.join(response_chunks) # Used as separator for chunks
             self.chat_repository.save_chat_interaction(chat_interaction=chat_interaction)
