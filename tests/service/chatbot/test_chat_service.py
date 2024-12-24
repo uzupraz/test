@@ -5,7 +5,7 @@ from dacite import from_dict
 
 from tests.test_utils import TestUtils
 from exception import ServiceException
-from model import Chat, ChatMessage, SaveChatResponseDTO, ChatResponse, MessageHistoryResponse, ChatInteraction, ChatContext, ChatSession
+from model import Chat, ChatMessage, SaveChatResponseDTO, ChatResponse, MessageHistoryResponse, ChatInteraction, ChatContext, ChatSession, UserPromptRequestDTO
 from service import ChatService
 from enums import ServiceStatus
 
@@ -318,6 +318,7 @@ class TestChatService(unittest.TestCase):
         """
         # Test data
         test_prompt = "Hello, how are you?"
+        test_system_prompt = "This is system prompt",
         test_response_chunks = ["Hello", ", I'm", " doing well!"]
         test_full_response = "Hello, I'm doing well!"
         mock_chat_context = from_dict(ChatContext, {
@@ -341,12 +342,18 @@ class TestChatService(unittest.TestCase):
 
         # Call the method and collect streamed responses
         response_chunks = []
-        for chunk in self.chat_service.save_chat_interaction(
+        request_data = UserPromptRequestDTO(
             user_id=self.TEST_USER_ID,
             chat_id=self.TEST_CHAT_ID,
-            prompt=test_prompt
-        ):
+            prompt=test_prompt,
+            system_prompt=test_system_prompt,
+            use_history=True
+        )
+        for chunk in self.chat_service.save_chat_interaction(request_data):
             response_chunks.append(chunk)
+
+        # Convert bytes to string 
+        response_chunks = [chunk.decode('utf-8') for chunk in response_chunks]
 
         # Verify the responses were streamed correctly
         self.assertEqual(response_chunks, test_response_chunks)
@@ -362,12 +369,11 @@ class TestChatService(unittest.TestCase):
         expected_chat_info = ChatInteraction(
             chat_id=self.TEST_CHAT_ID,
             prompt=test_prompt,
-            response=test_full_response
+            response=test_full_response,
         )
         self.chat_service.chat_repository.save_chat_interaction.assert_called_once_with(
             chat_interaction=expected_chat_info
         )
-
 
 
     def test_save_chat_interaction_failure(self):
@@ -376,6 +382,7 @@ class TestChatService(unittest.TestCase):
         Expected Result: ServiceException is raised.
         """
         test_prompt = "Hello, how are you?"
+        test_system_prompt = "This is system prompt."
         
         # Mock chat timestamp response
         mock_timestamp_response = MagicMock()
@@ -407,16 +414,92 @@ class TestChatService(unittest.TestCase):
         self.chat_service._get_chat_interaction_records = MagicMock(return_value=[])
 
         # Verify the exception is raised
+        request_data = UserPromptRequestDTO(
+            user_id=self.TEST_USER_ID,
+            chat_id=self.TEST_CHAT_ID,
+            prompt=test_prompt,
+            system_prompt=test_system_prompt,
+            use_history=True
+        )
+        # Verify message was not saved with complete response
         with self.assertRaises(ServiceException) as context:
-            list(self.chat_service.save_chat_interaction(
-                user_id=self.TEST_USER_ID,
-                chat_id=self.TEST_CHAT_ID,
-                prompt=test_prompt
-            ))
+            list(self.chat_service.save_chat_interaction(request_data))
 
         self.assertEqual(context.exception.message, 'Failed to save chat interaction.')
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.status, ServiceStatus.FAILURE)
+        
+        
+    def test_save_chat_interaction_generates_response_if_use_history_false(self):
+        """
+        Test case for saving a chat interaction if use_history is false.
+        """
+        # Test data
+        test_prompt = "Hello, how are you?"
+        test_system_prompt = "This is system prompt",
+        test_response_chunks = ["Hello", ", I'm", " doing well!"]
+        test_full_response = "Hello, I'm doing well!"
+        mock_chat_context = from_dict(ChatContext, {
+            'model_id': self.TEST_MODEL_ID,
+            'title': 'Test Chat'
+        })
+
+        # Mock _ensure_chat_title
+        self.chat_service._ensure_chat_title = MagicMock(return_value=mock_chat_context)
+
+        # Setup repository mocks
+        self.chat_service.chat_repository.save_chat_interaction = MagicMock()
+
+        # Mock _get_chat_interaction_records
+        self.chat_service._get_chat_interaction_records = MagicMock(return_value=[])
+
+        # Mock bedrock service response
+        self.chat_service.bedrock_service.send_prompt_to_model = MagicMock(
+            return_value=iter(test_response_chunks)
+        )
+
+        # Call the method and collect streamed responses
+        response_chunks = []
+        request_data = UserPromptRequestDTO(
+            user_id=self.TEST_USER_ID,
+            chat_id=self.TEST_CHAT_ID,
+            prompt=test_prompt,
+            system_prompt=test_system_prompt,
+            use_history=False
+        )
+        for chunk in self.chat_service.save_chat_interaction(request_data):
+            response_chunks.append(chunk)
+
+        # Convert bytes to string 
+        response_chunks = [chunk.decode('utf-8') for chunk in response_chunks]
+
+        # Verify the responses were streamed correctly
+        self.assertEqual(response_chunks, test_response_chunks)
+
+        # Verify _ensure_chat_title was called correctly
+        self.chat_service._ensure_chat_title.assert_called_once_with(
+            self.TEST_CHAT_ID,
+            self.TEST_USER_ID,
+            test_prompt
+        )
+
+        # Verify message was saved with complete response
+        expected_chat_info = ChatInteraction(
+            chat_id=self.TEST_CHAT_ID,
+            prompt=test_prompt,
+            response=test_full_response,
+        )
+        # Verify send_prompt_to_model is called with interaction_records=[]
+        self.chat_service.bedrock_service.send_prompt_to_model.assert_called_once_with(
+            model_id=mock_chat_context.model_id,
+            prompt=test_prompt,
+            interaction_records=[],
+            system_prompt=test_system_prompt
+        )
+        self.chat_service._get_chat_interaction_records.assert_not_called()
+        self.chat_service.chat_repository.save_chat_interaction.assert_called_once_with(
+            chat_interaction=expected_chat_info
+        )
 
 
     def test_ensure_chat_title_generates_new_title(self):

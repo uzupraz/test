@@ -84,6 +84,8 @@ class UserPromptRequestDTO:
     user_id: str
     chat_id: str
     prompt: str
+    system_prompt: str 
+    use_history: bool
 
 
 @dataclass
@@ -102,3 +104,4 @@ class ModelInteractionRequest:
     anthropic_version: str
     max_tokens: int
     messages: List[InteractionRecord]
+    system: str

@@ -18,7 +18,7 @@ class BedrockService:
 
 
     content_type = 'application/json'
-    PROMPT = "Generate a short, concise title for the following message that captures its essence: '{}'. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"
+    SYSTEM_PROMPT = "Generate a short, concise title for the following message that captures its essence. Only include the essential keywords or phrase, without quotations and adding prefixes like Title"
 
 
     def __init__(self, bedrock_config: AwsBedrockConfig) -> None:
@@ -31,7 +31,7 @@ class BedrockService:
         self.bedrock_config = bedrock_config
         
 
-    def send_prompt_to_model(self, model_id: str, prompt: str, interaction_records: List[InteractionRecord]):
+    def send_prompt_to_model(self, model_id: str, prompt: str, interaction_records: List[InteractionRecord], system_prompt: str):
         """
         Sends a prompt to the specified model and streams the response back.
 
@@ -42,6 +42,7 @@ class BedrockService:
             model_id (str): The ID of the model to send the prompt to.
             prompt (str): The prompt that will be sent to the model.
             interaction_records (List[InteractionReord]): A list of InteractionReord objects containing previous conversation history.
+            system_prompt (str): A system-level instruction to set context for the conversation.
 
         Yields:
             str: A chunk of content from the model's response.
@@ -51,16 +52,18 @@ class BedrockService:
         """
         log.info('Sending prompt to model. model_id: %s', model_id)
         try:
-            chats= []
+            chats = []
+
             for message in interaction_records:
                 chats.append(from_dict(InteractionRecord, {"role": message.role, "content": message.content}))
-                
+
             chats.append(from_dict(InteractionRecord, {"role": "user", "content": prompt}))
-            
+
             request_body = ModelInteractionRequest(
                 anthropic_version=self.bedrock_config.anthropic_version,
                 max_tokens=self.bedrock_config.max_tokens,
-                messages=chats
+                messages=chats,
+                system=system_prompt
             )
 
             response = self.bedrock_client.invoke_model_with_response_stream(
@@ -104,8 +107,9 @@ class BedrockService:
                 max_tokens=self.bedrock_config.max_tokens,
                 messages=[InteractionRecord(
                     role="user",
-                    content=self.PROMPT.format(message)  
+                    content=message
                 )],
+                system=self.SYSTEM_PROMPT
             )
 
             response = self.bedrock_client.invoke_model(

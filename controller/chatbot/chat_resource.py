@@ -74,7 +74,9 @@ chat_request_dto = api.model('Save chat request payload', {
 })
 
 prompt_request_dto = api.model('Save message request payload', {
-    'prompt': fields.String(required=True)
+    'prompt': fields.String(required=True),
+    'system_prompt': fields.String(required=False),
+    'use_history': fields.Boolean(required=False)
 })
 
 
@@ -161,7 +163,7 @@ class ChatMessagesResource(Resource):
         return ServerResponse.success(payload=response_payload), 200
     
 
-    @api.doc('Send prompt to model and save prompt and response')
+    @api.doc('Send prompt to model with previous messages as context or without and save prompt and response')
     @api.expect(prompt_request_dto, validate=True)
     def post(self, chat_id):
         log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
@@ -172,8 +174,20 @@ class ChatMessagesResource(Resource):
             log.warning('User has no permission to send message. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.FAILURE.value)
             raise ServiceException(403, ServiceStatus.FAILURE, 'User has no permission to send message.')
 
-        request_data = from_dict(UserPromptRequestDTO, {'user_id': user.sub, 'chat_id': chat_id, 'prompt': api.payload['prompt']})
+        payload = api.payload
+        request_data = from_dict(
+            UserPromptRequestDTO,
+            {
+                'user_id': user.sub,
+                'chat_id': chat_id,
+                'prompt': api.payload['prompt'],  
+                'system_prompt': payload.get('system_prompt', ''),  
+                'use_history': payload.get('use_history', True),  
+            }
+        )
 
-        response_generator = chat_service.save_chat_interaction(request_data.user_id, request_data.chat_id, request_data.prompt)
+        response_generator = chat_service.save_chat_interaction(request_data)
+        
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerStreamResponse.generate(response_generator)
+
