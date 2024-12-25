@@ -46,3 +46,4 @@ uvloop==0.17.0
 webargs==8.3.0
 websockets==11.0.3
 Werkzeug==3.0.1
+psycopg2-binary==2.9.10

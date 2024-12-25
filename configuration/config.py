@@ -81,3 +81,12 @@ class AwsBedrockConfig(metaclass=Singleton):
     model_id:str = os.getenv('AWS_BEDROCK_MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')
     anthropic_version:str = os.getenv('AWS_BEDROCK_ANTHROPIC_VERSION', 'bedrock-2023-05-31')
     max_tokens:int = int(os.getenv('AWS_BEDROCK_MAX_TOKENS', 1000))
+
+
+@dataclasses.dataclass(init=False)
+class PostgresConfig:
+    postgres_host:str = os.getenv('POSTGRES_HOST')
+    postgres_port:int = os.getenv('POSTGRES_PORT')
+    postgres_user:str = os.getenv('POSTGRES_USER')
+    postgres_pass:str = os.getenv('POSTGRES_PASS')
+    postgres_database:str = os.getenv('POSTGRES_DATABASE')
