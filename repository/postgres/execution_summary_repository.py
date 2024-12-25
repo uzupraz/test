@@ -43,7 +43,7 @@ class ExecutionSummaryRepository(metaclass=Singleton):
 
         query = """SELECT 
             COUNT(*) AS total_executions,
-            COUNT(CASE WHEN status = 'ERROR' THEN 1 END) AS failed_executions,
+            COUNT(CASE WHEN status = 'ERROR' THEN 1 END) AS failed_executions
         FROM 
             interconnecthub_executions_summary
         WHERE
@@ -94,7 +94,7 @@ class ExecutionSummaryRepository(metaclass=Singleton):
             cursor.execute(query, (owner_id, start_timestamp, end_timestamp))
             metrics = cursor.fetchall()
             log.info("Execution metrics retrieve successfully. owner_id: %s", owner_id)
-            return [WorkflowExecutionMetric(date=metric[0], total_executions=metric[1], failed_executions=metric[2]) for metric in metrics]
+            return [WorkflowExecutionMetric(date=metric[0].isoformat(), total_executions=metric[1], failed_executions=metric[2]) for metric in metrics]
         except Exception as e:
             log.exception('Unable to retrieve execution metrics. owner_id: %s', owner_id)
             raise ServiceException(409, ServiceStatus.FAILURE, 'Unable to retrieve execution metrics.')

@@ -21,13 +21,14 @@ from .csa.csa_updater_resource import api as csa_updater_ns
 from .custom_script_resource import api as custom_script_ns
 from .chatbot.chat_resource import api as chatbot_ns
 from .server_response import ServerResponse
+from .v2.dashboard_resource import api as dashboard_v2_ns
 from enums import ServiceStatus, APIStatus
 from exception import ServiceException
     
 
 
 api = Api(version='1.0', title='InterconnectHub Management API', description='InterconnectHub Management for Workflow related services.', doc='/api-docs')
-namespaces = [health_ns, workflow_ns, processors_ns, files_ns, dashboard_ns, data_studio_ns, data_table_ns, custom_script_ns, csa_updater_ns, chatbot_ns]
+namespaces = [health_ns, workflow_ns, processors_ns, files_ns, dashboard_ns, data_studio_ns, data_table_ns, custom_script_ns, csa_updater_ns, chatbot_ns, dashboard_v2_ns]
 
 for ns in namespaces:
     api.add_namespace(ns)

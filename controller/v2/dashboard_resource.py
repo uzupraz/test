@@ -14,7 +14,7 @@ from exception import ServiceException
 from enums import ServiceStatus
 
 
-api = Namespace("v2 Dashboard API", description="API for the dashboard home", path="/interconnecthub/v2/dashboard/")
+api = Namespace("Dashboard API V2", description="API for the dashboard home", path="/interconnecthub/v2/dashboard/")
 log = api.logger
 
 
@@ -120,5 +120,6 @@ class WorkflowExecutionEventsResource(Resource):
         user_data = g.get("user")
         user = User(**user_data)
         workflow_execution_metrics = dashboard_service.get_workflow_execution_metrics_by_date(user.organization_id, start_date, end_date)
+        print(workflow_execution_metrics)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
         return ServerResponse.success(payload=workflow_execution_metrics), 200

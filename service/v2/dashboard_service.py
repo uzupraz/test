@@ -22,14 +22,14 @@ class DashboardService(metaclass=Singleton):
         self.execution_summary_repository = execution_summary_repository
 
 
-    def get_workflow_stats(self, owner_id: str, start_date: str, end_date: str) -> WorkflowStats:
+    def get_workflow_stats(self, owner_id: str, start_date: datetime, end_date: datetime) -> WorkflowStats:
         """
         Get the stats about the workflows from DynamoDB and Postgres.
 
         Parameters:
             owner_id(str): Owner ID for the workflow stats.
-            start_date(str): Start date for the stats.
-            end_date(str): End date for the stats.
+            start_date(datetime): Start date for the stats.
+            end_date(datetime): End date for the stats.
 
         Returns:
             workflow_stats(WorkflowStats): The workflow stats.
@@ -45,14 +45,14 @@ class DashboardService(metaclass=Singleton):
         )
     
 
-    def get_workflow_execution_metrics_by_date(self, owner_id: str, start_date: str, end_date: str) -> List[WorkflowExecutionMetric]:
+    def get_workflow_execution_metrics_by_date(self, owner_id: str, start_date: datetime, end_date: datetime) -> List[WorkflowExecutionMetric]:
         """
         Get the metrics about the workflow executions from DynamoDB and Postgres.
 
         Parameters:
             owner_id(str): Owner ID for the workflow stats.
-            start_date(str): Start date for the stats.
-            end_date(str): End date for the stats.
+            start_date(datetime): Start date for the stats.
+            end_date(datetime): End date for the stats.
 
         Returns:
             workflow_execution_metric(WorkflowExecutionMetric): The workflow execution metric.
@@ -62,10 +62,7 @@ class DashboardService(metaclass=Singleton):
         return self.execution_summary_repository.get_workflow_execution_metrics_by_date(owner_id, start_timestamp, end_timestamp)
 
 
-    def _get_timestamps_from_iso_dates(self, start_date: str, end_date: str):
-        start = datetime.fromisoformat(start_date)
-        end = datetime.fromisoformat(end_date)
-
-        start_timestamp = int(start.timestamp())
-        end_timestamp = int(end.timestamp())
+    def _get_timestamps_from_iso_dates(self, start_date: datetime, end_date: datetime):
+        start_timestamp = int(start_date.timestamp())
+        end_timestamp = int(end_date.timestamp())
         return start_timestamp, end_timestamp
