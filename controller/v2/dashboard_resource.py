@@ -82,6 +82,21 @@ workflow_failed_events_response_dto = api.inherit('Get Workflow Failed Events Re
 })
 
 
+workflow_failures_response_dto = api.inherit('Get Workflow Failures Response',server_response, {
+    'payload': fields.List(fields.Nested(api.model('Workflow Failures',{
+        "workflow": fields.Nested(api.model("Workflow", {
+            "id": fields.String(description='Workflow ID'),
+            "name": fields.String(description='Workflow Name'),
+        })),
+        "errors": fields.List(fields.Nested(api.model("Workflow errors during execution", {
+            "error_code": fields.String(description='Error code'),
+            "occurrence": fields.Integer(description='Total occurrence of error'),
+            "severity": fields.Float(description='Severity of the error.'),
+        })))
+    })))
+})
+
+
 @api.route("/stats")
 class WorkflowStatsResource(Resource):
 
@@ -89,7 +104,7 @@ class WorkflowStatsResource(Resource):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description="Get the stats about the workflows.")
+    @api.doc(description="Gets total number of executions and failed executions.")
     @api.expect(parser, validate=True)
     @api.marshal_with(workflow_stats_response_dto, skip_none=True)
     def get(self):
@@ -118,13 +133,13 @@ class WorkflowStatsResource(Resource):
 
 
 @api.route("/executions")
-class WorkflowExecutionEventsResource(Resource):
+class WorkflowExecutionMetricsResource(Resource):
 
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description="Get workflow execution events.")
+    @api.doc(description="Gets total executions and total failed exeuctions by date..")
     @api.expect(parser, validate=True)
     @api.marshal_with(workflow_execution_metrics_response_dto, skip_none=True)
     def get(self):
@@ -159,7 +174,7 @@ class WorkflowIntegrationsResource(Resource):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description="Get all the active workflow integrations.")
+    @api.doc(description="Integrations stats which includes workflow id, name, last event date, failure count and failure ratio.")
     @api.expect(parser, validate=True)
     @api.marshal_with(workflow_integrations_response_dto, skip_none=True)
     def get(self):
@@ -188,13 +203,13 @@ class WorkflowIntegrationsResource(Resource):
 
 
 @api.route("/failed-executions")
-class WorkflowFailedEventsResource(Resource):
+class WorkflowFailedExecutionsResource(Resource):
 
     def __init__(self, api=None, *args, **kwargs):
         super().__init__(api, *args, **kwargs)
 
 
-    @api.doc(description="Get workflow failed events.")
+    @api.doc(description="Failed events stats which includes workflow details, event_id, execution_id & error_code.")
     @api.expect(parser, validate=True)
     @api.marshal_with(workflow_failed_events_response_dto, skip_none=True)
     def get(self):
@@ -217,6 +232,41 @@ class WorkflowFailedEventsResource(Resource):
 
         user_data = g.get("user")
         user = User(**user_data)
-        workflow_failed_events = dashboard_service.get_workflow_failed_executions(user.organization_id, start_date, end_date)
+        failed_executions = dashboard_service.get_workflow_failed_executions(user.organization_id, start_date, end_date)
         log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
-        return ServerResponse.success(payload=workflow_failed_events), 200
+        return ServerResponse.success(payload=failed_executions), 200
+    
+
+@api.route("/workflow-failures")
+class WorkflowFailuresResource(Resource):
+
+    def __init__(self, api=None, *args, **kwargs):
+        super().__init__(api, *args, **kwargs)
+
+
+    @api.doc(description="Get workflow failures.")
+    @api.expect(parser, validate=True)
+    @api.marshal_with(workflow_failures_response_dto, skip_none=True)
+    def get(self):
+        log.info('Received API Request. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.START.value)
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        # Parse the dates using ISO format
+        try:
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
+        except ValueError:
+            log.error("Invalid date format. Use ISO format. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "Invalid date format. Use ISO format.")
+
+        # Check if the date range is within 14 days
+        if end_date - start_date >= timedelta(days=14):
+            log.error("The date range cannot exceed 14 days. api: %s, method: %s", request.url, request.method)
+            raise ServiceException(400, ServiceStatus.FAILURE, "The date range cannot exceed 14 days.")
+
+        user_data = g.get("user")
+        user = User(**user_data)
+        workflow_failures = dashboard_service.get_workflow_failures(user.organization_id, start_date, end_date)
+        log.info('Done API Invocation. api: %s, method: %s, status: %s', request.url, request.method, APIStatus.SUCCESS.value)
+        return ServerResponse.success(payload=workflow_failures), 200

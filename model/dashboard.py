@@ -34,6 +34,15 @@ class WorkflowFailure:
     workflow: WorkflowItem
     errors: list[WorkflowError]
 
+
+@dataclass
+class WorkflowErrorFlatStructure:
+    error_occurrence: int
+    workflow_name: str
+    workflow_id: str
+    error_code: str = WorkflowErrorCode.UNKNOWN.value
+
+
 @dataclass
 class WorkflowFailedEvent:
     date: str
