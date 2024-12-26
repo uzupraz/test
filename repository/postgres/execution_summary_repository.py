@@ -2,7 +2,7 @@ from configuration import PostgresConfig
 from utils import Singleton
 from exception import ServiceException
 from enums import ServiceStatus
-from model import WorkflowExecutionMetric
+from model import WorkflowExecutionMetric, WorkflowIntegration, WorkflowStats, WorkflowItem, WorkflowFailedEvent
 
 import logging as log
 from typing import Tuple, List
@@ -38,7 +38,7 @@ class ExecutionSummaryRepository(metaclass=Singleton):
             raise
 
 
-    def get_execution_stats(self, owner_id: str, start_timestamp: int, end_timestamp: int) -> Tuple[int, int]:
+    def get_execution_stats(self, owner_id: str, start_timestamp: int, end_timestamp: int) -> WorkflowStats:
         log.info("Retrieving execution stats. owner_id: %s", owner_id)
 
         query = """SELECT 
@@ -57,16 +57,13 @@ class ExecutionSummaryRepository(metaclass=Singleton):
             cursor = conn.cursor()
             cursor.execute(query, (owner_id, start_timestamp, end_timestamp))
             stats = cursor.fetchone()
-            log.info("Execution stats retrieve successfully. owner_id: %s", owner_id)
-            return stats
+            log.info("Execution stats retrieved successfully. owner_id: %s", owner_id)
+            return WorkflowStats(active_workflows_count=0, total_executions_count=stats[0], failed_executions_count=stats[0])
         except Exception as e:
             log.exception('Unable to retrieve execution stats. owner_id: %s', owner_id)
             raise ServiceException(409, ServiceStatus.FAILURE, 'Unable to retrieve execution stats.')
         finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                self._release_connection(conn)
+            self._close_cursor_and_connection(cursor, conn)
 
 
     def get_workflow_execution_metrics_by_date(self, owner_id: str, start_timestamp: int, end_timestamp: int) -> List[WorkflowExecutionMetric]:
@@ -93,16 +90,115 @@ class ExecutionSummaryRepository(metaclass=Singleton):
             cursor = conn.cursor()
             cursor.execute(query, (owner_id, start_timestamp, end_timestamp))
             metrics = cursor.fetchall()
-            log.info("Execution metrics retrieve successfully. owner_id: %s", owner_id)
-            return [WorkflowExecutionMetric(date=metric[0].isoformat(), total_executions=metric[1], failed_executions=metric[2]) for metric in metrics]
+            log.info("Execution metrics retrieved successfully. owner_id: %s", owner_id)
+            return [WorkflowExecutionMetric(date=metric[0].strftime('%Y-%m-%d'), total_executions=metric[1], failed_executions=metric[2]) for metric in metrics]
         except Exception as e:
             log.exception('Unable to retrieve execution metrics. owner_id: %s', owner_id)
             raise ServiceException(409, ServiceStatus.FAILURE, 'Unable to retrieve execution metrics.')
         finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                self._release_connection(conn)
+            self._close_cursor_and_connection(cursor, conn)
+
+
+    def get_workflow_integrations(self, owner_id: str, start_timestamp: int, end_timestamp: int) -> List[WorkflowExecutionMetric]:
+        log.info("Retrieving workflow integrations. owner_id: %s", owner_id)
+
+        query = """
+        WITH workflow_stats AS (
+            SELECT 
+                workflow_id,
+                workflow_name,
+                MAX(event_timestamp) as last_event_timestamp,
+                COUNT(*) as total_executions,
+                COUNT(CASE WHEN status = 'ERROR' THEN 1 END) as failed_executions
+            FROM interconnecthub_executions_summary
+            WHERE owner_id = %s
+            AND event_timestamp BETWEEN %s AND %s
+            GROUP BY workflow_id, workflow_name
+        )
+        SELECT 
+            workflow_id,
+            workflow_name,
+            TO_TIMESTAMP(last_event_timestamp) as last_event_date,
+            failed_executions,
+            total_executions
+        FROM workflow_stats
+        ORDER BY last_event_timestamp DESC;
+        """
+        
+        conn = None
+        cursor = None
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute(query, (owner_id, start_timestamp, end_timestamp))
+            integrations = cursor.fetchall()
+            log.info("Workflow intergrations retrieved successfully. owner_id: %s", owner_id)
+            return [
+                WorkflowIntegration(
+                    workflow=WorkflowItem(id=integartion[0], name=integartion[1]),
+                    last_event_date=integartion[2].strftime('%Y-%m-%d'),
+                    failed_executions_count=integartion[3],
+                    total_executions_count=integartion[4],
+                    failed_executions_ratio=(
+                        float(integartion[3]) / float(integartion[4]) if integartion[4] > 0 else 0.0
+                    )
+                )
+                for integartion in integrations
+            ]
+        except Exception:
+            log.exception('Unable to retrieve workflow integrations. owner_id: %s', owner_id)
+            raise ServiceException(409, ServiceStatus.FAILURE, 'Unable to retrieve workflow integrations.')
+        finally:
+            self._close_cursor_and_connection(cursor, conn)
+
+
+    def get_workflow_failed_executions(self, owner_id: str, start_timestamp: int, end_timestamp: int) -> List[WorkflowExecutionMetric]:
+        log.info("Retrieving workflow failed executions. owner_id: %s", owner_id)
+
+        query = """
+        SELECT DISTINCT
+            execution_id,
+                event_id,
+            TO_TIMESTAMP(event_timestamp) as event_datetime,
+            workflow_name,
+            workflow_id
+        FROM interconnecthub_executions_summary
+        WHERE owner_id = %s
+        AND event_timestamp BETWEEN %s AND %s
+        AND status = 'ERROR'
+        ORDER BY event_datetime DESC;
+        """
+        
+        conn = None
+        cursor = None
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute(query, (owner_id, start_timestamp, end_timestamp))
+            failed_executions = cursor.fetchall()
+            log.info("Workflow failed executions retrieved successfully. owner_id: %s", owner_id)
+            return [
+                WorkflowFailedEvent(
+                    execution_id=execution[0],
+                    event_id=execution[1],
+                    date=execution[2].strftime('%Y-%m-%d'),
+                    workflow=WorkflowItem(id=execution[4], name=execution[3]),
+                    error_code=None
+                )
+                for execution in failed_executions
+            ]
+        except Exception:
+            log.exception('Unable to retrieve workflow failed executions. owner_id: %s', owner_id)
+            raise ServiceException(409, ServiceStatus.FAILURE, 'Unable to retrieve workflow failed executions.')
+        finally:
+            self._close_cursor_and_connection(cursor, conn)
+
+
+    def _close_cursor_and_connection(self, cursor, conn):
+        if cursor:
+            cursor.close()
+        if conn:
+            self._release_connection(conn)
 
 
     def _get_connection(self):
@@ -116,6 +212,7 @@ class ExecutionSummaryRepository(metaclass=Singleton):
             Exception: If the connection pool is not initialized.
         """
         if not self.pool:
+            log.error("Cannot initialize connection pool.")
             raise Exception("Connection pool is not initialized.")
         return self.pool.getconn()
 
